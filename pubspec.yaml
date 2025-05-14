@@ -45,7 +45,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-
+  #flutter_native_splash: ^2.3.1 # Use the latest version
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -74,6 +74,8 @@ flutter:
       - assets/auser_12.jpg
       - assets/auser_13.jpg
       - assets/auser_14.jpg
+      - assets/icon_128.png
+      - assets/icon_256.png
 
   #   
 
@@ -102,3 +104,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+#flutter_native_splash:
+#  color: "#000000" # Black background color (in hex)
+#  image: assets/icon_256.png # Path to your PNG image
+#  android_12:
+#    image: assets/icon_256.png # Optional: Different image for Android 12+
+#    color: "#000000"
+#  web: false # Optional: Disable web splash screen

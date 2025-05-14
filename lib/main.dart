@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'grindr.dart';
+import 'SplashScreen.dart'; // Import your SplashScreen widget
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Black Login Screen',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginScreen(),
+      home: const SplashScreen(nextScreen: LoginScreen()),
       routes: {
         '/forgotPassword': (context) => const ForgotPasswordScreen(),
         '/register': (context) => const RegisterScreen(),
