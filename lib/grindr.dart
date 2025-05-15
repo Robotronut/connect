@@ -1,314 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'dart:math';
-
-class ProfilePage extends StatefulWidget {
-  final Map<String, dynamic> user;
-
-  const ProfilePage({Key? key, required this.user}) : super(key: key);
-
-  @override
-  _ProfilePageState createState() => _ProfilePageState();
-}
-
-class _ProfilePageState extends State<ProfilePage> {
-  // List to hold the paths of the selected images
-  List<String?> _imagePaths = [null, null, null, null, null];
-  final ImagePicker _picker = ImagePicker();
-  String _bio =
-      'Some details about this person...'; // Initial bio, make it non-const
-  final TextEditingController _bioController =
-  TextEditingController(); // Controller for the TextField
-  bool _isEditingBio =
-  false; // Track if the user is currently editing the bio
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize the bioController with the initial bio text
-    _bioController.text = _bio;
-  }
-
-  // Function to pick an image
-  Future<void> _pickImage(int index) async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _imagePaths[index] = pickedFile.path;
-      });
-    } else {
-      print('No image selected.');
-    }
-  }
-
-  // Function to handle editing the bio
-  void _toggleEditBio() {
-    setState(() {
-      _isEditingBio = !_isEditingBio;
-      if (!_isEditingBio) {
-        // When done editing, update the bio
-        _bio = _bioController.text;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _bioController.dispose(); // Dispose the controller to prevent memory leaks
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final imageHeight = screenHeight * 0.5; // Height of the image grid
-    final textTopPadding = 100.0 + imageHeight + 20;
-    final availableHeight =
-        screenHeight - textTopPadding - 80; // 80 for action buttons and padding
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () {
-              // Handle edit profile action
-              print('Edit profile');
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          // Background Color
-          Positioned.fill(
-            child: Container(color: Colors.black),
-          ),
-          // Image Cards
-          Positioned(
-            top: 100.0,
-            left: 16.0,
-            right: 16.0,
-            child: SizedBox(
-              height: imageHeight, // Use the calculated image height
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                  childAspectRatio: 0.8,
-                ),
-                itemCount: _imagePaths.length,
-                itemBuilder: (context, index) {
-                  return _buildImageCard(index, context);
-                },
-              ),
-            ),
-          ),
-          // Profile Details at the Bottom
-          Positioned(
-            left: 16.0,
-            top: textTopPadding, // Position below the image grid.
-            right: 16.0,
-            child: SingleChildScrollView( // Wrap with SingleChildScrollView
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: availableHeight, // Use minHeight instead of maxHeight
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Add this line
-                  children: [
-                    Text(
-                      widget.user['name'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8.0),
-                    // Use a TextField for editing, and a Text for display
-                    if (_isEditingBio)
-                      TextField(
-                        controller: _bioController,
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 16.0),
-                        maxLines:
-                        null, // Allow multiple lines, and expand vertically
-                        keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none, // Remove the border
-                        ),
-                      )
-                    else
-                      Text(
-                        _bio,
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 16.0),
-                      ),
-                    const SizedBox(height: 16.0),
-                    Row(
-                      children: const [
-                        Icon(Icons.location_on, color: Colors.white70),
-                        SizedBox(width: 4.0),
-                        Text('Some Location',
-                            style: TextStyle(color: Colors.white70)),
-                      ],
-                    ),
-                    const SizedBox(height: 8.0),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.circle,
-                          color: widget.user['isOnline']
-                              ? Colors.greenAccent
-                              : Colors.grey,
-                          size: 12.0,
-                        ),
-                        const SizedBox(width: 4.0),
-                        Text(
-                          widget.user['isOnline'] ? 'Online' : 'Offline',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                    // Conditionally show edit/done button
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: _toggleEditBio,
-                        child: Text(
-                          _isEditingBio ? 'Done' : 'Edit Bio',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Function to build each image card
-  Widget _buildImageCard(int index, BuildContext context) {
-    // Calculate width based on screen size
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = (screenWidth - 32) /
-        2; // 32 for padding on both sides, 2 for 2 columns, and subtract spacing
-
-    return GestureDetector(
-      onTap: () => _pickImage(index),
-      child: Container(
-        width: cardWidth, // Use calculated width
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8.0),
-          border: Border.all(
-            color: Colors.white30,
-            width: 2.0,
-          ),
-          image: _imagePaths[index] != null
-              ? DecorationImage(
-            image: FileImage(File(_imagePaths[index]!)),
-            fit: BoxFit.cover,
-          )
-              : const DecorationImage(
-            image: AssetImage('assets/placeholder.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-        child: _imagePaths[index] == null
-            ? const Center(
-          child: Icon(Icons.add_a_photo, color: Colors.white70),
-        )
-            : null,
-      ),
-    );
-  }
-}
+import 'package:image_picker/image_picker.dart'; // Import the image_picker package
 
 class grindr extends StatelessWidget {
-  // List of common boy names
-  final List<String> boyNames = const [
-    "Liam",
-    "Noah",
-    "Oliver",
-    "Elijah",
-    "James",
-    "William",
-    "Benjamin",
-    "Lucas",
-    "Henry",
-    "Alexander",
-    "Jackson",
-    "Sebastian",
-    "Aiden",
-    "Matthew",
-    "Daniel",
-    "Michael",
-    "Ethan",
-    "Jacob",
-    "Logan",
-    "David",
+  final List<String> boyNames = [
+    "Liam", "Noah", "Oliver", "Elijah", "James", "William", "Benjamin", "Lucas",
+    "Henry", "Alexander", "Jackson", "Sebastian", "Aiden", "Matthew", "Daniel",
+    "Michael", "Ethan", "Jacob", "Logan", "David",
   ];
 
-  // Generate random users
   List<Map<String, dynamic>> generateUsers() {
     final random = Random();
     return List.generate(140, (index) {
-      String randomName = boyNames.elementAt(random.nextInt(boyNames.length));
+      String randomName = boyNames[random.nextInt(boyNames.length)];
       String imageName = "assets/auser_${(index % 14) + 1}.jpg";
       bool isOnline = random.nextBool();
+      int age = random.nextInt(40) + 18;
+      String bio = _generateBio(randomName, age);
+      List<String> interests = _generateInterests();
+      // Simulate recent messages
+      List<Map<String, String>> recentMessages = List.generate(
+        random.nextInt(5), // Generate between 0 and 4 messages
+            (i) => {
+          'sender': random.nextBool() ? 'self' : 'other',
+          'text': _generateRandomMessage(),
+          'timestamp': DateTime.now()
+              .subtract(Duration(minutes: random.nextInt(120)))
+              .toIso8601String(),
+        },
+      );
       return {
         "name": randomName,
         "image": imageName,
         "isOnline": isOnline,
+        "age": age,
+        "bio": bio,
+        "interests": interests,
+        "recentMessages": recentMessages,
       };
     });
+  }
+
+  String _generateBio(String name, int age) {
+    final random = Random();
+    final bios = [
+      "Just looking to chat and see where things go.",
+      "Into fitness, good food, and even better company.",
+      "Seeking genuine connections. Let's grab a coffee?",
+      "Adventurous soul, always up for exploring new things.",
+      "Quiet and thoughtful. Open to interesting conversations.",
+      "Love music, art, and deep talks.",
+      "Working hard, playing harder. Let's connect!",
+      "Sarcastic and fun-loving. Don't be shy!",
+      "Looking for friends and maybe more.",
+      "Enjoying life one day at a time.",
+    ];
+    return "${bios[random.nextInt(bios.length)]} I'm $age.";
+  }
+
+  List<String> _generateInterests() {
+    final random = Random();
+    final allInterests = [
+      "Hiking", "Gaming", "Cooking", "Reading", "Traveling", "Photography",
+      "Music", "Movies", "Art", "Sports", "Technology", "Coffee", "Animals",
+      "Yoga", "Meditation",
+    ];
+    final numberOfInterests = random.nextInt(3) + 1;
+    return (List.generate(allInterests.length, (index) => index)..shuffle())
+        .take(numberOfInterests)
+        .map((index) => allInterests[index])
+        .toList();
+  }
+
+  String _generateRandomMessage() {
+    final random = Random();
+    final messages = [
+      "Hey!", "How's it going?", "What are you up to?", "Nice profile!",
+      "Interested in chatting?", "Good vibes only.",
+      "Long message to test how the text wrapping works. This should take up multiple lines.",
+      "Okay", "Sounds good", "See you later!", "👋", "😄",
+    ];
+    return messages[random.nextInt(messages.length)];
   }
 
   @override
   Widget build(BuildContext context) {
     final users = generateUsers();
-    final loggedInUser = users[0];
-
-    // Define selected index for bottom navigation
-    ValueNotifier<int> _selectedIndex = ValueNotifier(0);
-
-    // Function to handle navigation
-    void _onItemTapped(int index) {
-      _selectedIndex.value = index; // update the selected index
-      if (index == 2) {
-        // If "Inbox" is tapped (index 2)
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MessagingScreen(
-              // Pass a list of users instead of just one.
-              users: users,
-              loggedInUser: loggedInUser,
-              user: {},
-            ),
-          ),
-        );
-      }
-    }
-
     return Scaffold(
       appBar: AppBar(toolbarHeight: 0),
       body: Container(
@@ -319,54 +96,38 @@ class grindr extends StatelessWidget {
               padding: const EdgeInsets.all(12.0),
               child: Row(
                 children: [
+                  // Navigate to EditProfileScreen when the user taps on their profile picture
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ProfilePage(
-                            user: loggedInUser,
-                          ),
+                          builder: (context) => EditProfileScreen(),
                         ),
                       );
                     },
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 20.0,
-                      backgroundImage: AssetImage(
-                        'assets/auser_6.jpg',
-                      ),
+                      backgroundImage: AssetImage('assets/auser_6.jpg'),
                     ),
                   ),
-                  const SizedBox(
-                    width: 8.0,
-                  ),
+                  SizedBox(width: 8.0),
                   Expanded(
                     child: Container(
-                      constraints: const BoxConstraints(
-                        maxHeight: 30.0,
-                      ),
+                      constraints: BoxConstraints(maxHeight: 30.0),
                       child: TextField(
-                        style: const TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Explore more profiles',
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          prefixIcon:
+                          Icon(Icons.search, color: Colors.white.withOpacity(0.9)),
                           filled: true,
-                          fillColor: Colors.white.withOpacity(
-                            0.1,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 1.0,
-                            horizontal: 5.0,
-                          ),
+                          fillColor: Colors.white.withOpacity(0.1),
+                          contentPadding:
+                          EdgeInsets.symmetric(vertical: 1.0, horizontal: 5.0),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              25.0,
-                            ),
+                            borderRadius: BorderRadius.circular(25.0),
                             borderSide: BorderSide.none,
                           ),
                         ),
@@ -381,7 +142,7 @@ class grindr extends StatelessWidget {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  const SizedBox(width: 8.0),
+                  SizedBox(width: 8.0),
                   _buildPillButton(Icons.star_outline, "Favorite"),
                   _buildPillButton(Icons.cake, "Age"),
                   _buildPillButton(Icons.wifi, "Online"),
@@ -389,7 +150,7 @@ class grindr extends StatelessWidget {
                   _buildPillButton(Icons.fiber_new, "Fresh"),
                   _buildPillButton(Icons.tag, "Tags"),
                   _buildPillButton(Icons.filter_list, "More Filters"),
-                  const SizedBox(width: 8.0),
+                  SizedBox(width: 8.0),
                 ],
               ),
             ),
@@ -398,7 +159,7 @@ class grindr extends StatelessWidget {
                 color: Colors.black,
                 padding: const EdgeInsets.all(8.0),
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 2.0,
                     mainAxisSpacing: 2.0,
@@ -406,22 +167,20 @@ class grindr extends StatelessWidget {
                   ),
                   itemCount: users.length,
                   itemBuilder: (context, index) {
-                    final user = users.elementAt(index);
+                    final user = users[index];
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ProfilePage(user: user),
+                            builder: (context) => MessagingScreen(user: user),
                           ),
                         );
                       },
                       child: Stack(
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(
-                              2.0,
-                            ),
+                            borderRadius: BorderRadius.circular(2.0),
                             child: Image.asset(
                               user["image"]!,
                               fit: BoxFit.cover,
@@ -441,7 +200,7 @@ class grindr extends StatelessWidget {
                                   end: Alignment.topCenter,
                                   colors: [
                                     Colors.black.withOpacity(0.9),
-                                    Colors.transparent,
+                                    Colors.transparent
                                   ],
                                 ),
                               ),
@@ -452,22 +211,20 @@ class grindr extends StatelessWidget {
                             left: 8.0,
                             child: Row(
                               children: [
-                                if (user["isOnline"] as bool) ...{
+                                if (user["isOnline"]) ...[
                                   Container(
                                     width: 10.0,
                                     height: 10.0,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       color: Colors.green,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                },
-                                const SizedBox(
-                                  width: 4.0,
-                                ),
+                                ],
+                                SizedBox(width: 4.0),
                                 Text(
                                   user["name"]!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10.0,
                                     fontWeight: FontWeight.bold,
@@ -486,67 +243,38 @@ class grindr extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: ValueListenableBuilder<int>(
-        valueListenable: _selectedIndex,
-        builder: (context, selectedIndex, child) {
-          return BottomNavigationBar(
-            backgroundColor: Colors.black,
-            selectedItemColor: Colors.white,
-            unselectedItemColor: Colors.grey,
-            currentIndex: selectedIndex, // Use the selectedIndex
-            onTap: _onItemTapped, // Call _onItemTapped
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.apps),
-                label: 'Browse',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.fire_extinguisher),
-                label: 'Interest',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.message),
-                label: 'Inbox',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.store),
-                label: 'Store',
-              ),
-            ],
-            type: BottomNavigationBarType.fixed,
-          );
-        },
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.black,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.grey,
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.apps), label: 'Browse'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.fire_extinguisher), label: 'Interest'),
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Inbox'),
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Store'),
+        ],
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }
 
-  // Helper method to build pill buttons
   Widget _buildPillButton(IconData icon, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 4.0,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10.0,
-          vertical: 0,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(
-            0.1,
-          ),
+          color: Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(25.0),
         ),
         child: Row(
           children: [
             Icon(icon, color: Colors.white, size: 12.0),
-            const SizedBox(width: 4.0),
+            SizedBox(width: 4.0),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10.0,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 10.0),
             ),
           ],
         ),
@@ -555,219 +283,164 @@ class grindr extends StatelessWidget {
   }
 }
 
-// New screen for messaging
 class MessagingScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> users; // List of all users
-  final Map<String, dynamic> loggedInUser;
+  final Map<String, dynamic> user;
 
-  const MessagingScreen({Key? key, required this.users, required this.loggedInUser, required Map<String, dynamic> user}) : super(key: key);
+  const MessagingScreen({super.key, required this.user});
 
   @override
-  _MessagingScreenState createState() => _MessagingScreenState();
+  State<MessagingScreen> createState() => _MessagingScreenState();
 }
 
 class _MessagingScreenState extends State<MessagingScreen> {
-  final List<Message> _messages = []; // List of messages in the chat
-  final TextEditingController _messageController =
-  TextEditingController(); // Controller for the message input
-  final ScrollController _scrollController =
-  ScrollController(); // Scroll controller to manage scrolling
-  String _selectedUserId = ""; // Keep track of the selected user to chat with.
+  final TextEditingController _messageController = TextEditingController();
+  final List<Map<String, String>> _messages = [];
 
   @override
   void initState() {
     super.initState();
-    // Initialize _selectedUserId with the first user in the list (or some default).
-    if (widget.users.isNotEmpty) {
-      _selectedUserId = widget.users[0]['name'];
+    // Load recent messages for this user
+    if (widget.user.containsKey('recentMessages') &&
+        widget.user['recentMessages'] is List) {
+      _messages.addAll(
+          List<Map<String, String>>.from(widget.user['recentMessages']));
     }
   }
 
-  // Function to add a new message to the chat
-  void _addMessage(String text, bool isMe, String userId) {
-    if (text.trim().isNotEmpty) {
+  void _sendMessage() {
+    if (_messageController.text.trim().isNotEmpty) {
       setState(() {
-        _messages.add(Message(text: text, isMe: isMe, userId: userId));
-        _messageController.clear(); // Clear the input field
-        // Scroll to the bottom after adding a new message:
-        WidgetsBinding.instance?.addPostFrameCallback((_) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
+        _messages.add({
+          'sender': 'self',
+          'text': _messageController.text.trim(),
+          'timestamp': DateTime.now().toIso8601String(),
         });
+        _messageController.clear();
       });
+      // In a real app, you would send this message to the server
     }
   }
 
-  // Function to get messages for the selected user.
-  List<Message> _getMessagesForUser(String userId) {
-    return _messages.where((message) => message.userId == userId).toList();
-  }
+  String _formatTimestamp(String timestamp) {
+    DateTime messageTime = DateTime.parse(timestamp);
+    DateTime now = DateTime.now();
+    Duration difference = now.difference(messageTime);
 
-  @override
-  void dispose() {
-    _messageController.dispose(); // Dispose the text editing controller.
-    _scrollController.dispose();
-    super.dispose();
+    if (difference.inDays > 1) {
+      return "${messageTime.day}/${messageTime.month}/${messageTime.year}";
+    } else if (difference.inHours > 1) {
+      return "${difference.inHours} hours ago";
+    } else if (difference.inMinutes > 1) {
+      return "${difference.inMinutes} minutes ago";
+    } else {
+      return "Just now";
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Find the selected user's data.
-    final selectedUser = widget.users.firstWhere(
-          (user) => user['name'] == _selectedUserId,
-      orElse: () => widget.loggedInUser, // Provide a default if not found
-    );
-
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Row(
           children: [
             CircleAvatar(
-              radius: 20.0,
-              backgroundImage: AssetImage(selectedUser['image'] ?? 'assets/placeholder.png'),
+              radius: 18.0,
+              backgroundImage: AssetImage(widget.user['image']!),
             ),
-            const SizedBox(width: 8.0),
+            SizedBox(width: 10.0),
             Text(
-              selectedUser['name'],
-              style: const TextStyle(color: Colors.white),
+              widget.user['name']!,
+              style:
+              TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        color: Colors.black,
-        child: Row(
-          children: <Widget>[
-            // Left side: List of user profile pictures
-            SizedBox(
-              width: 150.0, // Increased width to accommodate name
-              child: ListView.builder(
-                itemCount: widget.users.length,
-                itemBuilder: (context, index) {
-                  final user = widget.users[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8), // Added horizontal padding
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedUserId = user['name']; // set the selected user ID.
-                        });
-                      },
-                      child: Row( // Use a Row to layout image and text
-                        children: [
-                          CircleAvatar(
-                            radius: 30.0,
-                            backgroundImage: AssetImage(user['image']),
-                            // Add a border to show which user is selected.
-                            backgroundColor: _selectedUserId == user['name']
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              reverse: true,
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[_messages.length - 1 - index];
+                final isSelf = message['sender'] == 'self';
+                return Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
+                  child: Align(
+                    alignment: isSelf ? Alignment.topRight : Alignment.topLeft,
+                    child: Column(
+                      crossAxisAlignment:
+                      isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            color: isSelf
                                 ? Colors.blue
-                                : Colors.transparent,
+                                : Colors
+                                .white
+                                .withOpacity(0.1), // Use Grindr blue for sent messages
+                            borderRadius: BorderRadius.circular(8.0),
                           ),
-                          const SizedBox(width: 8), // Add some spacing
-                          Text(
-                            user['name'],
-                            style: TextStyle(color: Colors.white), // Style the name
+                          child: Text(
+                            message['text']!,
+                            style: TextStyle(color: Colors.white),
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            // Right side: Messages for the selected user
-            Expanded(
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: _getMessagesForUser(_selectedUserId).length,
-                      itemBuilder: (context, index) {
-                        final message = _getMessagesForUser(_selectedUserId)[index];
-                        return _buildMessageBubble(message);
-                      },
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          _formatTimestamp(message['timestamp']!),
+                          style: TextStyle(color: Colors.grey, fontSize: 10),
+                        ),
+                      ],
                     ),
                   ),
-                  _buildMessageInput(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Function to build a single message bubble
-  Widget _buildMessageBubble(Message message) {
-    final bool isMe = message.isMe;
-    return Container(
-      margin: EdgeInsets.only(
-        top: 8.0,
-        bottom: 8.0,
-        left: isMe ? 64.0 : 16.0,
-        right: isMe ? 16.0 : 64.0,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.0),
-        color: isMe ? Colors.blue : Colors.grey[700],
-      ),
-      child: Text(
-        message.text,
-        style: const TextStyle(color: Colors.white, fontSize: 16.0),
-      ),
-    );
-  }
-
-  // Function to build the message input field
-  Widget _buildMessageInput() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[800], // A slightly lighter background
-      ),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Type your message...',
-                hintStyle: TextStyle(color: Colors.grey[400]),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25.0),
-                  borderSide: BorderSide.none, // Remove the border
-                ),
-                filled: true,
-                fillColor: Colors.grey[700], // Match bubble color
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-              ),
-              textInputAction: TextInputAction.send, // Change Enter behavior
-              onSubmitted: (text) {
-                _addMessage(text, true, _selectedUserId);
+                );
               },
             ),
           ),
-          const SizedBox(width: 8.0),
-          IconButton(
-            icon: const Icon(Icons.send, color: Colors.white),
-            onPressed: () {
-              _addMessage(_messageController.text, true, _selectedUserId);
-            },
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(25.0),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                      child: TextField(
+                        controller: _messageController,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Send a message...',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          border: InputBorder.none,
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8.0),
+                CircleAvatar(
+                  backgroundColor:
+                  Colors.blue, // Grindr-like send button color
+                  radius: 25.0,
+                  child: IconButton(
+                    icon: Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -775,11 +448,209 @@ class _MessagingScreenState extends State<MessagingScreen> {
   }
 }
 
-// Model class for a message
-class Message {
-  final String text;
-  final bool isMe; // True if the message is from the current user
-  final String userId; // Add the user id
-
-  Message({required this.text, required this.isMe, required this.userId});
+// new widget for the edit profile screen
+class EditProfileScreen extends StatefulWidget {
+  @override
+  _EditProfileScreenState createState() => _EditProfileScreenState();
 }
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  // text editing controllers for the text fields
+  final TextEditingController _bioController = TextEditingController();
+  // list of images.  The first image is the profile image.
+  List<String> _imageUrls = ['assets/auser_6.jpg']; // start with the default image
+  final picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    // set the initial value of the bio text field.
+    _bioController.text =
+    "Just looking to chat and see where things go. I'm 28."; // set a default bio
+  }
+
+  // function to select an image from device
+  Future<void> _pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageUrls.add(pickedFile.path); // add the image to the list
+      });
+    } else {
+      print('No image selected.');
+    }
+  }
+
+  // function to remove an image from the list
+  void _removeImage(int index) {
+    setState(() {
+      if (index > 0) {
+        // prevent removing the first image.
+        _imageUrls.removeAt(index);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: Text('Edit Profile', style: TextStyle(color: Colors.white)),
+        iconTheme: IconThemeData(color: Colors.white),
+        actions: [
+          // save button in the app bar
+          IconButton(
+            icon: Icon(Icons.save, color: Colors.white),
+            onPressed: () {
+              // save the profile data
+              Navigator.of(context).pop(); // go back to the previous screen.
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Profile Image',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 10),
+              // display the profile image.  Make it tappable to edit.
+              GestureDetector(
+                onTap: _pickImage,
+                child: CircleAvatar(
+                  radius: 50.0,
+                  backgroundImage: AssetImage(_imageUrls[0]),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Bio',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 10),
+              // text field for the user to edit their bio
+              TextField(
+                controller: _bioController,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Enter your bio',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10.0),
+                    borderSide: BorderSide(color: Colors.blue),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Other Images',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 10),
+              // display the other images
+              SizedBox(
+                height: 100, // set a height for the horizontal list view
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _imageUrls.length -
+                      1, // -1 because the first image is the profile image
+                  itemBuilder: (context, index) {
+                    final imageIndex =
+                        index + 1; // adjust the index to start from the second image
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 10.0),
+                      child: Stack(
+                        children: [
+                          // GestureDetector to make the image tappable
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10.0),
+                                image: DecorationImage(
+                                  image: AssetImage(_imageUrls[imageIndex]),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // button to remove the image
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(imageIndex),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 20),
+              // button to add more images
+              ElevatedButton(
+                onPressed: _pickImage,
+                child: Text('Add Image'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _bioController.dispose();
+    super.dispose();
+  }
+}
+
