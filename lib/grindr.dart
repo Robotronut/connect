@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:image_picker/image_picker.dart'; // Import the image_picker package
+import 'dart:io'; // Import for File
+import 'package:video_player/video_player.dart'; // Import for video playback
+import 'package:chewie/chewie.dart'; // Import for video player controls
 
 class grindr extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Grindr-like App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        fontFamily: 'Inter',
+      ),
+      home: MainScreen(),
+    );
+  }
+}
+
+class MainScreen extends StatelessWidget {
   final List<String> boyNames = [
     "Liam", "Noah", "Oliver", "Elijah", "James", "William", "Benjamin", "Lucas",
     "Henry", "Alexander", "Jackson", "Sebastian", "Aiden", "Matthew", "Daniel",
@@ -295,6 +313,9 @@ class MessagingScreen extends StatefulWidget {
 class _MessagingScreenState extends State<MessagingScreen> {
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, String>> _messages = [];
+  final picker = ImagePicker(); // Add this line
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
 
   @override
   void initState() {
@@ -314,6 +335,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
           'sender': 'self',
           'text': _messageController.text.trim(),
           'timestamp': DateTime.now().toIso8601String(),
+          'type': 'text', // Add type text
         });
         _messageController.clear();
       });
@@ -335,6 +357,66 @@ class _MessagingScreenState extends State<MessagingScreen> {
     } else {
       return "Just now";
     }
+  }
+
+  // Function to pick an image
+  Future<void> _sendImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _messages.add({
+          'sender': 'self',
+          'text': pickedFile.path, // Store the path
+          'timestamp': DateTime.now().toIso8601String(),
+          'type': 'image', // Add a type identifier
+        });
+      });
+    }
+  }
+  // Function to pick a video
+  Future<void> _sendVideo() async{
+    final pickedFile = await picker.pickVideo(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _messages.add({
+          'sender': 'self',
+          'text': pickedFile.path, // Store the path
+          'timestamp': DateTime.now().toIso8601String(),
+          'type': 'video', // Add a type identifier
+        });
+      });
+    }
+  }
+
+  Future<void> _initializeVideoPlayer(String videoPath) async {
+    _videoPlayerController = VideoPlayerController.file(File(videoPath));
+    try{
+      await _videoPlayerController!.initialize();
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
+        autoPlay: false,
+        looping: false,
+        aspectRatio: _videoPlayerController!.value.aspectRatio,
+      );
+    } catch(e){
+      print("Error initializing video player: $e");
+      //show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error playing video: $e'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+    }
+
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -377,21 +459,50 @@ class _MessagingScreenState extends State<MessagingScreen> {
                       crossAxisAlignment:
                       isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8.0),
-                          decoration: BoxDecoration(
-                            color: isSelf
-                                ? Colors.blue
-                                : Colors
-                                .white
-                                .withOpacity(0.1), // Use Grindr blue for sent messages
-                            borderRadius: BorderRadius.circular(8.0),
+                        if (message['type'] == 'image')
+                          Container(
+                            width: 200, // Adjust as needed
+                            height: 200,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8.0),
+                              image: DecorationImage(
+                                image: FileImage(File(message['text']!)), // Use FileImage
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          )
+                        else if (message['type'] == 'video')
+                          FutureBuilder<void>(
+                            future: _initializeVideoPlayer(message['text']!),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.done && _chewieController != null) {
+                                return Chewie(
+                                  controller: _chewieController!,
+                                );
+                              } else if (snapshot.hasError){
+                                return const Center(child: Text("Error playing video", style: TextStyle(color: Colors.white),));
+                              }
+                              else {
+                                return const Center(child: CircularProgressIndicator(color: Colors.white,));
+                              }
+                            },
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              color: isSelf
+                                  ? Colors.blue
+                                  : Colors
+                                  .white
+                                  .withOpacity(0.1), // Use Grindr blue for sent messages
+                              borderRadius: BorderRadius.circular(8.0),
+                            ),
+                            child: Text(
+                              message['text']!,
+                              style: TextStyle(color: Colors.white),
+                            ),
                           ),
-                          child: Text(
-                            message['text']!,
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
                         SizedBox(height: 2),
                         Text(
                           _formatTimestamp(message['timestamp']!),
@@ -406,39 +517,64 @@ class _MessagingScreenState extends State<MessagingScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(25.0),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15.0),
-                      child: TextField(
-                        controller: _messageController,
-                        style: TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: 'Send a message...',
-                          hintStyle: TextStyle(color: Colors.grey),
-                          border: InputBorder.none,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(25.0),
                         ),
-                        onSubmitted: (_) => _sendMessage(),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15.0),
+                          child: TextField(
+                            controller: _messageController,
+                            style: TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              hintText: 'Send a message...',
+                              hintStyle: TextStyle(color: Colors.grey),
+                              border: InputBorder.none,
+                            ),
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    SizedBox(width: 8.0),
+                    CircleAvatar(
+                      backgroundColor:
+                      Colors.blue, // Grindr-like send button color
+                      radius: 25.0,
+                      child: IconButton(
+                        icon: Icon(Icons.send, color: Colors.white),
+                        onPressed: _sendMessage,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8.0),
-                CircleAvatar(
-                  backgroundColor:
-                  Colors.blue, // Grindr-like send button color
-                  radius: 25.0,
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.white),
-                    onPressed: _sendMessage,
-                  ),
-                ),
+                SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.image, color: Colors.white),
+                      onPressed: _sendImage,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.videocam, color: Colors.white),
+                      onPressed: _sendVideo,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.emoji_emotions, color: Colors.white),
+                      onPressed: () {
+                        // Handle emoji sending (show a picker, etc.)
+                      },
+                    ),
+                    // Add more icons for other actions like GIFs, stickers, etc.
+                  ],
+                )
               ],
             ),
           ),
@@ -531,7 +667,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onTap: _pickImage,
                 child: CircleAvatar(
                   radius: 50.0,
-                  backgroundImage: AssetImage(_imageUrls[0]),
+                  backgroundImage: _imageUrls.isNotEmpty ? AssetImage(_imageUrls[0]) : null,
+                  child: _imageUrls.isEmpty ? const Icon(Icons.person, size: 50, color: Colors.grey,) : null,
                 ),
               ),
               SizedBox(height: 20),
@@ -599,13 +736,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10.0),
                                 image: DecorationImage(
-                                  image: AssetImage(_imageUrls[imageIndex]),
+                                  image: _imageUrls.length > imageIndex ? AssetImage(_imageUrls[imageIndex]) : const AssetImage('assets/placeholder.png'),
                                   fit: BoxFit.cover,
                                 ),
                               ),
                             ),
                           ),
-                          // button to remove the image
+                          // button to removethe image
                           Positioned(
                             top: 0,
                             right: 0,

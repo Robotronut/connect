@@ -31,6 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
   image_picker: ^0.8.9 # Add the image_picker package here.  Use the latest version available.
+  video_player: ^2.8.0 # Use the latest version
+  chewie: ^1.7.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -59,25 +61,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-     
-      - assets/auser_1.jpg
-      - assets/auser_2.jpg
-      - assets/auser_3.jpg
-      - assets/auser_4.jpg
-      - assets/auser_5.jpg
-      - assets/auser_6.jpg
-      - assets/auser_7.jpg
-      - assets/auser_8.jpg
-      - assets/auser_9.jpg
-      - assets/auser_10.jpg
-      - assets/auser_11.jpg
-      - assets/auser_12.jpg
-      - assets/auser_13.jpg
-      - assets/auser_14.jpg
-      - assets/icon_128.png
-      - assets/icon_256.png
-
-  #   
+    - assets/
+  #    If your images are in specific subdirectories, list them:
+  #    - assets/images/
+  #    - assets/videos/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
