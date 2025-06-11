@@ -20,7 +20,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool _isLoading = false;
   String? _userEmail; // To store the email passed from the registration screen
   String? _userName;
-  String? _userPassword;
+
   @override
   void initState() {
     super.initState();
@@ -43,24 +43,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (args != null && args is Map<String, dynamic>) {
       _userEmail = args['email'] as String?;
       _userName = args['username'] as String?;
-      _userPassword = args['password'] as String?;
-      // You might also want to set _userName here if it's passed as part of the arguments
-      // For example, if arguments were a Map:
-      // if (args is Map<String, String>) {
-      //   _userEmail = args['email'];
-      //   _userName = args['username'];
-      // }
     }
     if (_userEmail == null) {
       // Handle case where email is not passed (e.g., if user navigates directly)
-      print('Warning: Email not passed to OTP verification screen.');
+      // Guard the use of context
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content:
                 Text('Error: User email not found. Please register again.')),
       );
       // Optionally, navigate back to registration or show an error
-      // Navigator.pop(context);
+      // if (mounted) Navigator.pop(context); // Guard navigation too
     }
   }
 
@@ -73,6 +67,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   Future<void> _verifyOtp() async {
     if (_enteredOtp.length != 4) {
+      // Guard the use of context
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a complete 4-digit OTP.')),
       );
@@ -80,6 +76,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     if (_userEmail == null) {
+      // Guard the use of context
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Error: Cannot verify OTP without user email.')),
@@ -103,22 +101,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
       if (key != null) {
         await SecureStorageService.saveApiKey(key);
+        // Guard the use of context
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('OTP verified successfully! Key saved.')),
         );
         // You can now navigate to the main application screen
         // For example: Navigator.pushReplacementNamed(context, '/home');
+
+        // Guard the call to showDialog
+        if (!mounted) return;
         showDialog(
           context: context,
-          builder: (BuildContext context) {
+          builder: (BuildContext dialogContext) {
             return AlertDialog(
               title: const Text('Success!'),
               content: const Text('OTP verified and API Key saved securely.'),
               actions: <Widget>[
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(dialogContext).pop(); // Close the dialog
+                    // Guard the navigation too
+                    if (!mounted) return;
                     Navigator.pushReplacementNamed(context, '/grindr');
                   },
                   child: const Text('OK'),
@@ -128,6 +133,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           },
         );
       } else {
+        // Guard the use of context
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text('OTP verification failed. Please try again.')),
@@ -137,10 +144,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       setState(() {
         _isLoading = false;
       });
+      // Guard the use of context
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('An error occurred: ${e.toString()}')),
       );
-      print('Error during OTP verification: $e');
     }
   }
 
@@ -232,6 +240,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               TextButton(
                 onPressed: () {
                   // Implement resend OTP logic here if needed
+                  // Guard the use of context
+                  if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                         content: Text(

@@ -1,7 +1,5 @@
 // lib/models/user_model.dart
 
-import 'package:flutter/foundation.dart'; // Often used for @required, though null-safety makes it less common now
-
 class UserModel {
   final String id;
   final List<String> imageUrls;

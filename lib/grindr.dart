@@ -1,5 +1,6 @@
 import 'package:connect/models/user_model.dart';
 import 'package:connect/screens/edit_profile_screen.dart';
+import 'package:connect/services/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
@@ -22,10 +23,16 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   final ScrollController _scrollController =
       ScrollController(); // For infinite scrolling
 
+  // Add a variable to store the logged-in user's data
+  UserModel? _loggedInUser;
+  bool _isLoggedInUserLoading = true;
+  String _loggedInUserErrorMessage = '';
+
   @override
   void initState() {
     super.initState();
-    _fetchUsers(); // Fetch users when the screen initializes
+    _fetchLoggedInUser(); // Fetch logged-in user when screen initializes
+    _fetchUsers(); // Fetch other users
     _scrollController
         .addListener(_onScroll); // Add scroll listener for infinite scrolling
   }
@@ -36,6 +43,38 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     _scrollController.dispose();
     super.dispose();
   }
+
+  // --- NEW METHOD TO FETCH LOGGED-IN USER ---
+  Future<void> _fetchLoggedInUser() async {
+    setState(() {
+      _isLoggedInUserLoading = true;
+      _loggedInUserErrorMessage = '';
+    });
+    try {
+      final String? userId = await SecureStorageService.getUserId();
+      if (userId == null) {
+        // Handle case where user ID is not found (e.g., user is not logged in)
+        setState(() {
+          _loggedInUserErrorMessage = 'User not logged in.';
+          _isLoggedInUserLoading = false;
+        });
+        return; // Exit the function
+      }
+      final user = await ApiService.getUserProfile(userId);
+      setState(() {
+        _loggedInUser = user;
+        _isLoggedInUserLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoggedInUserLoading = false;
+        _loggedInUserErrorMessage =
+            'Failed to load logged-in user: ${e.toString()}';
+        print(_loggedInUserErrorMessage); // Log the error
+      });
+    }
+  }
+  // ----------------------------------------
 
   void _onScroll() {
     // Only trigger load more if not currently loading and has more data
@@ -105,11 +144,22 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     });
     // Now call _fetchUsers to get the first page again
     await _fetchUsers();
+    await _fetchLoggedInUser(); // Also refresh the logged-in user's data
   }
   // ----------------------------------------
 
   @override
   Widget build(BuildContext context) {
+    // Determine the image provider for the logged-in user's avatar
+    ImageProvider userAvatarImage;
+    if (_loggedInUser != null && _loggedInUser!.imageUrls.isNotEmpty) {
+      userAvatarImage = NetworkImage(_loggedInUser!.imageUrls[0]);
+    } else {
+      // Fallback to a placeholder asset image if no user or no image URL
+      userAvatarImage = const AssetImage(
+          'assets/placeholder_user.jpg'); // Make sure you have this asset
+    }
+
     return Scaffold(
       appBar: AppBar(toolbarHeight: 0),
       body: Container(
@@ -129,10 +179,10 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                         ),
                       );
                     },
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 20.0,
-                      // Placeholder for user's own profile picture
-                      backgroundImage: AssetImage('assets/auser_6.jpg'),
+                      // Use the determined image provider
+                      backgroundImage: userAvatarImage,
                     ),
                   ),
                   const SizedBox(width: 8.0),
@@ -143,12 +193,15 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: 'Explore more profiles',
-                          hintStyle:
-                              TextStyle(color: Colors.white.withOpacity(0.7)),
+                          hintStyle: TextStyle(
+                              color: Colors.white.withAlpha(
+                                  178)), // Changed from withOpacity(0.7)
                           prefixIcon: Icon(Icons.search,
-                              color: Colors.white.withOpacity(0.9)),
+                              color: Colors.white.withAlpha(
+                                  229)), // Changed from withOpacity(0.9)
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.1),
+                          fillColor: Colors.white
+                              .withAlpha(25), // Changed from withOpacity(0.1)
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 1.0, horizontal: 5.0),
                           border: OutlineInputBorder(
@@ -372,7 +425,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withAlpha(25), // Changed from withOpacity(0.1)
           borderRadius: BorderRadius.circular(25.0),
         ),
         child: Row(

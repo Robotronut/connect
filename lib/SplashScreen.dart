@@ -24,7 +24,6 @@ class _SplashScreenState extends State<SplashScreen> {
     // 1. Attempt to retrieve the stored API key (security stamp) and email
     final String? storedStamp = await SecureStorageService.getApiKey();
     final String? storedEmail = await SecureStorageService.getEmail();
-    final String? storedUserId = await SecureStorageService.getUserId();
 
     // Determine the next route based on stored credentials
     String nextRoute = '/login'; // Default to login screen
@@ -46,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
         // Stamp verified successfully!
         print('Stamp verified successfully. Navigating to Grindr.');
         // If your API returns a new stamp upon verification, save it.
-        await SecureStorageService.saveApiKey(verifiedStamp);
+        //await SecureStorageService.saveApiKey(verifiedStamp);
         nextRoute = '/grindr'; // User is authenticated, go to Grindr
       } else {
         // Stamp verification failed (e.g., expired, invalid, network error)

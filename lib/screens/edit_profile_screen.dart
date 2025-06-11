@@ -15,10 +15,10 @@ class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  _EditProfileScreenState createState() => _EditProfileScreenState();
+  EditProfileScreenState createState() => EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class EditProfileScreenState extends State<EditProfileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String _errorMessage = '';
@@ -168,10 +168,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'myemail@example.com'; // Placeholder if email not in secure storage
 
       // Remove units for editing
-      _heightController.text =
-          fetchedProfile.height?.replaceAll(' cm', '') ?? '';
-      _weightController.text =
-          fetchedProfile.weight?.replaceAll(' kg', '') ?? '';
+      _heightController.text = fetchedProfile.height.replaceAll(' cm', '');
+      _weightController.text = fetchedProfile.weight.replaceAll(' kg', '');
 
       _selectedBuild = fetchedProfile.build;
       _selectedLookingFor = fetchedProfile.lookingFor;
@@ -192,6 +190,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _errorMessage =
             'Failed to load profile: ${e.toString().split(':').last.trim()}';
       }
+
+      // >>>>>> ADDED THIS MOUNTED CHECK HERE <<<<<<
+      if (!mounted) {
+        // If the widget is no longer in the widget tree, we cannot show a SnackBar.
+        // Optionally, log the error here if you need to track it even if no UI feedback is given.
+        return; // Exit the catch block early as we can't proceed with context
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -209,6 +215,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     if (_currentUserProfile == null) {
+      if (!mounted) return; // Add mounted check before using context
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cannot save: User profile not loaded.')),
       );
@@ -256,6 +263,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await SecureStorageService.saveUserName(_usernameController.text);
       await SecureStorageService.saveEmail(_emailController.text);
 
+      if (!mounted) return; // Add mounted check before using context
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
@@ -265,6 +273,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       _errorMessage =
           'Failed to save profile: ${e.toString().split(':').last.trim()}';
+
+      if (!mounted) return; // Add mounted check before using context
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -298,12 +308,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 0, imageUrl); // Make new image the main profile image
           }
         });
+
+        if (!mounted) return; // Add mounted check before using context
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Image uploaded successfully!')),
         );
       } catch (e) {
         _errorMessage =
             'Failed to upload image: ${e.toString().split(':').last.trim()}';
+
+        if (!mounted) return; // Add mounted check before using context
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_errorMessage)),
         );
@@ -312,9 +326,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _isImageProcessing = false;
         });
       }
-    } else {
-      print('No image selected.');
-    }
+    } else {}
   }
 
   /// Removes an image from the user's profile via API.
@@ -328,12 +340,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() {
         _imageUrls.remove(imageUrlToRemove); // Remove from local list
       });
+
+      if (!mounted) return; // Add mounted check before using context
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image removed successfully!')),
       );
     } catch (e) {
       _errorMessage =
           'Failed to remove image: ${e.toString().split(':').last.trim()}';
+
+      if (!mounted) return; // Add mounted check before using context
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -347,7 +363,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   /// Performs user logout by clearing authentication data and navigating to login.
   Future<void> _performLogout() async {
     await SecureStorageService.deleteAllAuthData();
-    print('User logged out locally.');
 
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(
@@ -355,6 +370,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         (Route<dynamic> route) => false,
       );
     }
+  }
+
+  // Helper method for consistent section titles
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16.0,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   @override
@@ -530,12 +560,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       width: 100,
                                       height: 100,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.1),
+                                        color: Colors.white.withAlpha(
+                                            25), // Corrected from withValues(alpha: 25)
                                         borderRadius:
                                             BorderRadius.circular(10.0),
                                         border: Border.all(
-                                            color:
-                                                Colors.white.withOpacity(0.3)),
+                                            color: Colors.white.withAlpha(
+                                                13)), // Corrected from withValues(alpha: 13)
                                       ),
                                       child:
                                           _isImageProcessing // Show small loader if an image operation is in progress
@@ -652,7 +683,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   /// Helper widget for consistent text form fields.
-  /// Helper widget for consistent text form fields.
   Widget _buildTextField(TextEditingController controller, String hintText,
       {int maxLines = 1,
       TextInputType keyboardType = TextInputType.text,
@@ -672,8 +702,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             color: Colors.cyan), // <--- CHANGE THIS for the hint text color
         // --- START INPUTDECORATION COLOR CHANGES ---
         filled: true, // MUST be true for fillColor to work
-        fillColor: Colors.deepPurple.withOpacity(
-            0.3), // <--- CHANGE THIS for the background color of the input field
+        fillColor: Colors.deepPurple.withAlpha(
+            76), // <--- CHANGED THIS from withOpacity(0.3) for the background color of the input field
         // --- END INPUTDECORATION COLOR CHANGES ---
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
@@ -741,29 +771,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         // Optionally, define borders for enabled and focused states for more control
         enabledBorder: OutlineInputBorder(
+          // <<< FIXED SYNTAX HERE
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide(
-              color: Colors
-                  .grey.shade700), // <--- Optional: Border color when enabled
+          borderSide:
+              BorderSide.none, // Corrected missing parenthesis/completion
         ),
+        // Add focusedBorder if needed for consistency with TextField
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide(
-              color: Colors
-                  .greenAccent), // <--- Optional: Border color when focused
+          borderSide:
+              const BorderSide(color: Colors.red), // Example focused border
         ),
       ),
-      // 4. Color of the dropdown arrow icon
-      icon: const Icon(Icons.arrow_drop_down,
-          color: Colors.amber), // <--- CHANGE THIS (Example: amber)
-
       items: items.map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          // 5. Text color for *each item* within the dropdown menu list
-          child: Text(value,
-              style: const TextStyle(
-                  color: Colors.white)), // <--- CHANGE THIS (Example: white)
+          child: Text(value),
         );
       }).toList(),
       onChanged: onChanged,
@@ -773,21 +796,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
         return null;
       },
-    );
-  }
-
-  /// Helper widget for consistent section titles.
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 20.0,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
     );
   }
 }

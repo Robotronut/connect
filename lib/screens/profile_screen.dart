@@ -13,23 +13,20 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.userId});
 
   @override
-  _ProfileScreenState createState() => _ProfileScreenState();
+  ProfileScreenState createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class ProfileScreenState extends State<ProfileScreen> {
   final PageController _pageController = PageController();
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
 
-  int _currentPageIndex = 0;
   UserModel? _userProfile;
   bool _isLoading = true;
   String? _errorMessage;
   String? _currentLoggedInUserId;
   String? _displayUsername;
-
-  // This flag can still be useful for other UI logic, e.g., showing/hiding elements
-  bool _isProfileSheetExpanded = false;
+  int _currentPageIndex = 0; // << NEW: To track current image index
 
   final double _maxSheetExtent = 0.90; // Max height the sheet can expand to
   final double _initialChildSize =
@@ -43,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
     _pageController.addListener(() {
       setState(() {
+        // Update the current page index when the PageView scrolls
         _currentPageIndex = _pageController.page?.round() ?? 0;
       });
     });
@@ -70,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         } else {
           _displayUsername = fetchedProfile.userName;
         }
+        _currentPageIndex = 0; // Reset index when new profile is loaded
       });
     } catch (e) {
       setState(() {
@@ -92,6 +91,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   bool get _isOwnProfile {
     return _userProfile != null && widget.userId == _currentLoggedInUserId;
+  }
+
+  // << NEW: Helper method to build the page indicator dots >>
+  Widget _buildPageIndicator() {
+    if (_userProfile == null || _userProfile!.imageUrls.length <= 1) {
+      return const SizedBox.shrink(); // Hide if only one or no images
+    }
+    return Positioned(
+      bottom:
+          10, // Position slightly above the bottom edge of the image container
+      left: 0,
+      right: 0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(_userProfile!.imageUrls.length, (index) {
+          return Container(
+            width: 8.0,
+            height: 8.0,
+            margin: const EdgeInsets.symmetric(horizontal: 4.0),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _currentPageIndex == index
+                  ? Colors.white // Active dot
+                  : Colors.white.withOpacity(0.4), // Inactive dot
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // Helper method for consistent stat rows
+  Widget _buildStatRow(IconData icon, String text, {bool showInfo = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.white70),
+          const SizedBox(width: 10),
+          Text(text, style: const TextStyle(color: Colors.white)),
+          if (showInfo) ...[
+            const SizedBox(width: 5),
+            const Icon(Icons.info_outline, size: 16, color: Colors.white70),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Helper method for consistent expectation rows
+  Widget _buildExpectationRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.white70),
+          const SizedBox(width: 10),
+          Text(label, style: const TextStyle(color: Colors.white70)),
+          const SizedBox(width: 5),
+          Text(value, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -202,7 +264,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onNotification: (notification) {
               setState(() {
                 // Adjust threshold as needed, e.g., 0.8 means 80% expanded
-                _isProfileSheetExpanded = notification.extent > 0.8;
               });
               return true; // Allow the notification to continue bubbling
             },
@@ -229,62 +290,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         // --- PHOTO SECTION (now inside the scrollable sheet) ---
                         // Give the PageView a fixed height or an AspectRatio to control its size
-                        Container(
+                        SizedBox(
                           height: MediaQuery.of(context).size.height *
                               0.70, // Example: photo takes 70% of screen height
                           // Adjust this height to control how much of the photo is seen
                           // and how far you have to scroll to see the rest of the profile.
-                          child: PageView.builder(
-                            controller: _pageController,
-                            itemCount: _userProfile!.imageUrls.length,
-                            itemBuilder: (context, index) {
-                              final imageUrl = _userProfile!.imageUrls[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PhotoDetailScreen(
-                                        imageUrl: imageUrl,
-                                        heroTag:
-                                            'profilePhoto$index', // Unique tag for Hero animation
+                          child: Stack(
+                            // << NEW: Use Stack to overlay dots on PageView
+                            children: [
+                              PageView.builder(
+                                controller: _pageController,
+                                itemCount: _userProfile!.imageUrls.length,
+                                itemBuilder: (context, index) {
+                                  final imageUrl =
+                                      _userProfile!.imageUrls[index];
+                                  return GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              PhotoDetailScreen(
+                                            imageUrl: imageUrl,
+                                            heroTag:
+                                                'profilePhoto$index', // Unique tag for Hero animation
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Hero(
+                                      tag:
+                                          'profilePhoto$index', // Matches the tag in PhotoDetailScreen
+                                      child: Image.network(
+                                        imageUrl,
+                                        fit: BoxFit
+                                            .cover, // Fills the container, cropping if necessary
+                                        errorBuilder: (context, error,
+                                                stackTrace) =>
+                                            Image.asset(
+                                                'assets/placeholder_error.jpg',
+                                                fit: BoxFit.cover),
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress
+                                                          .expectedTotalBytes !=
+                                                      null
+                                                  ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                  : null,
+                                              color: Colors.grey,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                   );
                                 },
-                                child: Hero(
-                                  tag:
-                                      'profilePhoto$index', // Matches the tag in PhotoDetailScreen
-                                  child: Image.network(
-                                    imageUrl,
-                                    fit: BoxFit
-                                        .cover, // Fills the container, cropping if necessary
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Image.asset(
-                                                'assets/placeholder_error.jpg',
-                                                fit: BoxFit.cover),
-                                    loadingBuilder:
-                                        (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress
-                                                      .expectedTotalBytes !=
-                                                  null
-                                              ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                              : null,
-                                          color: Colors.grey,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
+                              ),
+                              _buildPageIndicator(), // << NEW: Call the page indicator helper
+                            ],
                           ),
                         ),
                         // --- END PHOTO SECTION ---
@@ -470,38 +540,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatRow(IconData icon, String text, {bool showInfo = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.white70),
-          const SizedBox(width: 10),
-          Text(text, style: const TextStyle(color: Colors.white)),
-          if (showInfo) ...[
-            const SizedBox(width: 5),
-            const Icon(Icons.info_outline, size: 16, color: Colors.white70),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpectationRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.white70),
-          const SizedBox(width: 10),
-          Text(label, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(width: 5),
-          Text(value, style: const TextStyle(color: Colors.white)),
         ],
       ),
     );
