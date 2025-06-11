@@ -5,11 +5,13 @@ import 'package:connect/services/secure_storage_service.dart';
 import 'package:connect/services/api_service.dart'; // Import your API service
 import 'package:connect/models/user_model.dart'; // Import your user model
 import 'dart:io'; // Required for File
+import 'package:flutter/services.dart'; // Required for TextInputFormatter
 
+/// A screen for editing the user's profile information.
+///
+/// This screen allows users to update their bio, physical attributes,
+/// preferences, and manage their profile images.
 class EditProfileScreen extends StatefulWidget {
-  // It's good practice to pass the current user's ID
-  // or even the UserProfile object if you already have it.
-  // For simplicity, we'll assume we fetch it using the logged-in user's credentials.
   const EditProfileScreen({super.key});
 
   @override
@@ -29,72 +31,89 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _weightController = TextEditingController();
 
   // Dropdown values for selection fields (populate from API if dynamic, or keep static)
-  List<String> _buildOptions = [
-    'Athletic',
-    'Average',
-    'Muscular',
+
+// Corrected _buildOptions
+  final List<String> _buildOptions = [
     'Slim',
-    'Heavy',
-    'Other'
+    'Average',
+    'Athletic',
+    'Muscular',
+    'A few extra pounds' // Corrected from 'Heavy', removed 'Other'
   ];
   String? _selectedBuild;
 
-  List<String> _lookingForOptions = [
+// Corrected _lookingForOptions
+  final List<String> _lookingForOptions = [
     'Chat',
+    'Friendship', // Corrected from 'Friends'
     'Hookups',
-    'Dating',
-    'Friends',
-    'Anything'
+    'Long-term Relationship', // Added this option
+    'Dating'
+    // Removed 'Anything' as it's not in backend defaults
   ];
   String? _selectedLookingFor;
 
-  List<String> _meetAtOptions = [
+// Corrected _meetAtOptions
+  final List<String> _meetAtOptions = [
     'My Place',
     'Your Place',
     'Public Place',
-    'Cafe',
     'Online'
+    // Removed 'Cafe' as it's not in backend defaults
   ];
   String? _selectedMeetAt;
 
-  List<String> _nsfwPicsOptions = ['Yes', 'No', 'Not At First'];
+// Corrected _nsfwPicsOptions
+  final List<String> _nsfwPicsOptions = [
+    'Yes',
+    'No',
+    'Not At First',
+    'Maybe'
+  ]; // Added 'Maybe'
   String? _selectedNsfwPics;
 
-  List<String> _genderOptions = [
+// Corrected _genderOptions
+  final List<String> _genderOptions = [
     'Man',
     'Woman',
-    'Non-Binary',
-    'Transgender',
-    'Prefer not to say'
+    'Non-binary' // Corrected from 'Non-Binary', removed 'Transgender', 'Prefer not to say'
   ];
   String? _selectedGender;
 
-  List<String> _pronounsOptions = [
+// Corrected _pronounsOptions
+// Note: Frontend typically shows all available pronouns, and backend logic handles which are valid for a selected gender.
+// Based on your backend, 'He/Him/His', 'She/Her/Hers', 'They/Them/Theirs' are the main options.
+// 'Ask me' is a common frontend addition for user preference.
+// I will keep 'Ask me' for user flexibility, but ensure the core ones match.
+  final List<String> _pronounsOptions = [
     'He/Him/His',
     'She/Her/Hers',
     'They/Them/Theirs',
-    'Ask me'
+    'Ask me' // Keeping this for frontend flexibility unless backend strictly disallows it
   ];
   String? _selectedPronouns;
 
-  List<String> _raceOptions = [
+// Corrected _raceOptions
+  final List<String> _raceOptions = [
     'White',
     'Black',
     'Asian',
     'Hispanic',
-    'Mixed',
-    'Other'
+    'Indigenous', // Added 'Indigenous'
+    'Mixed'
+    // Removed 'Other'
   ];
   String? _selectedRace;
 
-  List<String> _relationshipStatusOptions = [
+// Corrected _relationshipStatusOptions
+  final List<String> _relationshipStatusOptions = [
     'Single',
-    'Taken',
-    'Open',
+    'In a Relationship', // Corrected from 'Taken', added 'Married'
+    'Married',
     'Complicated'
+    // Removed 'Open'
   ];
   String? _selectedRelationshipStatus;
-
   // Store the UserProfile that we are editing
   UserModel? _currentUserProfile;
 
@@ -102,6 +121,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // Initially, this will hold the fetched network URLs
   final List<String> _imageUrls = [];
   final picker = ImagePicker();
+
+  // Track if an image upload/deletion is in progress
+  bool _isImageProcessing = false;
 
   @override
   void initState() {
@@ -119,6 +141,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  /// Loads the user's profile data from the API and populates the form fields.
   Future<void> _loadUserProfile() async {
     setState(() {
       _isLoading = true;
@@ -126,15 +149,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      // For simplicity, we assume the API knows which profile to fetch
-      // based on the provided email/securityStamp.
-      // If your API requires a specific user ID, you'd need to store/pass it.
-      // For now, let's mock a user ID or assume a 'get_my_profile' endpoint.
-      // If you need a user ID, you could fetch it from secure storage first.
-      final String? loggedInUserId =
-          await SecureStorageService.getApiKey(); // Assuming you store userId
+      final String? loggedInUserId = await SecureStorageService.getUserId();
       if (loggedInUserId == null) {
-        throw Exception("No logged-in user ID found.");
+        throw Exception(
+            "Authentication error: No logged-in user ID found. Please log in again.");
       }
 
       final UserModel fetchedProfile =
@@ -142,16 +160,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _currentUserProfile = fetchedProfile;
 
       _bioController.text = fetchedProfile.aboutMe;
-      // Note: your API doesn't return 'name' or 'email' for user profiles
-      // on get_people. If your user management API returns these, populate them.
-      // For now, we'll load them from secure storage if they exist.
-      _usernameController.text =
-          await SecureStorageService.getUserName() ?? 'My Username';
-      _emailController.text =
-          await SecureStorageService.getEmail() ?? 'myemail@example.com';
+      // Populate username and email from secure storage,
+      // as they might not be part of the general user profile API response.
+      _usernameController.text = await SecureStorageService.getUserName() ??
+          fetchedProfile.userName; // Fallback to fetched profile username
+      _emailController.text = await SecureStorageService.getEmail() ??
+          'myemail@example.com'; // Placeholder if email not in secure storage
 
-      _heightController.text = fetchedProfile.height.replaceAll(' cm', '');
-      _weightController.text = fetchedProfile.weight.replaceAll(' kg', '');
+      // Remove units for editing
+      _heightController.text =
+          fetchedProfile.height?.replaceAll(' cm', '') ?? '';
+      _weightController.text =
+          fetchedProfile.weight?.replaceAll(' kg', '') ?? '';
 
       _selectedBuild = fetchedProfile.build;
       _selectedLookingFor = fetchedProfile.lookingFor;
@@ -165,7 +185,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _imageUrls.clear();
       _imageUrls.addAll(fetchedProfile.imageUrls);
     } catch (e) {
-      _errorMessage = 'Failed to load profile: ${e.toString()}';
+      // More user-friendly error messages
+      if (e.toString().contains("401")) {
+        _errorMessage = 'Session expired. Please log in again.';
+      } else {
+        _errorMessage =
+            'Failed to load profile: ${e.toString().split(':').last.trim()}';
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -176,6 +202,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  /// Saves the updated user profile to the API.
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -194,28 +221,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      // Create an updated UserProfile object from current state
       final updatedProfile = UserModel(
-          id: _currentUserProfile!.id, // Keep the original ID
-          aboutMe: _bioController.text,
-          height: '${_heightController.text} cm',
-          weight: '${_weightController.text} kg',
-          build: _selectedBuild ?? _currentUserProfile!.build,
-          lookingFor: _selectedLookingFor ?? _currentUserProfile!.lookingFor,
-          meetAt: _selectedMeetAt ?? _currentUserProfile!.meetAt,
-          nsfwPics: _selectedNsfwPics ?? _currentUserProfile!.nsfwPics,
-          gender: _selectedGender ?? _currentUserProfile!.gender,
-          pronouns: _selectedPronouns ?? _currentUserProfile!.pronouns,
-          race: _selectedRace ?? _currentUserProfile!.race,
-          relationshipStatus: _selectedRelationshipStatus ??
-              _currentUserProfile!.relationshipStatus,
-          imageUrls: _imageUrls, // Pass the current list of image URLs
-          status: _currentUserProfile!
-              .status, // Status might be dynamically updated by backend
-          age: _currentUserProfile!.age, // Age typically not edited here
-          distance: _currentUserProfile!
-              .distance, // Distance typically not edited here
-          userName: _currentUserProfile!.userName);
+        id: _currentUserProfile!.id,
+        aboutMe: _bioController.text,
+        // Ensure height and weight are numbers before adding units
+        height: _heightController.text.isNotEmpty &&
+                int.tryParse(_heightController.text) != null
+            ? '${_heightController.text} cm'
+            : _currentUserProfile!.height, // Keep existing if invalid
+        weight: _weightController.text.isNotEmpty &&
+                int.tryParse(_weightController.text) != null
+            ? '${_weightController.text} kg'
+            : _currentUserProfile!.weight, // Keep existing if invalid
+        build: _selectedBuild ?? _currentUserProfile!.build,
+        lookingFor: _selectedLookingFor ?? _currentUserProfile!.lookingFor,
+        meetAt: _selectedMeetAt ?? _currentUserProfile!.meetAt,
+        nsfwPics: _selectedNsfwPics ?? _currentUserProfile!.nsfwPics,
+        gender: _selectedGender ?? _currentUserProfile!.gender,
+        pronouns: _selectedPronouns ?? _currentUserProfile!.pronouns,
+        race: _selectedRace ?? _currentUserProfile!.race,
+        relationshipStatus: _selectedRelationshipStatus ??
+            _currentUserProfile!.relationshipStatus,
+        imageUrls: _imageUrls, // Pass the current list of image URLs
+        status: _currentUserProfile!.status,
+        age: _currentUserProfile!.age,
+        distance: _currentUserProfile!.distance,
+        userName: _usernameController
+            .text, // Use the updated username from the controller
+      );
 
       await ApiService.updateUserProfile(updatedProfile);
 
@@ -230,7 +263,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         Navigator.of(context).pop(); // Go back after successful save
       }
     } catch (e) {
-      _errorMessage = 'Failed to save profile: ${e.toString()}';
+      _errorMessage =
+          'Failed to save profile: ${e.toString().split(':').last.trim()}';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -241,31 +275,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  /// Allows the user to pick an image from the gallery and uploads it.
   Future<void> _pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
-        _isLoading = true; // Show loading while uploading
+        _isImageProcessing = true; // Show specific loader for image processing
+        _errorMessage = ''; // Clear previous image errors
       });
       try {
         File imageFile = File(pickedFile.path);
         final imageUrl =
             await ApiService.uploadImage(imageFile); // Upload to API
         setState(() {
-          _imageUrls.add(imageUrl); // Add the returned URL to the list
+          // If this is the first image, or if we want it to be the main profile image,
+          // insert it at the beginning. Otherwise, add to the end.
+          if (_imageUrls.isEmpty) {
+            _imageUrls.add(imageUrl);
+          } else {
+            _imageUrls.insert(
+                0, imageUrl); // Make new image the main profile image
+          }
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Image uploaded successfully!')),
         );
       } catch (e) {
-        _errorMessage = 'Failed to upload image: ${e.toString()}';
+        _errorMessage =
+            'Failed to upload image: ${e.toString().split(':').last.trim()}';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_errorMessage)),
         );
       } finally {
         setState(() {
-          _isLoading = false;
+          _isImageProcessing = false;
         });
       }
     } else {
@@ -273,9 +317,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
+  /// Removes an image from the user's profile via API.
   void _removeImage(String imageUrlToRemove) async {
     setState(() {
-      _isLoading = true; // Show loading while deleting
+      _isImageProcessing = true; // Show specific loader for image processing
+      _errorMessage = ''; // Clear previous image errors
     });
     try {
       await ApiService.deleteImage(imageUrlToRemove); // Delete from API
@@ -286,17 +332,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SnackBar(content: Text('Image removed successfully!')),
       );
     } catch (e) {
-      _errorMessage = 'Failed to remove image: ${e.toString()}';
+      _errorMessage =
+          'Failed to remove image: ${e.toString().split(':').last.trim()}';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
     } finally {
       setState(() {
-        _isLoading = false;
+        _isImageProcessing = false;
       });
     }
   }
 
+  /// Performs user logout by clearing authentication data and navigating to login.
   Future<void> _performLogout() async {
     await SecureStorageService.deleteAllAuthData();
     print('User logged out locally.');
@@ -321,13 +369,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.save, color: Colors.white),
-            onPressed: _isLoading
+            onPressed: (_isLoading ||
+                    _isImageProcessing) // Disable save button while any operation is loading
                 ? null
-                : _saveProfile, // Disable save button while loading
+                : _saveProfile,
           ),
         ],
       ),
-      body: _isLoading && _currentUserProfile == null
+      body: _isLoading &&
+              _currentUserProfile ==
+                  null // Show loading indicator only on initial profile load
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : _errorMessage.isNotEmpty
               ? Center(
@@ -353,15 +404,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           const SizedBox(height: 10),
                           // Main profile image
                           GestureDetector(
-                            onTap: _pickImage, // Allow picking a new main image
+                            onTap: _isImageProcessing
+                                ? null
+                                : _pickImage, // Allow picking a new main image, disable if image processing
                             child: CircleAvatar(
                               radius: 50.0,
+                              backgroundColor:
+                                  Colors.grey[800], // Background for avatar
                               backgroundImage: _imageUrls.isNotEmpty
-                                  ? NetworkImage(
-                                      _imageUrls[0]) // Use NetworkImage
-                                  : const AssetImage(
-                                          'assets/placeholder_error.jpg')
-                                      as ImageProvider, // Default placeholder
+                                  ? NetworkImage(_imageUrls[0])
+                                  : null, // Use NetworkImage, null if no image
+                              child: _imageUrls.isEmpty
+                                  ? ClipOval(
+                                      child: Image.asset(
+                                        'assets/placeholder_error.jpg', // Use asset for placeholder
+                                        fit: BoxFit.cover,
+                                        width:
+                                            100, // Ensure it fills the circle
+                                        height: 100,
+                                      ),
+                                    )
+                                  : null,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -371,11 +434,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           const SizedBox(height: 20),
                           _buildSectionTitle('Height (cm)'),
                           _buildTextField(_heightController, 'e.g., 175',
-                              keyboardType: TextInputType.number),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ]), // Only allow digits
                           const SizedBox(height: 20),
                           _buildSectionTitle('Weight (kg)'),
                           _buildTextField(_weightController, 'e.g., 70',
-                              keyboardType: TextInputType.number),
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly
+                              ]), // Only allow digits
                           const SizedBox(height: 20),
                           _buildSectionTitle('Build'),
                           _buildDropdown(_buildOptions, _selectedBuild,
@@ -454,9 +523,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 if (index == _imageUrls.length) {
                                   // This is the "Add Image" button
                                   return GestureDetector(
-                                    onTap: _isLoading
+                                    onTap: _isImageProcessing
                                         ? null
-                                        : _pickImage, // Disable while uploading
+                                        : _pickImage, // Disable while uploading/deleting an image
                                     child: Container(
                                       width: 100,
                                       height: 100,
@@ -469,7 +538,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 Colors.white.withOpacity(0.3)),
                                       ),
                                       child:
-                                          _isLoading // Show small loader if something is uploading
+                                          _isImageProcessing // Show small loader if an image operation is in progress
                                               ? const Center(
                                                   child:
                                                       CircularProgressIndicator(
@@ -491,14 +560,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         decoration: BoxDecoration(
                                           borderRadius:
                                               BorderRadius.circular(10.0),
-                                          image: DecorationImage(
-                                            image: NetworkImage(
-                                                imageUrl), // Use NetworkImage
-                                            fit: BoxFit.cover,
-                                          ),
+                                          // Removed redundant DecorationImage to rely on Image.network error/loading builders
                                         ),
                                         child: ClipRRect(
-                                          // To show error/loading on images
                                           borderRadius:
                                               BorderRadius.circular(10.0),
                                           child: Image.network(
@@ -535,7 +599,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         top: 0,
                                         right: 0,
                                         child: GestureDetector(
-                                          onTap: _isLoading
+                                          onTap: _isImageProcessing
                                               ? null
                                               : () => _removeImage(
                                                   imageUrl), // Disable while loading
@@ -561,9 +625,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           const SizedBox(height: 40),
                           Center(
                             child: ElevatedButton.icon(
-                              onPressed: _isLoading
+                              onPressed: (_isLoading || _isImageProcessing)
                                   ? null
-                                  : _performLogout, // Disable while loading
+                                  : _performLogout, // Disable while any operation is loading
                               icon:
                                   const Icon(Icons.logout, color: Colors.white),
                               label: const Text('Log Out'),
@@ -587,27 +651,47 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Helper for text fields
+  /// Helper widget for consistent text form fields.
+  /// Helper widget for consistent text form fields.
   Widget _buildTextField(TextEditingController controller, String hintText,
-      {int maxLines = 1, TextInputType keyboardType = TextInputType.text}) {
+      {int maxLines = 1,
+      TextInputType keyboardType = TextInputType.text,
+      List<TextInputFormatter>? inputFormatters}) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.white),
+      // --- START TEXTFORMFIELD COLOR CHANGES ---
+      style: const TextStyle(
+          color: Colors
+              .lightGreenAccent), // <--- CHANGE THIS for the text the user types
+      // --- END TEXTFORMFIELD COLOR CHANGES ---
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters, // Apply formatters
       decoration: InputDecoration(
         hintText: hintText,
-        hintStyle: const TextStyle(color: Colors.grey),
+        hintStyle: const TextStyle(
+            color: Colors.cyan), // <--- CHANGE THIS for the hint text color
+        // --- START INPUTDECORATION COLOR CHANGES ---
+        filled: true, // MUST be true for fillColor to work
+        fillColor: Colors.deepPurple.withOpacity(
+            0.3), // <--- CHANGE THIS for the background color of the input field
+        // --- END INPUTDECORATION COLOR CHANGES ---
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: const BorderSide(
+              color: Colors
+                  .orange), // <--- CHANGE THIS for the default border color
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderSide: const BorderSide(
+              color: Colors
+                  .orange), // <--- CHANGE THIS for the border color when enabled
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(color: Colors.blue),
+          borderSide: const BorderSide(
+              color: Colors
+                  .red), // <--- CHANGE THIS for the border color when focused
         ),
       ),
       maxLines: maxLines,
@@ -615,31 +699,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         if (value == null || value.isEmpty) {
           return 'This field cannot be empty';
         }
+        // Specific validation for height and weight
+        if (keyboardType == TextInputType.number) {
+          if (int.tryParse(value) == null) {
+            return 'Please enter a valid number';
+          }
+          // Add range validation if desired (e.g., height > 0, weight > 0)
+          if (int.parse(value) <= 0) {
+            return 'Value must be greater than 0';
+          }
+        }
         return null;
       },
     );
   }
 
-  // Helper for dropdowns
+  /// Helper widget for consistent dropdown form fields.
   Widget _buildDropdown(List<String> items, String? selectedValue,
       ValueChanged<String?> onChanged) {
     return DropdownButtonFormField<String>(
       value: selectedValue,
-      dropdownColor: Colors.black, // Background color for dropdown menu
-      style: const TextStyle(color: Colors.white),
+      // 1. Background color for the dropdown *menu* itself (when it's open)
+      dropdownColor:
+          Colors.deepPurple.shade800, // <--- CHANGE THIS (Example: dark purple)
+
+      // 2. Text color for the *selected item* displayed in the closed dropdown field
+      style: const TextStyle(
+          color:
+              Colors.lightBlueAccent), // <--- CHANGE THIS (Example: light blue)
+
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        // 3. Background color for the dropdown *field* itself (the visible box)
+        fillColor: Colors.blueGrey.shade800.withOpacity(
+            0.5), // <--- CHANGE THIS (Example: semi-transparent dark blue-grey)
+
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide.none,
+          borderSide:
+              BorderSide.none, // You currently have no border here, keeping it
+        ),
+        // Optionally, define borders for enabled and focused states for more control
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide(
+              color: Colors
+                  .grey.shade700), // <--- Optional: Border color when enabled
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide(
+              color: Colors
+                  .greenAccent), // <--- Optional: Border color when focused
         ),
       ),
-      icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+      // 4. Color of the dropdown arrow icon
+      icon: const Icon(Icons.arrow_drop_down,
+          color: Colors.amber), // <--- CHANGE THIS (Example: amber)
+
       items: items.map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
-          child: Text(value, style: const TextStyle(color: Colors.white)),
+          // 5. Text color for *each item* within the dropdown menu list
+          child: Text(value,
+              style: const TextStyle(
+                  color: Colors.white)), // <--- CHANGE THIS (Example: white)
         );
       }).toList(),
       onChanged: onChanged,
@@ -652,7 +776,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Helper for section titles
+  /// Helper widget for consistent section titles.
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
