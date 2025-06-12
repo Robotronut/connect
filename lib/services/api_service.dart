@@ -474,6 +474,48 @@ class ApiService {
     }
   }
 
+// --- NEW: Update User Profile ---
+  static Future<void> updateExistingUserProfile(
+      UserModel updatedProfile) async {
+    final String? email = await SecureStorageService.getEmail();
+    final String? securityStamp = await SecureStorageService.getApiKey();
+
+    if (email == null || securityStamp == null) {
+      throw Exception(
+          "Authentication required: Email or Security Stamp not found.");
+    }
+
+    final url = Uri.parse(
+        '$_baseUrl/update_existing_user_profile'); // Your API's update endpoint
+
+    try {
+      final headers = await _getHeaders();
+      final body = jsonEncode({
+        ...updatedProfile.toMap(), // Convert UserProfile to map
+        'Email': email, // Include credentials if needed by update endpoint
+        'Stamp': securityStamp,
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        // Successfully updated
+        print('Profile updated successfully!');
+      } else {
+        print(
+            'Failed to update profile: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to update profile: ${response.body}');
+      }
+    } catch (e) {
+      print('Error updating profile: $e');
+      rethrow;
+    }
+  }
+
   // --- NEW: Upload Image ---
   // This is a generic image upload method. You might need separate
   // endpoints for profile picture vs. other gallery images depending on your backend.
