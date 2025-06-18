@@ -346,7 +346,7 @@ class ApiService {
 
   static Future<List<UserModel>> getPeople({
     required int pageNumber,
-    required int pageSize,
+    required int pageSize, bool? isRightNow, bool? hasAlbums, List<String>? genders, String? position, int? minAge, int? maxAge, bool? onlineStatus, bool? isFresh, bool? isFavorite, List<String>? tags, String? relationshipStatus, String? bodyType, List<String>? moreFilterPositions, bool? hasPhotos, String? height, bool? hasFacePics, String? weight, bool? acceptsNsfwPics, String? lookingFor, String? meetAt, bool? haventChattedToday,
   }) async {
     final String? email = await SecureStorageService.getEmail();
     final String? securityStamp = await SecureStorageService.getApiKey();

@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
           filled: true,
           fillColor: Colors.white.withAlpha(225),
           contentPadding:
-              const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+          const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -83,13 +83,13 @@ class MyApp extends StatelessWidget {
       initialRoute: '/', // <--- CHANGED: Set the initial route to the root '/'
       routes: {
         '/': (context) =>
-            const SplashScreen(), // <--- NEW: Map the root route to SplashScreen
+        const SplashScreen(), // <--- NEW: Map the root route to SplashScreen
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
         '/otp_verification': (context) => const OtpVerificationScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/grindr': (context) =>
-            const MainBrowseScreen(), // Make sure 'grindr()' returns a Widget
+        const MainBrowseScreen(), // Make sure 'grindr()' returns a Widget
       },
     );
   }
