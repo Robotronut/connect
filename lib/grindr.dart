@@ -7,7 +7,7 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 
 import 'package:connect/screens/edit_profile_screen.dart'; // Ensure this path is correct
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
-
+import 'package:connect/screens/messaging_screen.dart'; // This is a placeholder, create this file
 // Import the new filter dialogs/screens
 import 'package:connect/filters/position_filter_dialog.dart';
 import 'package:connect/filters/age_filter_dialog.dart';
