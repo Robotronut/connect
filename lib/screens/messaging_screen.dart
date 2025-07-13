@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:connect/services/api_service.dart'; // Import your ApiService
+import 'package:connect/services/secure_storage_service.dart'; // Import SecureStorageService
 
 class MessageScreen extends StatefulWidget {
-  const MessageScreen({super.key});
+  // Optional parameter to directly open a chat with a specific user
+  final Map<String, dynamic>? initialChatUser;
+
+  const MessageScreen({super.key, this.initialChatUser});
 
   @override
   State<MessageScreen> createState() => _MessageScreenState();
@@ -9,23 +14,169 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [
-    {'text': 'Hello', 'isMe': false, 'time': '22:26'},
-    {'text': 'How are you?', 'isMe': true, 'time': '22:30'},
-    {'text': 'Looking for?', 'isMe': false, 'time': '22:39'},
+  // Stores the currently selected user for chat, null if showing inbox list
+  Map<String, dynamic>? _currentChatUser;
+
+  // List to hold actual Message objects
+  final List<Message> _messages = [];
+  bool _isLoadingHistory = false; // New state for loading history
+
+  // Mock list of users/conversations for the inbox
+  final List<Map<String, dynamic>> _mockConversations = [
+    {
+      'id': 'user1',
+      'name': 'Alice',
+      'lastMessage': 'Hey there!',
+      'time': '10:30 AM',
+      'unread': 2,
+      'isOnline': true,
+      'profilePic': 'https://placehold.co/100x100/FF5733/FFFFFF?text=A',
+      'email': 'alice@example.com' // Added email for SignalR
+    },
+    {
+      'id': 'user2',
+      'name': 'Bob',
+      'lastMessage': 'Sounds good, see you then.',
+      'time': 'Yesterday',
+      'unread': 0,
+      'isOnline': false,
+      'profilePic': 'https://placehold.co/100x100/33FF57/FFFFFF?text=B',
+      'email': 'bob@example.com' // Added email for SignalR
+    },
+    {
+      'id': 'user3',
+      'name': 'Charlie',
+      'lastMessage': 'Don\'t forget the meeting.',
+      'time': 'Mon',
+      'unread': 0,
+      'isOnline': true,
+      'profilePic': 'https://placehold.co/100x100/3357FF/FFFFFF?text=C',
+      'email': 'charlie@example.com' // Added email for SignalR
+    },
+    {
+      'id': 'user4',
+      'name': 'Diana',
+      'lastMessage': 'Got it!',
+      'time': '2 days ago',
+      'unread': 1,
+      'isOnline': false,
+      'profilePic': 'https://placehold.co/100x100/FF33CC/FFFFFF?text=D',
+      'email': 'diana@example.com' // Added email for SignalR
+    },
   ];
 
-  void _sendMessage() {
-    if (_messageController.text.isNotEmpty) {
+  String? _currentUserEmail; // Store the current logged-in user's email
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeChat();
+    _listenForNewMessages();
+  }
+
+  @override
+  void dispose() {
+    // No need to stop SignalR here if it's a global service managed by MainBrowseScreen
+    // ApiService.stopSignalR(); // Only if SignalR connection is managed per screen
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeChat() async {
+    _currentUserEmail = await SecureStorageService.getEmail();
+    print('MessageScreen: Current User Email: $_currentUserEmail'); // Debug print
+    setState(() {
+      _currentChatUser = widget.initialChatUser;
+    });
+    print('MessageScreen: Initial Chat User: $_currentChatUser'); // Debug print
+    _currentChatUser !['email'] = "user1@example.com";
+    // Fetch historical messages here for _currentChatUser if it's not null
+    if (_currentChatUser != null && _currentUserEmail != null) {
+      _fetchChatHistory(_currentUserEmail!, _currentChatUser!['email']);
+    }
+  }
+
+  Future<void> _fetchChatHistory(String user1Email, String user2Email, {int count = 5, int offset = 0}) async {
+    setState(() {
+      _isLoadingHistory = true;
+      _messages.clear(); // Clear existing messages before loading history
+    });
+    try {
+      final fetchedMessages = await ApiService.fetchChatHistory(user1Email, user2Email);
       setState(() {
-        _messages.add({
-          'text': _messageController.text,
-          'isMe': true, // Assuming sent messages are from 'me'
-          'time': '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+        _messages.addAll(fetchedMessages);
+        _isLoadingHistory = false;
+      });
+      print('MessageScreen: Fetched ${fetchedMessages.length} messages.'); // Debug print
+    } catch (e) {
+      print('MessageScreen: Error fetching chat history: $e'); // Debug print
+      setState(() {
+        _isLoadingHistory = false;
+        // Optionally show an error message to the user
+      });
+    }
+  }
+
+  void _listenForNewMessages() {
+    ApiService.onNewMessage.listen((message) {
+      print('MessageScreen: Received new message from stream: ${message.content}'); // Debug print
+      // Only add message to current chat if it's relevant
+      // (either sent by current user, or received from current chat partner)
+      if (message.senderId == _currentChatUser?['email'] ||
+          (message.recipientId == _currentUserEmail && message.senderId == _currentChatUser?['email'])) {
+        setState(() {
+          _messages.add(message);
         });
+      }
+      // You might also want to update the last message in _mockConversations
+      // for the inbox view if the message is for a different chat.
+    });
+  }
+
+  void _sendMessage() async {
+    if (_messageController.text.isNotEmpty && _currentChatUser != null && _currentUserEmail != null) {
+      final String messageContent = _messageController.text;
+      final String recipientEmail = _currentChatUser!['email'];
+
+      print('MessageScreen: Attempting to send message: "$messageContent"'); // Debug print
+      print('MessageScreen: Sender: $_currentUserEmail, Recipient: $recipientEmail'); // Debug print
+
+      // Add message to local list immediately for optimistic UI update
+      setState(() {
+        _messages.add(
+          Message(
+            id: UniqueKey().toString(), // Client-side ID
+            senderId: _currentUserEmail!,
+            recipientId: recipientEmail,
+            content: messageContent,
+            timestamp: DateTime.now(),
+          ),
+        );
       });
       _messageController.clear();
+
+      // Send message via SignalR
+      await ApiService.sendChatMessage(
+        senderEmail: _currentUserEmail!,
+        recipientEmail: recipientEmail,
+        content: messageContent,
+      );
+    } else {
+      print('MessageScreen: Cannot send message. Conditions not met:'); // Debug print
+      print('  Text empty: ${_messageController.text.isEmpty}');
+      print('  _currentChatUser is null: ${_currentChatUser == null}');
+      print('  _currentUserEmail is null: ${_currentUserEmail == null}');
     }
+  }
+
+  // Function to handle tapping on a user in the inbox list
+  void _onUserTap(Map<String, dynamic> user) {
+    setState(() {
+      _currentChatUser = user;
+      if (_currentUserEmail != null) {
+        _fetchChatHistory(_currentUserEmail!, _currentChatUser!['email']);
+      }
+    });
   }
 
   // Function to show the media options bottom sheet
@@ -401,54 +552,116 @@ class _MessageScreenState extends State<MessageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black, // Set the background to black
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
+        backgroundColor: Colors.black, // Ensure app bar is also black
+        leading: _currentChatUser == null
+            ? null // No back arrow when on the inbox list
+            : IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () {
-            // Implement back functionality
+            // If currently in a chat, go back to the inbox list
+            setState(() {
+              _currentChatUser = null;
+              _messages.clear(); // Clear messages when going back to inbox
+            });
           },
         ),
-        title: Row(
+        title: _currentChatUser == null
+            ? const Text(
+          'Inbox', // Title for the inbox list
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+        )
+            : Row(
           children: [
-            // User profile picture (placeholder)
-            const CircleAvatar(
+            // User profile picture for the current chat
+            CircleAvatar(
               radius: 18,
               backgroundImage: NetworkImage(
-                  'https://placehold.co/100x100/000000/FFFFFF?text=P'), // Placeholder image
+                  _currentChatUser!['profilePic'] ?? 'https://placehold.co/100x100/000000/FFFFFF?text=P'),
             ),
             const SizedBox(width: 8),
             // Online indicator
             Stack(
               children: [
-                const Text(
-                  'Profile Name', // Placeholder name
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  _currentChatUser!['name'], // Display current chat user's name
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 2),
+                if (_currentChatUser!['isOnline'])
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.black, width: 2),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_horiz),
+            icon: const Icon(Icons.more_horiz, color: Colors.white), // Set icon color to white
             onPressed: _showMoreChatOptions, // Show more chat options
           ),
         ],
       ),
-      body: Column(
+      body: _currentChatUser == null
+          ? ListView.builder(
+        // Display the list of conversations (inbox)
+        itemCount: _mockConversations.length,
+        itemBuilder: (context, index) {
+          final conversation = _mockConversations[index];
+          return ListTile(
+            leading: CircleAvatar(
+              radius: 25,
+              backgroundImage: NetworkImage(conversation['profilePic']),
+            ),
+            title: Text(
+              conversation['name'],
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              conversation['lastMessage'],
+              style: TextStyle(color: Colors.grey[400]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  conversation['time'],
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                ),
+                if (conversation['unread'] > 0)
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: Colors.blueAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      conversation['unread'].toString(),
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                  ),
+              ],
+            ),
+            onTap: () => _onUserTap(conversation), // Navigate to chat on tap
+          );
+        },
+      )
+          : Column(
+        // Display the chat messages for the selected user
         children: [
           // "Today" divider
           const Padding(
@@ -458,6 +671,12 @@ class _MessageScreenState extends State<MessageScreen> {
               style: TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ),
+          // Loading indicator for chat history
+          if (_isLoadingHistory)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
           // Chat messages list
           Expanded(
             child: ListView.builder(
@@ -465,35 +684,38 @@ class _MessageScreenState extends State<MessageScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
+                // Determine if the message is from the current user
+                final bool isMe = message.senderId == _currentUserEmail;
+
                 return Align(
-                  alignment: message['isMe'] ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
                     padding:
                     const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                     decoration: BoxDecoration(
-                      color: message['isMe'] ? Colors.blueAccent : Colors.grey[700],
+                      color: isMe ? Colors.blueAccent : Colors.grey[700],
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(15),
                         topRight: const Radius.circular(15),
-                        bottomLeft: message['isMe']
+                        bottomLeft: isMe
                             ? const Radius.circular(15)
                             : const Radius.circular(0),
-                        bottomRight: message['isMe']
+                        bottomRight: isMe
                             ? const Radius.circular(0)
                             : const Radius.circular(15),
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment: message['isMe'] ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                       children: [
                         Text(
-                          message['text'],
+                          message.content,
                           style: const TextStyle(color: Colors.white, fontSize: 16),
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          message['time'],
+                          '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
                           style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10),
                         ),
                       ],
@@ -529,6 +751,8 @@ class _MessageScreenState extends State<MessageScreen> {
                               hintText: 'Say something...',
                               hintStyle: TextStyle(color: Colors.grey[400]),
                               border: InputBorder.none,
+                              filled: true, // Ensure the TextField itself is filled
+                              fillColor: Colors.grey[700], // Set a distinct fill color for visibility
                               contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                             ),
                             onSubmitted: (_) => _sendMessage(),
@@ -575,37 +799,40 @@ class _MessageScreenState extends State<MessageScreen> {
               ],
             ),
           ),
-          // Bottom Navigation Bar with additional options
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black, // Match background
-              border: Border(
-                top: BorderSide(color: Colors.grey[900]!, width: 0.5),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildBottomNavItem(Icons.camera_alt, 'Camera', _showMediaOptions), // Re-using for demonstration
-                _buildBottomNavItem(Icons.location_on, 'Location', _showLocationOptions),
-                _buildBottomNavItem(Icons.gif_box, 'GIF', _showGifOptions),
-                _buildBottomNavItem(Icons.photo, 'Photos', () {
-                  // Navigate to photos or show relevant modal
-                }),
-                _buildBottomNavItem(Icons.chat_bubble, 'Messages', () {
-                  // Navigate to messages
-                }),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10), // Space for home indicator
+          // Bottom Navigation Bar with additional options (only for chat view)
+          // This section is commented out as the main app now manages the global BottomNavigationBar.
+          /*
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.black, // Match background
+                    border: Border(
+                      top: BorderSide(color: Colors.grey[900]!, width: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildBottomNavItem(Icons.camera_alt, 'Camera', _showMediaOptions), // Re-using for demonstration
+                      _buildBottomNavItem(Icons.location_on, 'Location', _showLocationOptions),
+                      _buildBottomNavItem(Icons.gif_box, 'GIF', _showGifOptions),
+                      _buildBottomNavItem(Icons.photo, 'Photos', () {
+                        // Navigate to photos or show relevant modal
+                      }),
+                      _buildBottomNavItem(Icons.chat_bubble, 'Messages', () {
+                        // Navigate to messages
+                      }),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10), // Space for home indicator
+                */
         ],
       ),
     );
   }
 
-  // Helper widget for bottom navigation items
+  // Helper widget for bottom navigation items (kept for other bottom sheets if needed)
   Widget _buildBottomNavItem(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -623,4 +850,3 @@ class _MessageScreenState extends State<MessageScreen> {
     );
   }
 }
-

@@ -42,7 +42,7 @@ dependencies:
   blur: ^4.0.0
   flutter_staggered_grid_view: ^0.7.0
   flutter_svg: ^2.0.10+1
-  cached_network_image: ^3.4.1
+  cached_network_image: ^3.4.0
   flutter_story_presenter: ^1.0.0
   story: ^1.1.0
   bottom_picker: ^2.8.0
@@ -58,7 +58,8 @@ dependencies:
   lottie:
   bottom_sheet_scaffold:
   accordion: ^2.6.0
-
+  signalr_core:
+  intl: ^0.19.0 # For date and time formatting
 
 
 dev_dependencies:

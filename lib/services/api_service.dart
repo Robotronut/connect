@@ -1,11 +1,54 @@
 // --- services/api_service.dart ---
-// Create a new file: lib/services/api_service.dart
-import 'package:flutter/foundation.dart'; // Add this line
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:connect/models/user_model.dart' show UserModel;
 import 'package:http/http.dart' as http;
 import '../services/secure_storage_service.dart';
-import 'dart:io'; // Add this line
+import 'dart:io';
+import 'package:signalr_core/signalr_core.dart'; // Import SignalR Core
+import 'dart:async'; // Import for StreamController
+import 'package:intl/intl.dart'; // For date formatting if needed, as per user's pubspec.yaml
+
+// Define the Message model here as it's used by the API service
+class Message {
+  final String id; // The GUID string from the backend
+  final String senderId;
+  final String recipientId;
+  final String content;
+  final DateTime timestamp;
+
+  Message({
+    required this.id,
+    required this.senderId,
+    required this.recipientId,
+    required this.content,
+    required this.timestamp,
+  });
+
+  factory Message.fromJson(Map<String, dynamic> json) {
+    return Message(
+      // The backend's ChatDto has user1Email and user2Email.
+      // We need to decide which one is sender and which is recipient
+      // based on the context of the chat history.
+      // Assuming 'id' is provided by backend for history, if not, generate.
+      id: json['id'] ?? UniqueKey().toString(),
+      senderId: json['user1Email'], // Assuming user1Email is the sender
+      recipientId: json['user2Email'], // Assuming user2Email is the recipient
+      content: json['content'],
+      timestamp: DateTime.parse(json['timeStamp']), // Backend uses 'TimeStamp'
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'senderId': senderId,
+      'recipientId': recipientId,
+      'content': content,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+}
 
 // This is a TOP-LEVEL function, outside of the ApiService class
 // It's designed to be run in a separate isolate using compute
@@ -22,6 +65,162 @@ UserModel _parseUserModel(String responseBody) {
 
 class ApiService {
   static const String _baseUrl = 'https://peek.thegwd.ca';
+  // Base URL for chat specific API endpoints
+  static const String _chatBaseUrl = 'https://peek.thegwd.ca/api/Chat';
+
+  static HubConnection? _hubConnection;
+  static final StreamController<Message> _messageStreamController =
+  StreamController<Message>.broadcast();
+
+  // Stream to listen for new incoming messages
+  static Stream<Message> get onNewMessage => _messageStreamController.stream;
+
+  /// Initializes and starts the SignalR connection.
+  static Future<void> initializeSignalR() async {
+    // Ensure only one connection is active
+    if (_hubConnection != null &&
+        _hubConnection!.state == HubConnectionState.connected) {
+      print('SignalR connection already active.');
+      return;
+    }
+
+    final String? securityStamp = await SecureStorageService.getApiKey();
+    final String? userEmail = await SecureStorageService.getEmail();
+
+    if (securityStamp == null || userEmail == null) {
+      print('SignalR: User not authenticated. Cannot establish connection.');
+      return;
+    }
+
+    _hubConnection = HubConnectionBuilder()
+        .withUrl(
+      '$_baseUrl/', // Your SignalR Hub URL
+      HttpConnectionOptions(
+        accessTokenFactory: () => Future.value(securityStamp), // Pass the security stamp as an access token
+        logging: (level, message) => print('SignalR Log: $message'),
+        // SkipNegotiation: true, // Might be needed for some server configurations
+        // Transport: HttpTransportType.WebSockets, // Force WebSockets if needed
+      ),
+    )
+        .build();
+
+    // Register client-side method that the server can call
+    _hubConnection!.on('ReceiveMessage', (arguments) {
+      print('Received raw message from SignalR: $arguments');
+      if (arguments != null && arguments.isNotEmpty) {
+        // Assuming arguments map directly to ChatDto properties:
+        // [Content, user1Email, user2Email, TimeStamp]
+        final String content = arguments[0];
+        final String user1Email = arguments[1]; // Sender
+        final String user2Email = arguments[2]; // Recipient
+        final String timestampString = arguments[3];
+
+        try {
+          final Message receivedMessage = Message(
+            id: UniqueKey().toString(), // Generate a client-side ID if backend doesn't provide one in ChatDto
+            senderId: user1Email,
+            recipientId: user2Email,
+            content: content,
+            timestamp: DateTime.parse(timestampString),
+          );
+          _messageStreamController.add(receivedMessage);
+          print('Parsed and added message to stream: ${receivedMessage.content}');
+        } catch (e) {
+          print('Error parsing received message: $e');
+        }
+      }
+    });
+
+    _hubConnection!.onclose((error) {
+      print('SignalR Connection closed: $error');
+      // Implement reconnection logic here if necessary
+    });
+
+    try {
+      await _hubConnection!.start();
+      print('SignalR connection started successfully.');
+    } catch (e) {
+      print('Error starting SignalR connection: $e');
+    }
+  }
+
+  /// Sends a chat message via SignalR.
+  /// Matches the SendMessageDto on the backend.
+  static Future<void> sendChatMessage({
+    required String senderEmail,
+    required String recipientEmail,
+    required String content,
+  }) async {
+    if (_hubConnection?.state == HubConnectionState.connected) {
+      try {
+        final String? securityStamp = await SecureStorageService.getApiKey();
+        if (securityStamp == null) {
+          print('Cannot send message: Security Stamp not found.');
+          return;
+        }
+
+        // Invoke the server-side method 'SendMessageToUser'
+        // Arguments should match your C# SendMessageDto properties:
+        // SecurityStamp, SenderEmail, RecipientEmail, Content
+        await _hubConnection!.invoke(
+          'SendMessageToUser', // This should be the method name on your SignalR Hub
+          args: [securityStamp, senderEmail, recipientEmail, content],
+        );
+        print('Message sent via SignalR: $content to $recipientEmail');
+      } catch (e) {
+        print('Error sending message via SignalR: $e');
+      }
+    } else {
+      print('SignalR not connected. Message not sent.');
+      // Fallback to REST API if SignalR is not connected, or show error
+      // await _sendChatMessageViaRest(senderEmail, recipientEmail, content);
+    }
+  }
+
+  /// Fetches chat history between two users.
+  static Future<List<Message>> fetchChatHistory(String user1Email, String user2Email, {int count = 50, int offset = 0}) async {
+    final String? securityStamp = await SecureStorageService.getApiKey();
+    if (securityStamp == null) {
+      print('Cannot fetch chat history: Security Stamp not found.');
+      return [];
+    }
+
+    // Construct the URL based on the provided format
+    final uri = Uri.parse('$_chatBaseUrl/history/$securityStamp/$user1Email/$user2Email?count=$count&offset=$offset');
+
+    try {
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Security-Stamp': securityStamp, // Include security stamp in headers for history API
+        },
+      );
+
+      if (response.statusCode == 200) {
+        List<dynamic> jsonList = json.decode(response.body);
+        return jsonList.map((json) => Message.fromJson(json)).toList();
+      } else {
+        print("Failed to load chat history: ${response.statusCode} ${response.body}");
+        return [];
+      }
+    } catch (e) {
+      print("Error fetching chat history: $e");
+      return [];
+    }
+  }
+
+  /// Stops the SignalR connection and closes the message stream.
+  static Future<void> stopSignalR() async {
+    if (_hubConnection?.state == HubConnectionState.connected) {
+      await _hubConnection!.stop();
+      print('SignalR connection stopped.');
+    }
+    if (!_messageStreamController.isClosed) {
+      await _messageStreamController.close();
+      print('Message stream closed.');
+    }
+  }
 
   /// Calls the registration API to generate an OTP.
   /// Returns true if successful, false otherwise.
@@ -61,8 +260,8 @@ class ApiService {
   /// Returns the key string if successful, null otherwise.
   static Future<String?> verifyOtp(
       {required String email, // Assuming email is needed for verification
-      required String otp,
-      required String username}) async {
+        required String otp,
+        required String username}) async {
     final url = Uri.parse('$_baseUrl/Verify-Otp');
     try {
       final response = await http.post(
@@ -178,9 +377,9 @@ class ApiService {
         // Assuming your API returns a JSON object like: {"stamp": "user_stamp_string"}
         // or {"token": "user_token_string"}
         final String? receivedStamp =
-            responseData['stamp']; // Or 'token' if it returns a new token/stamp
+        responseData['stamp']; // Or 'token' if it returns a new token/stamp
         final String receivedId = responseData[
-            'userid']; // Or 'token' if it returns a new token/stamp
+        'userid']; // Or 'token' if it returns a new token/stamp
         final String userName = responseData['username'];
         if (receivedStamp != null && receivedStamp.isNotEmpty) {
           print(
@@ -270,7 +469,7 @@ class ApiService {
         url,
         headers: {
           'Content-Type':
-              'application/json', // Set content type for JSON payload
+          'application/json', // Set content type for JSON payload
         },
         body: json.encode({
           'email': email.toLowerCase(), // Send the user's email
@@ -285,9 +484,9 @@ class ApiService {
 
         // Extract the API key and UserName from the successful response
         final String? apiKey =
-            responseData['apiKey']; // Assuming the key is 'apiKey'
+        responseData['apiKey']; // Assuming the key is 'apiKey'
         final String? userName =
-            responseData['username']; // Assuming the key is 'userName'
+        responseData['username']; // Assuming the key is 'userName'
         final String userId = responseData['userid'];
 
         // Check if both apiKey and userName are present
@@ -378,7 +577,7 @@ class ApiService {
         // Pass the response.body to the top-level _parseUserModels function
         // which will run in a separate isolate.
         final List<UserModel> userList =
-            await compute(_parseUserModels, response.body);
+        await compute(_parseUserModels, response.body);
         return userList;
       } else {
         print(
@@ -420,7 +619,7 @@ class ApiService {
       if (response.statusCode == 200) {
         // Use compute for single user profile parsing as well, especially if the profile can be complex
         final UserModel userProfile =
-            await compute(_parseUserModel, response.body);
+        await compute(_parseUserModel, response.body);
         return userProfile;
       } else {
         print(
@@ -529,7 +728,7 @@ class ApiService {
     }
 
     final url =
-        Uri.parse('$_baseUrl/upload_image'); // Your API's image upload endpoint
+    Uri.parse('$_baseUrl/upload_image'); // Your API's image upload endpoint
 
     try {
       final request = http.MultipartRequest('POST', url);
@@ -551,7 +750,7 @@ class ApiService {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         // Assuming your backend returns the URL of the uploaded image
         final String imageUrl =
-            jsonResponse['imageUrl']; // Adjust key based on your API response
+        jsonResponse['imageUrl']; // Adjust key based on your API response
         return imageUrl;
       } else {
         print(
@@ -576,7 +775,7 @@ class ApiService {
     }
 
     final url =
-        Uri.parse('$_baseUrl/delete_image'); // Your API's delete image endpoint
+    Uri.parse('$_baseUrl/delete_image'); // Your API's delete image endpoint
 
     try {
       final headers = await _getHeaders();

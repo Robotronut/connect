@@ -6,6 +6,7 @@ import 'package:connect/services/api_service.dart';
 import 'package:connect/services/secure_storage_service.dart';
 import 'package:connect/screens/edit_profile_screen.dart';
 import 'package:connect/screens/photo_detail_screen.dart'; // Import the photo detail screen
+import 'package:connect/screens/messaging_screen.dart'; // Import the MessageScreen
 
 class ProfileScreen extends StatefulWidget {
   final String userId;
@@ -19,7 +20,7 @@ class ProfileScreen extends StatefulWidget {
 class ProfileScreenState extends State<ProfileScreen> {
   final PageController _pageController = PageController();
   final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
+  DraggableScrollableController();
 
   UserModel? _userProfile;
   bool _isLoading = true;
@@ -30,9 +31,9 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   final double _maxSheetExtent = 0.90; // Max height the sheet can expand to
   final double _initialChildSize =
-      0.90; // Example: sheet starts at 65% of screen height
+  0.90; // Example: sheet starts at 65% of screen height
   final double _minChildSize =
-      0.15; // Example: sheet can shrink to 15% (showing just header)
+  0.15; // Example: sheet can shrink to 15% (showing just header)
 
   @override
   void initState() {
@@ -54,7 +55,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
       final UserModel fetchedProfile =
-          await ApiService.getUserProfile(widget.userId);
+      await ApiService.getUserProfile(widget.userId);
 
       String? storedUsername;
       if (widget.userId == _currentLoggedInUserId) {
@@ -100,7 +101,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     }
     return Positioned(
       bottom:
-          10, // Position slightly above the bottom edge of the image container
+      10, // Position slightly above the bottom edge of the image container
       left: 0,
       right: 0,
       child: Row(
@@ -154,6 +155,27 @@ class ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  // Function to navigate to MessageScreen with initial chat user
+  void _navigateToChatScreen() {
+    if (_userProfile != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MessageScreen(
+            initialChatUser: {
+              'id': _userProfile!.id,
+              'name': _userProfile!.userName,
+              'profilePic': _userProfile!.imageUrls.isNotEmpty
+                  ? _userProfile!.imageUrls[0]
+                  : 'https://placehold.co/100x100/000000/FFFFFF?text=P',
+              'isOnline': _userProfile!.status.toLowerCase().contains('online'),
+            },
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -280,11 +302,11 @@ class ProfileScreenState extends State<ProfileScreen> {
                     color: Colors.black,
                     // Add border radius to the top of the sheet
                     borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(20)),
+                    BorderRadius.vertical(top: Radius.circular(20)),
                   ),
                   child: SingleChildScrollView(
                     controller:
-                        scrollController, // Pass the sheet's scroll controller to its content
+                    scrollController, // Pass the sheet's scroll controller to its content
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -303,7 +325,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 itemCount: _userProfile!.imageUrls.length,
                                 itemBuilder: (context, index) {
                                   final imageUrl =
-                                      _userProfile!.imageUrls[index];
+                                  _userProfile!.imageUrls[index];
                                   return GestureDetector(
                                     onTap: () {
                                       Navigator.push(
@@ -311,22 +333,22 @@ class ProfileScreenState extends State<ProfileScreen> {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               PhotoDetailScreen(
-                                            imageUrl: imageUrl,
-                                            heroTag:
+                                                imageUrl: imageUrl,
+                                                heroTag:
                                                 'profilePhoto$index', // Unique tag for Hero animation
-                                          ),
+                                              ),
                                         ),
                                       );
                                     },
                                     child: Hero(
                                       tag:
-                                          'profilePhoto$index', // Matches the tag in PhotoDetailScreen
+                                      'profilePhoto$index', // Matches the tag in PhotoDetailScreen
                                       child: Image.network(
                                         imageUrl,
                                         fit: BoxFit
                                             .cover, // Fills the container, cropping if necessary
                                         errorBuilder: (context, error,
-                                                stackTrace) =>
+                                            stackTrace) =>
                                             Image.asset(
                                                 'assets/placeholder_error.jpg',
                                                 fit: BoxFit.cover),
@@ -337,12 +359,12 @@ class ProfileScreenState extends State<ProfileScreen> {
                                           return Center(
                                             child: CircularProgressIndicator(
                                               value: loadingProgress
-                                                          .expectedTotalBytes !=
-                                                      null
+                                                  .expectedTotalBytes !=
+                                                  null
                                                   ? loadingProgress
-                                                          .cumulativeBytesLoaded /
-                                                      loadingProgress
-                                                          .expectedTotalBytes!
+                                                  .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
                                                   : null,
                                               color: Colors.grey,
                                             ),
@@ -391,14 +413,14 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 children: [
                                   Text(_userProfile!.status,
                                       style:
-                                          TextStyle(color: Colors.grey[400])),
+                                      TextStyle(color: Colors.grey[400])),
                                   const SizedBox(width: 5),
                                   Icon(Icons.near_me,
                                       size: 16, color: Colors.grey[400]),
                                   const SizedBox(width: 2),
                                   Text(_userProfile!.distance,
                                       style:
-                                          TextStyle(color: Colors.grey[400])),
+                                      TextStyle(color: Colors.grey[400])),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -410,24 +432,28 @@ class ProfileScreenState extends State<ProfileScreen> {
                                   Text(
                                       '${_userProfile!.height} | ${_userProfile!.weight} | ${_userProfile!.build}',
                                       style:
-                                          const TextStyle(color: Colors.white)),
+                                      const TextStyle(color: Colors.white)),
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[850],
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Text(
-                                  _isOwnProfile
-                                      ? 'This is your profile.'
-                                      : 'Say something...',
-                                  style: TextStyle(color: Colors.grey[500]),
-                                  textAlign: TextAlign.center,
+                              // "Say something..." entry or "Your profile"
+                              GestureDetector(
+                                onTap: _isOwnProfile ? null : _navigateToChatScreen, // Navigate only if not own profile
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[850],
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Text(
+                                    _isOwnProfile
+                                        ? 'This is your profile.'
+                                        : 'Say something...',
+                                    style: TextStyle(color: Colors.grey[500]),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 20),
@@ -501,17 +527,20 @@ class ProfileScreenState extends State<ProfileScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[850],
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      _isOwnProfile ? 'Your profile' : 'Say something...',
-                      style: TextStyle(color: Colors.grey[500]),
-                      textAlign: TextAlign.center,
+                  child: GestureDetector( // Wrap with GestureDetector
+                    onTap: _isOwnProfile ? null : _navigateToChatScreen, // Navigate only if not own profile
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[850],
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        _isOwnProfile ? 'Your profile' : 'Say something...',
+                        style: TextStyle(color: Colors.grey[500]),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ),
@@ -527,14 +556,17 @@ class ProfileScreenState extends State<ProfileScreen> {
                         color: Colors.orange, size: 28),
                   ),
                   const SizedBox(width: 15),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[850],
-                      shape: BoxShape.circle,
+                  GestureDetector( // Wrap with GestureDetector
+                    onTap: _navigateToChatScreen, // Navigate to chat screen
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[850],
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.chat_bubble_outline,
+                          color: Colors.yellow, size: 28),
                     ),
-                    child: const Icon(Icons.chat_bubble_outline,
-                        color: Colors.yellow, size: 28),
                   ),
                 ],
               ],

@@ -17,6 +17,7 @@ class UserModel {
   final String pronouns;
   final String race;
   final String relationshipStatus;
+
   final String
       userName; // Assuming this is always present and non-null from API
 
@@ -64,6 +65,7 @@ class UserModel {
           json['userName'] as String, // Ensure this matches API key and type
     );
   }
+
 
   // Method to convert a UserModel instance to a JSON-compatible map
   // This is often named 'toMap' or 'toJson'
