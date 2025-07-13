@@ -1,4 +1,3 @@
-// main_browse_screen.dart (Updated)
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Keep this import even if not directly used in MainBrowseScreen
 import 'package:connect/services/secure_storage_service.dart';
@@ -257,6 +256,20 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           finalTagsToApi = _selectedTags.isNotEmpty ? _selectedTags : null;
         }
       }
+
+      // --- Debugging Print Statements for Age Filter ---
+      print('--- Age Filter Debugging ---');
+      print('isAgeFilterEnabled: $_isAgeFilterEnabled');
+      print('Selected Age Range: $_selectedAgeRange');
+      print('Final Min Age sent to API: $finalMinAge');
+      print('Final Max Age sent to API: $finalMaxAge');
+      print('isGlobalFilterEnabled: $_isGlobalFilterEnabled');
+      if (_isGlobalFilterEnabled) {
+        print('Selected Min Age from More Filters (string): $_selectedMinAgeFromMoreFilters');
+      }
+      print('--------------------------');
+      // --- End Debugging Print Statements ---
+
 
       final fetchedUsers = await ApiService.getPeople(
         pageNumber: _currentPage,

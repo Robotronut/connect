@@ -458,7 +458,9 @@ class ApiService {
     }
   }
 
-  static Future<bool> login(String email, String password) async {
+  /// Handles user login.
+  /// Returns the JWT token string if successful, null otherwise.
+  static Future<String?> login(String email, String password) async {
     // Construct the full URL for the login endpoint
     final url = Uri.parse(
         '$_baseUrl/login'); // Assuming '/login' is your login endpoint
@@ -482,47 +484,65 @@ class ApiService {
         // Parse the JSON response body
         final Map<String, dynamic> responseData = json.decode(response.body);
 
-        // Extract the API key and UserName from the successful response
-        final String? apiKey =
-        responseData['apiKey']; // Assuming the key is 'apiKey'
-        final String? userName =
-        responseData['username']; // Assuming the key is 'userName'
-        final String userId = responseData['userid'];
+        // Extract the JWT token from the successful response
+        final String? jwtToken = responseData['jwtToken']; // Assuming the key is 'token'
+        final String? userName = responseData['username'];
+        final String? userId = responseData['userid'];
 
-        // Check if both apiKey and userName are present
-        if (apiKey != null &&
-            userName != null &&
-            apiKey.isNotEmpty &&
-            userName.isNotEmpty) {
-          await SecureStorageService.saveApiKey(apiKey);
-          await SecureStorageService.saveUserName(userName);
-          await SecureStorageService.saveUserId(userId);
+
+        // Check if the JWT token is present
+        if (jwtToken != null && jwtToken.isNotEmpty) {
+          // Save the token, username, and user ID securely
+          await SecureStorageService.saveApiKey(jwtToken); // Save the JWT token as API Key
+          if (userName != null) {
+            await SecureStorageService.saveUserName(userName);
+          }
+          if (userId != null) {
+            await SecureStorageService.saveUserId(userId);
+          }
           await SecureStorageService.saveEmail(email.toLowerCase());
-          // TODO: Implement secure storage for the API Key and User Name
-          // You should typically store the API key securely (e.g., using shared_preferences
-          // or flutter_secure_storage) for subsequent authenticated API calls.
-          // Example (uncomment and implement if using shared_preferences):
-          // final prefs = await SharedPreferences.getInstance();
-          // await prefs.setString('user_api_key', apiKey);
-          // await prefs.setString('user_name', userName);
 
-          return true; // Login successful
+          return jwtToken; // Login successful, return the JWT token
         } else {
-          // If API key or UserName is missing in a successful response
+          // If JWT token is missing in a successful response
           print(
-              'Login successful but missing API Key or User Name in response.');
-          return false; // Treat as failure due to incomplete response
+              'Login successful but missing JWT token in response.');
+          return null; // Treat as failure due to incomplete response
         }
       } else {
         // Login failed for other reasons (e.g., invalid credentials, server error)
         print('Login failed: ${response.statusCode} - ${response.body}');
-        // You might want to parse response.body here to get specific error messages
-        return false; // Login failed
+        return null; // Login failed
       }
     } catch (e) {
       // Catch any network-related errors (e.g., no internet connection)
       print('Error during login request: $e');
-      return false; // Request failed due to exception
+      return null; // Request failed due to exception
+    }
+  }
+
+  /// Fetches the user profile using a JWT token for verification.
+  /// Returns a map of user profile data if successful.
+  static Future<Map<String, dynamic>> getUserProfile(String jwtToken) async {
+    final url = Uri.parse('$_baseUrl/api/User/get_user_profile'); // Adjust URL as per your API
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $jwtToken', // Attach the JWT here
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        print('Failed to load user profile: ${response.statusCode} ${response.body}');
+        throw Exception('Failed to load user profile: ${response.statusCode} ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching user profile for JWT verification: $e');
+      rethrow;
     }
   }
 
@@ -591,7 +611,7 @@ class ApiService {
   }
 
   // --- NEW: Fetch a single user's profile by ID ---
-  static Future<UserModel> getUserProfile(String userId) async {
+  static Future<UserModel> getUserProfileById(String userId) async {
     final String? email = await SecureStorageService.getEmail();
     final String? securityStamp = await SecureStorageService.getApiKey();
 

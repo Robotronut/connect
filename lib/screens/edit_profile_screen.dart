@@ -156,7 +156,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       }
 
       final UserModel fetchedProfile =
-          await ApiService.getUserProfile(loggedInUserId);
+          (await ApiService.getUserProfile(loggedInUserId)) as UserModel;
       _currentUserProfile = fetchedProfile;
 
       _bioController.text = fetchedProfile.aboutMe;
