@@ -182,7 +182,8 @@ class ProfileScreenState extends State<ProfileScreen> {
                   username: _userProfile!.userName.toString(),
                   currentUserId: _currentLoggedInUserId.toString(),
                   chatHubUrl: url,
-                  otherUserId: _userProfile!.id.toString()
+                  otherUserId: _userProfile!.id.toString(),
+                  otherUserName: _userProfile!.userName.toString(),
                 )),
       );
     }

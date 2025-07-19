@@ -49,14 +49,15 @@ class ChatScreen extends StatefulWidget {
   final String chatHubUrl; // Your SignalR Hub URL
   final String currentUserId; // The ID of the currently logged-in user
   final String otherUserId; // The ID of the user you are chatting with
-
-  const ChatScreen({
-    Key? key,
-    required this.username,
-    required this.chatHubUrl,
-    required this.currentUserId,
-    required this.otherUserId,
-  }) : super(key: key);
+  final String otherUserName;
+  const ChatScreen(
+      {Key? key,
+      required this.username,
+      required this.chatHubUrl,
+      required this.currentUserId,
+      required this.otherUserId,
+      required this.otherUserName})
+      : super(key: key);
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -218,7 +219,7 @@ class _ChatScreenState extends State<ChatScreen> {
         // Invoke the GetChatHistory method on the backend hub
         final List<dynamic>? historyArgs = await _hubConnection.invoke(
           'GetChatHistory',
-          args: [widget.otherUserId],
+          args: [widget.currentUserId, widget.otherUserId],
         );
 
         if (historyArgs != null) {
@@ -368,21 +369,29 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         // Changed title to be dynamic based on the other user
-        title: Text('Chat with ${widget.username}'),
-        backgroundColor: Colors.blueAccent,
-        actions: [
-          IconButton(
-            icon: Icon(
-                _isConnected ? Icons.signal_wifi_4_bar : Icons.signal_wifi_off,
-                color: _isConnected ? Colors.greenAccent : Colors.redAccent),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(_isConnected ? 'Connected' : 'Disconnected')),
-              );
-            },
+        title: Text(
+          'Chat with ${widget.username}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14, // <-- You can change the font size here
+            fontWeight: FontWeight.bold, // Optional: make it bold
           ),
-        ],
+        ),
+        backgroundColor: Colors.black,
+        // Dark background for app bar
+        elevation: 4, // Add a subtle shadow
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.black87,
+                Colors.black
+              ], // Darker gradient for app bar
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -390,58 +399,83 @@ class _ChatScreenState extends State<ChatScreen> {
           _isLoadingHistory
               ? const Padding(
                   padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.orange), // Orange loading indicator
+                  ),
                 )
               : const SizedBox.shrink(),
           Expanded(
-            child: ListView.builder(
-              reverse: true, // Show latest messages at the bottom
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                // Access the ChatMessage object directly
-                final chatMessage = _messages[index];
-                return Align(
-                  // Use chatMessage.isMe for alignment
-                  alignment: chatMessage.isMe
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(
-                        horizontal: 8.0, vertical: 4.0),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      // Use chatMessage.isMe for color
-                      color: chatMessage.isMe
-                          ? Colors.blue[100]
-                          : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      // Align content within the bubble
-                      crossAxisAlignment: chatMessage.isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          // Display only the message content
-                          chatMessage.content,
-                          style: TextStyle(
-                            color: chatMessage.isMe
-                                ? Colors.black
-                                : Colors.black87,
+            child: Container(
+              color: Colors.grey.shade900, // Dark background for chat area
+              child: ListView.builder(
+                reverse: true, // Show latest messages at the bottom
+                itemCount: _messages.length,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10.0,
+                    vertical: 8.0), // Overall padding for list
+                itemBuilder: (context, index) {
+                  // Access the ChatMessage object directly
+                  final chatMessage = _messages[index];
+                  return Align(
+                    // Use chatMessage.isMe for alignment
+                    alignment: chatMessage.isMe
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width *
+                            0.75, // Limit bubble width
+                      ),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 4.0), // Vertical spacing between bubbles
+                      padding:
+                          const EdgeInsets.all(12), // Padding inside the bubble
+                      decoration: BoxDecoration(
+                        // Use chatMessage.isMe for color
+                        color: chatMessage.isMe
+                            ? Colors.red.shade400
+                            : Colors.lightBlue
+                                .shade400, // Orange for sent, Light Blue for received
+                        borderRadius:
+                            BorderRadius.circular(16), // More rounded corners
+                        boxShadow: [
+                          // Subtle shadow for depth
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                                0.2), // Darker shadow for dark theme
+                            blurRadius: 3,
+                            offset: const Offset(0, 2),
                           ),
+                        ],
+                      ),
+                      child: Text(
+                        // Display only the message content
+                        chatMessage.content,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.white, // White text for message content
                         ),
-                        // Removed the Text widget displaying senderId and timestamp
-                      ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
-          Padding(
-            // Adjusted padding to be consistent
-            padding: const EdgeInsets.only(bottom: 50),
+          // Input area
+          Container(
+            padding: const EdgeInsets.only(bottom: 60, left: 12.0, right: 12.0),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade900, // Dark background for input area
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3), // Darker shadow
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -449,23 +483,60 @@ class _ChatScreenState extends State<ChatScreen> {
                     controller: _messageController,
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
+                      hintStyle: TextStyle(
+                          color:
+                              Colors.grey.shade500), // Lighter grey hint text
+                      filled: true,
+                      fillColor:
+                          Colors.grey.shade800, // Darker fill for text field
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(25), // More rounded
+                        borderSide: BorderSide.none, // No border line
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide(
+                            color: Colors.grey.shade700,
+                            width: 1), // Darker grey border
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide(
+                            color: Colors.red.shade400,
+                            width: 1), // Orange accent when focused
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                          horizontal: 20, vertical: 12),
                     ),
                     enabled: _isConnected, // Disable input if not connected
+                    style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white), // White text for input
                   ),
                 ),
-                const SizedBox(width: 8),
-                FloatingActionButton(
-                  // Changed to call _sendPrivateMessage for private chat
-                  onPressed: _isConnected
-                      ? _sendPrivateMessage
-                      : null, // Disable button if not connected
-                  mini: true,
-                  child: const Icon(Icons.send),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.red.shade400,
+                        Colors.red.shade700
+                      ], // Orange gradient for send button
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: FloatingActionButton(
+                    onPressed: _isConnected
+                        ? _sendPrivateMessage // Changed to send private messages
+                        : null, // Disable button if not connected
+                    mini: false, // Make it a standard size button
+                    backgroundColor:
+                        Colors.transparent, // Transparent to show gradient
+                    elevation: 0, // No default elevation
+                    child: const Icon(Icons.send, color: Colors.white),
+                  ),
                 ),
               ],
             ),
