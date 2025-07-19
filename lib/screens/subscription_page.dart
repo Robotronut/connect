@@ -66,7 +66,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 _selectedTab == 'XTRA'
                     ? _buildXtraContent()
                     : _buildUnlimitedContent(),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
                 // Subscription Plan Cards.
                 // Wrapped in SingleChildScrollView for horizontal scrolling to accommodate multiple cards
@@ -269,14 +269,14 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           ),
           const SizedBox(height: 5),
           const Text(
-            'Find More Faster',
+            'Cross Streams',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white, // White text
+              color: Colors.lightBlue, // White text
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 6),
           _buildFeatureRow(Icons.person, '600 Profiles'), // Placeholder icon for 600 Profiles
           _buildFeatureRow(Icons.block, 'No more Ads'),
           _buildFeatureRow(Icons.timer, 'Expiring Albums'), // Placeholder icon for Expiring Albums
@@ -314,14 +314,14 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           ),
           const SizedBox(height: 2),
           const Text(
-            'Spank Me Daddy',
+            'Blue Mountain',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.orange, // White text
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 2),
           _buildFeatureRow(Icons.people_alt, 'Unlimited Profiles'), // Placeholder icon
           _buildFeatureRow(Icons.chat, 'For You Chats', isNew: true), // Placeholder icon
           _buildFeatureRow(Icons.visibility, 'Viewed Me'), // Placeholder icon
@@ -462,7 +462,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           // "POPULAR" badge
           if (isPopular)
             Positioned(
-              top: -10,
+              top: 5,
               right: -10,
               child: Transform.rotate(
                 angle: 0.2, // Slightly rotate the badge
@@ -486,10 +486,10 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           // "BEST VALUE" badge
           if (isBestValue)
             Positioned(
-              top: -10,
-              right: -10,
+              top: 5,
+              right: -3,
               child: Transform.rotate(
-                angle: 0.2, // Slightly rotate the badge
+                angle: 0.3, // Slightly rotate the badge
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
@@ -501,7 +501,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
-                      fontSize: 10,
+                      fontSize: 9,
                     ),
                   ),
                 ),
