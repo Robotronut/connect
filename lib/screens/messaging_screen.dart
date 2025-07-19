@@ -604,11 +604,11 @@ class _MessageScreenState extends State<MessageScreen> {
                   // User profile picture for the current chat
                   CircleAvatar(
                     radius: 18,
-                    backgroundImage: NetworkImage(_currentChatUser![
-                            'profilePic'] ??
-                        'https://placehold.co/100x100/000000/FFFFFF?text=P'),
+                    backgroundImage: NetworkImage(
+                        _currentChatUser!['profilePic'] ??
+                            'assets/placeholder_user.jpg'),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 18),
                   // Online indicator
                   Stack(
                     children: [
@@ -616,13 +616,14 @@ class _MessageScreenState extends State<MessageScreen> {
                         _currentChatUser![
                             'name'], // Display current chat user's name
                         style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: Colors.white),
                       ),
                       if (_currentChatUser!['isOnline'])
                         Positioned(
                           right: 0,
+                          left: 0,
                           bottom: 0,
                           child: Container(
                             width: 10,
@@ -770,7 +771,8 @@ class _MessageScreenState extends State<MessageScreen> {
                 ),
                 // Message input area
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding:
+                      const EdgeInsets.only(left: 0, right: 0, bottom: 50.0),
                   child: Row(
                     children: [
                       Expanded(
@@ -819,7 +821,7 @@ class _MessageScreenState extends State<MessageScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       // Send button
                       Container(
                         decoration: const BoxDecoration(
@@ -831,7 +833,7 @@ class _MessageScreenState extends State<MessageScreen> {
                           onPressed: _sendMessage,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       // Microphone icon
                       Container(
                         decoration: const BoxDecoration(

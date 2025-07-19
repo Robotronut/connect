@@ -160,8 +160,8 @@ class ApiService {
         // Arguments should match your C# SendMessageDto properties:
         // SecurityStamp, SenderEmail, RecipientEmail, Content
         await _hubConnection!.invoke(
-          'SendMessageToUser', // This should be the method name on your SignalR Hub
-          args: [senderId, recipientId, content],
+          'SendPrivateMessage', // This should be the method name on your SignalR Hub
+          args: [recipientId, content],
         );
         print('Message sent via SignalR: $content to $recipientId');
       } catch (e) {

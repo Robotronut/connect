@@ -1,6 +1,7 @@
 // lib/screens/profile_screen.dart
 
 import 'package:connect/models/user_model.dart';
+import 'package:connect/screens/chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:connect/services/api_service.dart';
 import 'package:connect/services/secure_storage_service.dart';
@@ -80,13 +81,11 @@ class ProfileScreenState extends State<ProfileScreen> {
       final UserModel? fetchedProfile =
           await ApiService.getUserProfile(widget.userId);
 
-     
-
       setState(() {
         _userProfile = fetchedProfile;
-      
-          _displayUsername = fetchedProfile!.userName;
-      
+
+        _displayUsername = fetchedProfile!.userName;
+
         _currentPageIndex = 0;
       });
     } catch (e) {
@@ -175,23 +174,16 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   void _navigateToChatScreen() {
     if (_userProfile != null) {
+      final String url = 'https://peek.thegwd.ca/chathub';
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => MessageScreen(
-            initialChatUser: {
-              'id': _userProfile!.id,
-              'name': _userProfile!.userName,
-              // CORRECTED: Accessing the URL directly from the list element
-              'profilePic': _userProfile!.imageUrls != null &&
-                      _userProfile!.imageUrls.isNotEmpty
-                  ? _userProfile!.imageUrls[0]
-                  : 'assets/placeholder_user.jpg',
-              'isOnline':
-                  _userProfile!.status!.toLowerCase().contains('online'),
-            },
-          ),
-        ),
+            builder: (context) => ChatScreen(
+                  username: _userProfile!.userName.toString(),
+                  currentUserId: _currentLoggedInUserId.toString(),
+                  chatHubUrl: url,
+                  otherUserId: _userProfile!.id.toString()
+                )),
       );
     }
   }
@@ -526,7 +518,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                 if (!_isOwnProfile)
                   Padding(
                     padding: const EdgeInsets.only(
-                        left: 20.0, right: 20.0, bottom: 20.0),
+                        left: 20.0, right: 20.0, bottom: 50.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

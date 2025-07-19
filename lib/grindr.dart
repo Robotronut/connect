@@ -828,6 +828,9 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     }
 
     return Scaffold(
+      // The body of the Scaffold contains a PageView, which holds multiple screens.
+      // To ensure all screens within the PageView respect the safe area,
+      // each child of the PageView should be wrapped in SafeArea.
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -839,13 +842,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
             const NeverScrollableScrollPhysics(), // Disable swiping between pages
         children: [
           // 0: Browse Screen
+          // This screen already has SafeArea applied to its Column child.
           Container(
             color: Colors.black,
             child: SafeArea(
-              // Added SafeArea to handle system intrusions
+              // Existing SafeArea for Browse Screen
               child: Column(
                 children: [
-                  // Removed AppBar here to reduce unnecessary top space
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12.0,
@@ -1069,25 +1072,31 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
               ),
             ),
           ),
-          // 1: Interest Screen (Placeholder)
-          Container(
-            color: Colors.black,
-            child: const Center(
-              child: Text(
-                'Interest Screen Placeholder',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+          // 1: Interest Screen (Placeholder) - Wrapped with SafeArea
+          SafeArea(
+            child: Container(
+              color: Colors.black,
+              child: const Center(
+                child: Text(
+                  'Interest Screen Placeholder',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
+                ),
               ),
             ),
           ),
-          // 2: Inbox Screen (MessageScreen)
-          const MessageScreen(),
-          // 3: Store Screen (Placeholder)
-          Container(
-            color: Colors.black,
-            child: const Center(
-              child: Text(
-                'Store Screen Placeholder',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+          // 2: Inbox Screen (MessageScreen) - Wrapped with SafeArea
+          SafeArea(
+            child: const MessageScreen(),
+          ),
+          // 3: Store Screen (Placeholder) - Wrapped with SafeArea
+          SafeArea(
+            child: Container(
+              color: Colors.black,
+              child: const Center(
+                child: Text(
+                  'Store Screen Placeholder',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
+                ),
               ),
             ),
           ),
@@ -1110,8 +1119,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       ),
     );
   }
-
-  Widget _buildPillButton(IconData icon, String label, {VoidCallback? onTap}) {
+}
+Widget _buildPillButton(IconData icon, String label, {VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: GestureDetector(
@@ -1137,4 +1146,3 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       ),
     );
   }
-}
