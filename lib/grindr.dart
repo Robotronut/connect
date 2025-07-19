@@ -437,7 +437,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         _isOnlineFilterEnabled = false;
         _isFreshEnabled = false;
         _isFavoriteFilterEnabled = false;
-        
+
         _isTagsFilterEnabled =
             false; // Important: turn off individual tags filter
         _selectedTags
@@ -792,6 +792,31 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     });
   }
 
+  Future<void> _navigateToEditProfile() async {
+    // Await the result from EditProfileScreen
+    final bool? profileUpdated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(user: _loggedInUser),
+      ),
+    );
+
+    // If profileUpdated is true, it means the profile was saved successfully
+    if (profileUpdated == true) {
+      // Trigger a refresh of the current page's data from the backend
+      await _fetchUsers();
+      await _fetchLoggedInUser();
+      setState(() {
+        // Update any local state that depends on the profile, if necessary
+        // For example, if _loggedInUser is a state variable, update it here:
+        // _loggedInUser = fetchedNewProfileData;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile data refreshed!')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     ImageProvider userAvatarImage;
@@ -816,230 +841,232 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           // 0: Browse Screen
           Container(
             color: Colors.black,
-            child: Column(
-              children: [
-                AppBar(
-                  toolbarHeight: 0,
-                  backgroundColor: Colors.black,
-                ), // AppBar for browse screen content
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  EditProfileScreen(user: _loggedInUser),
-                            ),
-                          );
-                        },
-                        child: CircleAvatar(
-                          radius: 20.0,
-                          backgroundImage: userAvatarImage,
+            child: SafeArea(
+              // Added SafeArea to handle system intrusions
+              child: Column(
+                children: [
+                  // Removed AppBar here to reduce unnecessary top space
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                        vertical: 8.0), // Reduced vertical padding
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            _navigateToEditProfile();
+                          },
+                          child: CircleAvatar(
+                            radius: 20.0,
+                            backgroundImage: userAvatarImage,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8.0),
-                      Expanded(
-                        child: Container(
-                          constraints: const BoxConstraints(maxHeight: 30.0),
-                          child: TextField(
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Explore more profiles',
-                              hintStyle:
-                                  TextStyle(color: Colors.white.withAlpha(178)),
-                              prefixIcon: Icon(Icons.search,
-                                  color: Colors.white.withAlpha(229)),
-                              filled: true,
-                              fillColor: Colors.white.withAlpha(25),
-                              contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 1.0, horizontal: 5.0),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(25.0),
-                                borderSide: BorderSide.none,
+                        const SizedBox(width: 8.0),
+                        Expanded(
+                          child: Container(
+                            constraints: const BoxConstraints(maxHeight: 30.0),
+                            child: TextField(
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: 'Explore more profiles',
+                                hintStyle: TextStyle(
+                                    color: Colors.white.withAlpha(178)),
+                                prefixIcon: Icon(Icons.search,
+                                    color: Colors.white.withAlpha(229)),
+                                filled: true,
+                                fillColor: Colors.white.withAlpha(25),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 1.0, horizontal: 5.0),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25.0),
+                                  borderSide: BorderSide.none,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(
-                  height: 30.0,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      const SizedBox(width: 8.0),
-                      _buildPillButton(Icons.star_outline, "Favorite",
-                          onTap: _showFavoriteFilterDialog), // Favorite filter
-                      _buildPillButton(Icons.cake, "Age",
-                          onTap: _showAgeFilterDialog), // Age filter
-                      _buildPillButton(Icons.wifi, "Online",
-                          onTap: _showOnlineFilterDialog), // Online filter
-                      _buildPillButton(Icons.location_on, "Position",
-                          onTap: _showPositionFilterDialog),
-                      _buildPillButton(Icons.fiber_new, "Fresh",
-                          onTap: _showFreshFilterDialog), // Fresh filter
-                      _buildPillButton(Icons.tag, "Tags",
-                          onTap:
-                              _showTagsFilterScreen), // Tags filter now goes to TagsScreen
-                      _buildPillButton(Icons.filter_list, "More Filters",
-                          onTap: _showMoreFiltersScreen),
-                      const SizedBox(width: 8.0),
-                    ],
+                  SizedBox(
+                    height: 30.0, // This height defines the space for the pills
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: [
+                        const SizedBox(width: 8.0),
+                        _buildPillButton(Icons.star_outline, "Favorite",
+                            onTap:
+                                _showFavoriteFilterDialog), // Favorite filter
+                        _buildPillButton(Icons.cake, "Age",
+                            onTap: _showAgeFilterDialog), // Age filter
+                        _buildPillButton(Icons.wifi, "Online",
+                            onTap: _showOnlineFilterDialog), // Online filter
+                        _buildPillButton(Icons.location_on, "Position",
+                            onTap: _showPositionFilterDialog),
+                        _buildPillButton(Icons.fiber_new, "Fresh",
+                            onTap: _showFreshFilterDialog), // Fresh filter
+                        _buildPillButton(Icons.tag, "Tags",
+                            onTap:
+                                _showTagsFilterScreen), // Tags filter now goes to TagsScreen
+                        _buildPillButton(Icons.filter_list, "More Filters",
+                            onTap: _showMoreFiltersScreen),
+                        const SizedBox(width: 8.0),
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: Container(
-                    color: Colors.black,
-                    padding: const EdgeInsets.all(8.0),
-                    child: _errorMessage.isNotEmpty
-                        ? Center(
-                            child: Text(_errorMessage,
-                                style: const TextStyle(color: Colors.red)))
-                        : (_isLoading && _users.isEmpty)
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                    color: Colors.white))
-                            : RefreshIndicator(
-                                onRefresh: _refreshUsers,
-                                color: Colors.white,
-                                backgroundColor: Colors.grey[900],
-                                child: GridView.builder(
-                                  controller: _scrollController,
-                                  gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    crossAxisSpacing: 2.0,
-                                    mainAxisSpacing: 2.0,
-                                    childAspectRatio: 1,
-                                  ),
-                                  itemCount: _users.length + (_hasMore ? 1 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (index == _users.length) {
-                                      return _isLoading
-                                          ? const Center(
-                                              child: CircularProgressIndicator(
-                                                  color: Colors.white))
-                                          : const SizedBox.shrink();
-                                    }
-                                    final user = _users[index];
-                                    final imageUrl = user.imageUrls!.isNotEmpty
-                                        ? user.imageUrls![0]
-                                        : 'https://via.placeholder.com/150';
-                                    return GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ProfileScreen(
-                                              userId: user.id.toString(),
+                  Expanded(
+                    child: Container(
+                      color: Colors.black,
+                      padding: const EdgeInsets.all(8.0),
+                      child: _errorMessage.isNotEmpty
+                          ? Center(
+                              child: Text(_errorMessage,
+                                  style: const TextStyle(color: Colors.red)))
+                          : (_isLoading && _users.isEmpty)
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white))
+                              : RefreshIndicator(
+                                  onRefresh: _refreshUsers,
+                                  color: Colors.white,
+                                  backgroundColor: Colors.grey[900],
+                                  child: GridView.builder(
+                                    controller: _scrollController,
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 3,
+                                      crossAxisSpacing: 2.0,
+                                      mainAxisSpacing: 2.0,
+                                      childAspectRatio: 1,
+                                    ),
+                                    itemCount:
+                                        _users.length + (_hasMore ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index == _users.length) {
+                                        return _isLoading
+                                            ? const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                        color: Colors.white))
+                                            : const SizedBox.shrink();
+                                      }
+                                      final user = _users[index];
+                                      final imageUrl = user.imageUrls.isNotEmpty
+                                          ? user.imageUrls[0]
+                                          : 'assets/placeholder_user.jpg';
+                                      return GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ProfileScreen(
+                                                userId: user.id.toString(),
+                                              ),
                                             ),
-                                          ),
-                                        );
-                                      },
-                                      child: Stack(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(2.0),
-                                            child: Image.network(
-                                              imageUrl,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                return Image.asset(
-                                                  'assets/placeholder_error.jpg',
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: double.infinity,
-                                                );
-                                              },
-                                              loadingBuilder: (context, child,
-                                                  loadingProgress) {
-                                                if (loadingProgress == null)
-                                                  return child;
-                                                return Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                    value: loadingProgress
-                                                                .expectedTotalBytes !=
-                                                            null
-                                                        ? loadingProgress
-                                                                .cumulativeBytesLoaded /
-                                                            loadingProgress
-                                                                .expectedTotalBytes!
-                                                        : null,
-                                                    color: Colors.grey,
+                                          );
+                                        },
+                                        child: Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(2.0),
+                                              child: Image.network(
+                                                imageUrl,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                                errorBuilder: (context, error,
+                                                    stackTrace) {
+                                                  return Image.asset(
+                                                    'assets/placeholder_error.jpg',
+                                                    fit: BoxFit.cover,
+                                                    width: double.infinity,
+                                                    height: double.infinity,
+                                                  );
+                                                },
+                                                loadingBuilder: (context, child,
+                                                    loadingProgress) {
+                                                  if (loadingProgress == null)
+                                                    return child;
+                                                  return Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      value: loadingProgress
+                                                                  .expectedTotalBytes !=
+                                                              null
+                                                          ? loadingProgress
+                                                                  .cumulativeBytesLoaded /
+                                                              loadingProgress
+                                                                  .expectedTotalBytes!
+                                                          : null,
+                                                      color: Colors.grey,
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            Positioned(
+                                              bottom: 0,
+                                              left: 0,
+                                              right: 0,
+                                              child: Container(
+                                                height: 50,
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin:
+                                                        Alignment.bottomCenter,
+                                                    end: Alignment.topCenter,
+                                                    colors: [
+                                                      Colors.black
+                                                          .withOpacity(0.9),
+                                                      Colors.transparent
+                                                    ],
                                                   ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          Positioned(
-                                            bottom: 0,
-                                            left: 0,
-                                            right: 0,
-                                            child: Container(
-                                              height: 50,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.bottomCenter,
-                                                  end: Alignment.topCenter,
-                                                  colors: [
-                                                    Colors.black
-                                                        .withOpacity(0.9),
-                                                    Colors.transparent
-                                                  ],
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          Positioned(
-                                            bottom: 8.0,
-                                            left: 8.0,
-                                            child: Row(
-                                              children: [
-                                                if (user.status!
-                                                    .toLowerCase()
-                                                    .contains('online')) ...[
-                                                  Container(
-                                                    width: 10.0,
-                                                    height: 10.0,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                      color: Colors.green,
-                                                      shape: BoxShape.circle,
+                                            Positioned(
+                                              bottom: 8.0,
+                                              left: 8.0,
+                                              child: Row(
+                                                children: [
+                                                  if (user.status!
+                                                      .toLowerCase()
+                                                      .contains('online')) ...[
+                                                    Container(
+                                                      width: 10.0,
+                                                      height: 10.0,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color: Colors.green,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                  const SizedBox(width: 4.0),
+                                                  Text(
+                                                    user.userName.toString(),
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10.0,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                 ],
-                                                const SizedBox(width: 4.0),
-                                                Text(
-                                                  user.userName.toString(),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10.0,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // 1: Interest Screen (Placeholder)

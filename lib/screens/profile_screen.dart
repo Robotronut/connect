@@ -35,9 +35,12 @@ class ProfileScreenState extends State<ProfileScreen> {
   String? _displayUsername;
   int _currentPageIndex = 0;
 
-  final double _initialChildSize = 0.90; // Starts showing most of the content including photo
-  final double _minChildSize = 0.15; // Sheet can shrink to 15% (showing just header)
-  final double _maxSheetExtent = 0.90; // Max height the sheet can expand to (almost full screen)
+  final double _initialChildSize =
+      1; // Starts showing most of the content including photo
+  final double _minChildSize =
+      1; // Sheet can shrink to 15% (showing just header)
+  final double _maxSheetExtent =
+      1; // Max height the sheet can expand to (almost full screen)
 
   double _sheetScrollOpacity = 0.0;
 
@@ -56,9 +59,11 @@ class ProfileScreenState extends State<ProfileScreen> {
       double normalizedOpacity = 0.0;
 
       if (currentExtent > _minChildSize) {
-        normalizedOpacity = ((currentExtent - _minChildSize) / (_maxSheetExtent - _minChildSize)).clamp(0.0, 1.0);
+        normalizedOpacity = ((currentExtent - _minChildSize) /
+                (_maxSheetExtent - _minChildSize))
+            .clamp(0.0, 1.0);
       }
-      
+
       setState(() {
         _sheetScrollOpacity = normalizedOpacity;
       });
@@ -72,20 +77,16 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
-      final UserModel? fetchedProfile = await ApiService.getUserProfile(widget.userId);
+      final UserModel? fetchedProfile =
+          await ApiService.getUserProfile(widget.userId);
 
-      String? storedUsername;
-      if (widget.userId == _currentLoggedInUserId) {
-        storedUsername = await SecureStorageService.getUserName();
-      }
+     
 
       setState(() {
         _userProfile = fetchedProfile;
-        if (_isOwnProfile) {
-          _displayUsername = storedUsername ?? fetchedProfile!.userName;
-        } else {
+      
           _displayUsername = fetchedProfile!.userName;
-        }
+      
         _currentPageIndex = 0;
       });
     } catch (e) {
@@ -112,7 +113,9 @@ class ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildPageIndicator() {
-    if (_userProfile == null || _userProfile!.imageUrls == null || _userProfile!.imageUrls!.length <= 1) {
+    if (_userProfile == null ||
+        _userProfile!.imageUrls == null ||
+        _userProfile!.imageUrls.length <= 1) {
       return const SizedBox.shrink();
     }
     return Positioned(
@@ -121,7 +124,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       right: 0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_userProfile!.imageUrls!.length, (index) {
+        children: List.generate(_userProfile!.imageUrls.length, (index) {
           return Container(
             width: 8.0,
             height: 8.0,
@@ -180,9 +183,10 @@ class ProfileScreenState extends State<ProfileScreen> {
               'id': _userProfile!.id,
               'name': _userProfile!.userName,
               // CORRECTED: Accessing the URL directly from the list element
-              'profilePic': _userProfile!.imageUrls != null && _userProfile!.imageUrls!.isNotEmpty
-                  ? _userProfile!.imageUrls![0]
-                  : 'https://placehold.co/100x100/000000/FFFFFF?text=P',
+              'profilePic': _userProfile!.imageUrls != null &&
+                      _userProfile!.imageUrls.isNotEmpty
+                  ? _userProfile!.imageUrls[0]
+                  : 'assets/placeholder_user.jpg',
               'isOnline':
                   _userProfile!.status!.toLowerCase().contains('online'),
             },
@@ -195,7 +199,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
-    final double photoHeightInSheet = screenHeight * 0.70;
+    final double photoHeightInSheet = screenHeight * 0.50;
 
     if (_isLoading) {
       return const Scaffold(
@@ -251,10 +255,9 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(_sheetScrollOpacity),
-        elevation: 0,
+        backgroundColor: Colors.black.withValues(alpha: _sheetScrollOpacity),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
@@ -302,275 +305,276 @@ class ProfileScreenState extends State<ProfileScreen> {
         minChildSize: _minChildSize,
         maxChildSize: _maxSheetExtent,
         expand: true,
+        snap: false,
+        shouldCloseOnMinExtent: true,
         builder: (BuildContext context, ScrollController scrollController) {
-          return Container(
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      margin: const EdgeInsets.only(top: 10, bottom: 15),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[700],
-                        borderRadius: BorderRadius.circular(5),
-                      ),
+          return SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(top: 10, bottom: 15),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[700],
+                      borderRadius: BorderRadius.circular(5),
                     ),
                   ),
-
-                  SizedBox(
-                    height: photoHeightInSheet,
-                    width: double.infinity,
-                    child: _userProfile!.imageUrls == null || _userProfile!.imageUrls!.isEmpty
-                        ? Container(
-                            color: Colors.grey[800],
-                            child: const Center(
-                              child: Icon(Icons.person, size: 100, color: Colors.grey),
-                            ),
-                          )
-                        : Stack(
-                            children: [
-                              PageView.builder(
-                                controller: _pageController,
-                                itemCount: _userProfile!.imageUrls!.length,
-                                itemBuilder: (context, index) {
-                                  // CORRECTED: Direct access to the URL string
-                                  final String imageUrl = _userProfile!.imageUrls![index];
-                                  return GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => PhotoDetailScreen(
-                                            // CORRECTED: Pass the URL string directly
-                                            imageUrl: _userProfile!.imageUrls![index],
-                                            heroTag: 'profilePhoto$index',
-                                          ),
+                ),
+                SizedBox(
+                  height: photoHeightInSheet,
+                  width: double.infinity,
+                  child: _userProfile!.imageUrls.isEmpty
+                      ? Container(
+                          color: Colors.grey[800],
+                          child: const Center(
+                            child: Icon(Icons.person,
+                                size: 100, color: Colors.grey),
+                          ),
+                        )
+                      : Stack(
+                          children: [
+                            PageView.builder(
+                              controller: _pageController,
+                              itemCount: _userProfile!.imageUrls.length,
+                              itemBuilder: (context, index) {
+                                // CORRECTED: Direct access to the URL string
+                                final String imageUrl =
+                                    _userProfile!.imageUrls[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PhotoDetailScreen(
+                                          // CORRECTED: Pass the URL string directly
+                                          imageUrl:
+                                              _userProfile!.imageUrls[index],
+                                          heroTag: 'profilePhoto$index',
                                         ),
-                                      );
-                                    },
-                                    child: Hero(
-                                      tag: 'profilePhoto$index',
-                                      child: Image.network(
-                                        imageUrl,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        errorBuilder: (context, error, stackTrace) =>
-                                            Image.asset(
-                                                'assets/placeholder_error.jpg',
-                                                fit: BoxFit.cover),
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                                  : null,
-                                              color: Colors.white,
-                                            ),
-                                          );
-                                        },
                                       ),
+                                    );
+                                  },
+                                  child: Hero(
+                                    tag: 'profilePhoto$index',
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      errorBuilder: (context, error,
+                                              stackTrace) =>
+                                          Image.asset(
+                                              'assets/placeholder_error.jpg',
+                                              fit: BoxFit.cover),
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        }
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
+                                            color: Colors.white,
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
-                              ),
-                              _buildPageIndicator(),
-                            ],
-                          ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              _displayUsername ?? 'N/A',
-                              style: const TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                            const Spacer(),
-                            Text(
-                              _userProfile!.age.toString(),
-                              style: const TextStyle(
-                                fontSize: 28,
-                                color: Colors.white70,
-                              ),
-                            ),
+                            _buildPageIndicator(),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Text(_userProfile!.status.toString(),
-                                style: TextStyle(color: Colors.grey[400])),
-                            const SizedBox(width: 5),
-                            Icon(Icons.near_me,
-                                size: 16, color: Colors.grey[400]),
-                            const SizedBox(width: 2),
-                            Text(_userProfile!.distance.toString(),
-                                style: TextStyle(color: Colors.grey[400])),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Icon(Icons.monitor_weight,
-                                size: 16, color: Colors.grey[400]),
-                            const SizedBox(width: 5),
-                            Text(
-                                '${_userProfile!.height} | ${_userProfile!.weight} | ${_userProfile!.bodyType}',
-                                style:
-                                    const TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: _isOwnProfile
-                              ? null
-                              : _navigateToChatScreen,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[850],
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: Text(
-                              _isOwnProfile
-                                  ? 'This is your profile.'
-                                  : 'Say something...',
-                              style: TextStyle(color: Colors.grey[500]),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'ABOUT ME',
-                          style: TextStyle(
-                              fontSize: 16,
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _displayUsername ?? 'N/A',
+                            style: const TextStyle(
+                              fontSize: 34,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[400]),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
+                              color: Colors.white,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            _userProfile!.age.toString(),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(_userProfile!.status.toString(),
+                              style: TextStyle(color: Colors.grey[400])),
+                          const SizedBox(width: 5),
+                          Icon(Icons.near_me,
+                              size: 16, color: Colors.grey[400]),
+                          const SizedBox(width: 2),
+                          Text(_userProfile!.distance.toString(),
+                              style: TextStyle(color: Colors.grey[400])),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(Icons.monitor_weight,
+                              size: 16, color: Colors.grey[400]),
+                          const SizedBox(width: 5),
+                          Text(
+                              '${_userProfile!.height} | ${_userProfile!.weight} | ${_userProfile!.bodyType}',
+                              style: const TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      GestureDetector(
+                        onTap: _isOwnProfile ? null : _navigateToChatScreen,
+                        child: Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(15),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
                           decoration: BoxDecoration(
                             color: Colors.grey[850],
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(30),
                           ),
                           child: Text(
-                            _userProfile!.aboutMe.toString(),
-                            style: const TextStyle(color: Colors.white),
+                            _isOwnProfile
+                                ? 'This is your profile.'
+                                : 'Say something...',
+                            style: TextStyle(color: Colors.grey[500]),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          'STATS',
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[400]),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'ABOUT ME',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[400]),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[850],
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(height: 10),
-                        _buildStatRow(Icons.male,
-                            '${_userProfile!.gender} | ${_userProfile!.pronouns}',
-                            showInfo: true),
-                        _buildStatRow(
-                            Icons.person, _userProfile!.race.toString()),
-                        _buildStatRow(Icons.person,
-                            _userProfile!.relationshipStatus.toString()),
-                        const SizedBox(height: 20),
-                        Text(
-                          'EXPECTATIONS',
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[400]),
+                        child: Text(
+                          _userProfile!.aboutMe.toString(),
+                          style: const TextStyle(color: Colors.white),
                         ),
-                        const SizedBox(height: 10),
-                        _buildExpectationRow(Icons.people, 'Looking For',
-                            _userProfile!.lookingFor.toString()),
-                        _buildExpectationRow(Icons.home, 'Meet At',
-                            _userProfile!.meetAt.toString()),
-                        _buildExpectationRow(
-                            Icons.camera_alt,
-                            'NSFW pics?',
-                            _userProfile!.acceptsNsfwPics.toString()),
-                        const SizedBox(height: 50),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'STATS',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[400]),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildStatRow(Icons.male,
+                          '${_userProfile!.gender} | ${_userProfile!.pronouns}',
+                          showInfo: true),
+                      _buildStatRow(
+                          Icons.person, _userProfile!.race.toString()),
+                      _buildStatRow(Icons.person,
+                          _userProfile!.relationshipStatus.toString()),
+                      const SizedBox(height: 20),
+                      Text(
+                        'EXPECTATIONS',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[400]),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildExpectationRow(Icons.people, 'Looking For',
+                          _userProfile!.lookingFor.toString()),
+                      _buildExpectationRow(Icons.home, 'Meet At',
+                          _userProfile!.meetAt.toString()),
+                      _buildExpectationRow(Icons.camera_alt, 'NSFW pics?',
+                          _userProfile!.acceptsNsfwPics.toString()),
+                      const SizedBox(height: 50),
+                    ],
                   ),
-                  if (!_isOwnProfile)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          left: 20.0, right: 20.0, bottom: 20.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _navigateToChatScreen,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 12, horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[850],
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Text(
-                                  'Say something...',
-                                  style: TextStyle(color: Colors.grey[500]),
-                                  textAlign: TextAlign.center,
-                                ),
+                ),
+                if (!_isOwnProfile)
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        left: 20.0, right: 20.0, bottom: 20.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _navigateToChatScreen,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[850],
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Text(
+                                'Say something...',
+                                style: TextStyle(color: Colors.grey[500]),
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 15),
-                          Container(
+                        ),
+                        const SizedBox(width: 15),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[850],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.local_fire_department,
+                              color: Colors.orange, size: 28),
+                        ),
+                        const SizedBox(width: 15),
+                        GestureDetector(
+                          onTap: _navigateToChatScreen,
+                          child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: Colors.grey[850],
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.local_fire_department,
-                                color: Colors.orange, size: 28),
+                            child: const Icon(Icons.chat_bubble_outline,
+                                color: Colors.yellow, size: 28),
                           ),
-                          const SizedBox(width: 15),
-                          GestureDetector(
-                            onTap: _navigateToChatScreen,
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[850],
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.chat_bubble_outline,
-                                  color: Colors.yellow, size: 28),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           );
         },

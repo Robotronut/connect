@@ -1,5 +1,6 @@
 // lib/screens/profile_screen.dart (Continued)
 import 'package:flutter/material.dart';
+import 'package:get/route_manager.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:connect/services/secure_storage_service.dart';
 import 'package:connect/services/api_service.dart'; // Import your API service
@@ -228,26 +229,32 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         gender: _selectedGender,
         lookingFor: _selectedLookingFor,
         joined: _currentUserProfile!.joined);
+    try {
     await ApiService.updateExistingUserProfile(updatedProfile);
+  // ... (your existing validation and API call to save the profile)
+  
 
-    _currentUserProfile = updatedProfile;
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  if (!mounted) return; // Always check mounted after async operations
 
-    if (_currentUserProfile == null) {
-      if (!mounted) return;
-      // Add mounted check before using context
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot save: User profile not loaded.')),
-      );
-      return;
-    } else {}
+  setState(() {
+    _isLoading = false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile updated successfully!')),
+    );
+  });
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+  // Pop the current page and pass 'true' to indicate a successful update
+  Navigator.pop(context, true);
+
+} catch (e) {
+  if (!mounted) return;
+  setState(() {
+    _isLoading = false;
+  });
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text('Failed to update profile: $e')),
+  );
+}
   }
 
   /// Allows the user to pick an image from the gallery and uploads it.

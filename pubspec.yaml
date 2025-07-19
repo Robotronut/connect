@@ -77,7 +77,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/
+    - assets/placeholder_user.jpg
+    - assets/placeholder_error.jpg
   #    If your images are in specific subdirectories, list them:
   #    - assets/images/
   #    - assets/videos/
