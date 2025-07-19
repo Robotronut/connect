@@ -28,7 +28,7 @@ dependencies:
   http: ^1.2.1
   flutter_secure_storage: ^9.0.0
   cupertino_icons: ^1.0.8
-  photo_view: ^0.14.0
+  photo_view: ^0.15.0
   google_fonts: ^6.1.0 # Use the latest version
 
 
@@ -45,12 +45,12 @@ dependencies:
   cached_network_image: ^3.4.0
   flutter_story_presenter: ^1.0.0
   story: ^1.1.0
-  bottom_picker: ^2.8.0
+  bottom_picker: ^3.2.1
   bottom_sheet: ^4.0.4
   get: ^4.6.6
   animated_custom_dropdown: ^3.1.1
   story_view: ^0.16.5
-  permission_handler: ^11.2.0
+  permission_handler: ^12.0.1
   carousel_slider: ^5.0.0
   dotted_border: ^2.1.0
   country_picker: ^2.0.0
@@ -59,13 +59,13 @@ dependencies:
   bottom_sheet_scaffold:
   accordion: ^2.6.0
   signalr_core:
-  intl: ^0.19.0 # For date and time formatting
+  intl: ^0.20.2 # For date and time formatting
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0 # Make sure this is ^4.0.0 and under dev_dependencies
+  flutter_lints: ^5.0.0 # Make sure this is ^4.0.0 and under dev_dependencies
   flutter_native_splash: ^2.4.0
 # The following section is specific to Flutter packages.
 flutter:

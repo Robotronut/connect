@@ -25,68 +25,21 @@ class _LoginScreenState extends State<LoginScreen> {
       final String email = _emailController.text;
       final String password = _passwordController.text;
 
-      // This is used as otpCode for verifyStamp
-      // First attempt to verify stamp (assuming this is a pre-login or 2FA step)
-      final String? receivedKey = await ApiService.verifyStamp(
-        email: email,
-        otpCode:
-        password, // Note: This uses password as otpCode, confirm your logic.
-      );
+      final String? jwtToken = await ApiService.login(email, password);
+      _isLoading = false; // Set loading to false after the login attempt
 
-      if (receivedKey != null) {
-        // If verifyStamp is successful, handle the API key and navigate
-        final String? storedKey = await SecureStorageService.getApiKey();
-
-        if (storedKey == null || storedKey != receivedKey) {
-          await SecureStorageService.saveApiKey(receivedKey);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Verification successful! API Key updated.')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                Text('Verification successful! Key already up-to-date.')),
-          );
-        }
-        Navigator.pushReplacementNamed(context, '/grindr');
+      if (jwtToken != null && jwtToken.isNotEmpty) {
+        // Login was successful, save the JWT token
+        await SecureStorageService.saveApiKey(jwtToken);
+        Navigator.pushReplacementNamed(context,
+            '/grindr'); // Navigate on successful login and verification
       } else {
-        // If verifyStamp fails (receivedKey is null), then attempt the standard login
-        print('OTP verification failed, attempting standard login...');
-        // Removed the redundant 'as String?' cast.
-        // The return type of ApiService.login should already be Future<String?>.
-        final String? jwtToken = await ApiService.login(email, password);
-
-        setState(() {
-          _isLoading = false; // Set loading to false after the login attempt
-        });
-
-        if (jwtToken != null && jwtToken.isNotEmpty) {
-          // Login was successful, save the JWT token
-          await SecureStorageService.saveApiKey(jwtToken); // Save the received JWT token
-
-          // NEW: Verify the JWT token by fetching user profile
-          try {
-            await ApiService.getUserProfile(jwtToken);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Login successful! JWT verified.')),
-            );
-            Navigator.pushReplacementNamed(context, '/grindr'); // Navigate on successful login and verification
-          } catch (e) {
-            // If JWT verification fails, clear the token and show error
-            await SecureStorageService.deleteApiKey(); // Clear invalid token
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Login successful, but JWT verification failed: $e')),
-            );
-          }
-        } else {
-          // Login failed
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Login failed. Please check your credentials.')),
-          );
-        }
+        // Login failed
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Login failed. Please check your credentials.')),
+        );
+        return;
       }
 
       // Ensure _isLoading is set to false in all paths to prevent UI getting stuck
@@ -136,10 +89,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Text(
                   'Welcome Back!',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey[
-                    200], // This is the color you want for the labels
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey[
+                            200], // This is the color you want for the labels
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
@@ -157,9 +110,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: Icon(Icons.email),
                         prefixIconColor: Color(0xFFFF0000),
                         alignLabelWithHint:
-                        true, // Keep this if you want hint to align with label when it's there
+                            true, // Keep this if you want hint to align with label when it's there
                         hintText:
-                        'Enter your email', // Add hint text if you like
+                            'Enter your email', // Add hint text if you like
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
@@ -190,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIconColor: Color(
                             0xFFFF0000), // Assuming you want this color for password icon too
                         hintText:
-                        'Enter your password', // Add hint text if you like
+                            'Enter your password', // Add hint text if you like
                       ),
                       obscureText: true,
                       validator: (value) {
@@ -207,9 +160,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : ElevatedButton(
-                  onPressed: _loginUser,
-                  child: const Text('Login'),
-                ),
+                        onPressed: _loginUser,
+                        child: const Text('Login'),
+                      ),
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {

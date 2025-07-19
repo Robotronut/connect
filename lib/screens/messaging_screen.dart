@@ -84,30 +84,34 @@ class _MessageScreenState extends State<MessageScreen> {
 
   Future<void> _initializeChat() async {
     _currentUserEmail = await SecureStorageService.getEmail();
-    print('MessageScreen: Current User Email: $_currentUserEmail'); // Debug print
+    print(
+        'MessageScreen: Current User Email: $_currentUserEmail'); // Debug print
     setState(() {
       _currentChatUser = widget.initialChatUser;
     });
     print('MessageScreen: Initial Chat User: $_currentChatUser'); // Debug print
-    _currentChatUser !['email'] = "user1@example.com";
+    _currentChatUser!['email'] = "user1@example.com";
     // Fetch historical messages here for _currentChatUser if it's not null
     if (_currentChatUser != null && _currentUserEmail != null) {
       _fetchChatHistory(_currentUserEmail!, _currentChatUser!['email']);
     }
   }
 
-  Future<void> _fetchChatHistory(String user1Email, String user2Email, {int count = 5, int offset = 0}) async {
+  Future<void> _fetchChatHistory(String userId, String user2Email,
+      {int count = 5, int offset = 0}) async {
     setState(() {
       _isLoadingHistory = true;
       _messages.clear(); // Clear existing messages before loading history
     });
     try {
-      final fetchedMessages = await ApiService.fetchChatHistory(user1Email, user2Email);
+      final fetchedMessages =
+          await ApiService.fetchChatHistory(userId, user2Email);
       setState(() {
         _messages.addAll(fetchedMessages);
         _isLoadingHistory = false;
       });
-      print('MessageScreen: Fetched ${fetchedMessages.length} messages.'); // Debug print
+      print(
+          'MessageScreen: Fetched ${fetchedMessages.length} messages.'); // Debug print
     } catch (e) {
       print('MessageScreen: Error fetching chat history: $e'); // Debug print
       setState(() {
@@ -119,11 +123,13 @@ class _MessageScreenState extends State<MessageScreen> {
 
   void _listenForNewMessages() {
     ApiService.onNewMessage.listen((message) {
-      print('MessageScreen: Received new message from stream: ${message.content}'); // Debug print
+      print(
+          'MessageScreen: Received new message from stream: ${message.content}'); // Debug print
       // Only add message to current chat if it's relevant
       // (either sent by current user, or received from current chat partner)
       if (message.senderId == _currentChatUser?['email'] ||
-          (message.recipientId == _currentUserEmail && message.senderId == _currentChatUser?['email'])) {
+          (message.recipientId == "" &&
+              message.senderId == _currentChatUser?['email'])) {
         setState(() {
           _messages.add(message);
         });
@@ -134,12 +140,16 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   void _sendMessage() async {
-    if (_messageController.text.isNotEmpty && _currentChatUser != null && _currentUserEmail != null) {
+    if (_messageController.text.isNotEmpty &&
+        _currentChatUser != null &&
+        _currentUserEmail != null) {
       final String messageContent = _messageController.text;
       final String recipientEmail = _currentChatUser!['email'];
 
-      print('MessageScreen: Attempting to send message: "$messageContent"'); // Debug print
-      print('MessageScreen: Sender: $_currentUserEmail, Recipient: $recipientEmail'); // Debug print
+      print(
+          'MessageScreen: Attempting to send message: "$messageContent"'); // Debug print
+      print(
+          'MessageScreen: Sender: $_currentUserEmail, Recipient: $recipientEmail'); // Debug print
 
       // Add message to local list immediately for optimistic UI update
       setState(() {
@@ -157,12 +167,13 @@ class _MessageScreenState extends State<MessageScreen> {
 
       // Send message via SignalR
       await ApiService.sendChatMessage(
-        senderEmail: _currentUserEmail!,
-        recipientEmail: recipientEmail,
+        senderId: _currentUserEmail!,
+        recipientId: recipientEmail,
         content: messageContent,
       );
     } else {
-      print('MessageScreen: Cannot send message. Conditions not met:'); // Debug print
+      print(
+          'MessageScreen: Cannot send message. Conditions not met:'); // Debug print
       print('  Text empty: ${_messageController.text.isEmpty}');
       print('  _currentChatUser is null: ${_currentChatUser == null}');
       print('  _currentUserEmail is null: ${_currentUserEmail == null}');
@@ -302,17 +313,21 @@ class _MessageScreenState extends State<MessageScreen> {
                   decoration: BoxDecoration(
                     color: Colors.grey[700],
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.blueAccent, width: 2), // Simulate location marker
+                    border: Border.all(
+                        color: Colors.blueAccent,
+                        width: 2), // Simulate location marker
                   ),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.location_on, color: Colors.blueAccent, size: 50),
+                        Icon(Icons.location_on,
+                            color: Colors.blueAccent, size: 50),
                         const SizedBox(height: 10),
                         Text(
                           'Simulated Map Area',
-                          style: TextStyle(color: Colors.grey[300], fontSize: 16),
+                          style:
+                              TextStyle(color: Colors.grey[300], fontSize: 16),
                         ),
                       ],
                     ),
@@ -329,7 +344,8 @@ class _MessageScreenState extends State<MessageScreen> {
                     Navigator.pop(context); // Close bottom sheet
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.amber[700], // Orange color from image
+                    backgroundColor:
+                        Colors.amber[700], // Orange color from image
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
                     ),
@@ -392,7 +408,8 @@ class _MessageScreenState extends State<MessageScreen> {
                 ),
                 // Search bar
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0, vertical: 10),
                   child: TextField(
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -404,7 +421,8 @@ class _MessageScreenState extends State<MessageScreen> {
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 15),
                     ),
                     style: const TextStyle(color: Colors.white),
                   ),
@@ -417,11 +435,13 @@ class _MessageScreenState extends State<MessageScreen> {
                     children: [
                       TextButton(
                         onPressed: () {},
-                        child: const Text('Recently Sent', style: TextStyle(color: Colors.blueAccent)),
+                        child: const Text('Recently Sent',
+                            style: TextStyle(color: Colors.blueAccent)),
                       ),
                       TextButton(
                         onPressed: () {},
-                        child: const Text('Trending', style: TextStyle(color: Colors.white)),
+                        child: const Text('Trending',
+                            style: TextStyle(color: Colors.white)),
                       ),
                     ],
                   ),
@@ -432,7 +452,8 @@ class _MessageScreenState extends State<MessageScreen> {
                   child: GridView.builder(
                     controller: controller, // Link controller to grid view
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
@@ -460,7 +481,8 @@ class _MessageScreenState extends State<MessageScreen> {
                           child: Text(
                             mockGifTitles[index],
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 14),
                           ),
                         ),
                       );
@@ -471,7 +493,8 @@ class _MessageScreenState extends State<MessageScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 20.0, top: 10),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: Colors.grey[800],
                       borderRadius: BorderRadius.circular(5),
@@ -558,250 +581,277 @@ class _MessageScreenState extends State<MessageScreen> {
         leading: _currentChatUser == null
             ? null // No back arrow when on the inbox list
             : IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-          onPressed: () {
-            // If currently in a chat, go back to the inbox list
-            setState(() {
-              _currentChatUser = null;
-              _messages.clear(); // Clear messages when going back to inbox
-            });
-          },
-        ),
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+                onPressed: () {
+                  // If currently in a chat, go back to the inbox list
+                  setState(() {
+                    _currentChatUser = null;
+                    _messages
+                        .clear(); // Clear messages when going back to inbox
+                  });
+                },
+              ),
         title: _currentChatUser == null
             ? const Text(
-          'Inbox', // Title for the inbox list
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-        )
+                'Inbox', // Title for the inbox list
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              )
             : Row(
-          children: [
-            // User profile picture for the current chat
-            CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage(
-                  _currentChatUser!['profilePic'] ?? 'https://placehold.co/100x100/000000/FFFFFF?text=P'),
-            ),
-            const SizedBox(width: 8),
-            // Online indicator
-            Stack(
-              children: [
-                Text(
-                  _currentChatUser!['name'], // Display current chat user's name
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                if (_currentChatUser!['isOnline'])
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.greenAccent,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 2),
-                      ),
-                    ),
+                children: [
+                  // User profile picture for the current chat
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundImage: NetworkImage(_currentChatUser![
+                            'profilePic'] ??
+                        'https://placehold.co/100x100/000000/FFFFFF?text=P'),
                   ),
-              ],
-            ),
-          ],
-        ),
+                  const SizedBox(width: 8),
+                  // Online indicator
+                  Stack(
+                    children: [
+                      Text(
+                        _currentChatUser![
+                            'name'], // Display current chat user's name
+                        style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
+                      ),
+                      if (_currentChatUser!['isOnline'])
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.greenAccent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.black, width: 2),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_horiz, color: Colors.white), // Set icon color to white
+            icon: const Icon(Icons.more_horiz,
+                color: Colors.white), // Set icon color to white
             onPressed: _showMoreChatOptions, // Show more chat options
           ),
         ],
       ),
       body: _currentChatUser == null
           ? ListView.builder(
-        // Display the list of conversations (inbox)
-        itemCount: _mockConversations.length,
-        itemBuilder: (context, index) {
-          final conversation = _mockConversations[index];
-          return ListTile(
-            leading: CircleAvatar(
-              radius: 25,
-              backgroundImage: NetworkImage(conversation['profilePic']),
-            ),
-            title: Text(
-              conversation['name'],
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              conversation['lastMessage'],
-              style: TextStyle(color: Colors.grey[400]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  conversation['time'],
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                ),
-                if (conversation['unread'] > 0)
-                  Container(
-                    padding: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      conversation['unread'].toString(),
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                    ),
-                  ),
-              ],
-            ),
-            onTap: () => _onUserTap(conversation), // Navigate to chat on tap
-          );
-        },
-      )
-          : Column(
-        // Display the chat messages for the selected user
-        children: [
-          // "Today" divider
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10.0),
-            child: Text(
-              'Today',
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ),
-          // Loading indicator for chat history
-          if (_isLoadingHistory)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
-          // Chat messages list
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 10.0),
-              itemCount: _messages.length,
+              // Display the list of conversations (inbox)
+              itemCount: _mockConversations.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                // Determine if the message is from the current user
-                final bool isMe = message.senderId == _currentUserEmail;
-
-                return Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: isMe ? Colors.blueAccent : Colors.grey[700],
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(15),
-                        topRight: const Radius.circular(15),
-                        bottomLeft: isMe
-                            ? const Radius.circular(15)
-                            : const Radius.circular(0),
-                        bottomRight: isMe
-                            ? const Radius.circular(0)
-                            : const Radius.circular(15),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          message.content,
-                          style: const TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10),
-                        ),
-                      ],
-                    ),
+                final conversation = _mockConversations[index];
+                return ListTile(
+                  leading: CircleAvatar(
+                    radius: 25,
+                    backgroundImage: NetworkImage(conversation['profilePic']),
                   ),
-                );
-              },
-            ),
-          ),
-          // Message input area
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      children: [
-                        // Camera icon
-                        IconButton(
-                          icon: const Icon(Icons.camera_alt, color: Colors.grey),
-                          onPressed: _showMediaOptions, // Show media options
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: _messageController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              hintText: 'Say something...',
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              border: InputBorder.none,
-                              filled: true, // Ensure the TextField itself is filled
-                              fillColor: Colors.grey[700], // Set a distinct fill color for visibility
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                            ),
-                            onSubmitted: (_) => _sendMessage(),
+                  title: Text(
+                    conversation['name'],
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    conversation['lastMessage'],
+                    style: TextStyle(color: Colors.grey[400]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        conversation['time'],
+                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      ),
+                      if (conversation['unread'] > 0)
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            conversation['unread'].toString(),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 10),
                           ),
                         ),
-                        // Emoji icon
-                        IconButton(
-                          icon: const Icon(Icons.sentiment_satisfied_alt,
-                              color: Colors.grey),
-                          onPressed: () {
-                            // Implement emoji picker
-                          },
+                    ],
+                  ),
+                  onTap: () =>
+                      _onUserTap(conversation), // Navigate to chat on tap
+                );
+              },
+            )
+          : Column(
+              // Display the chat messages for the selected user
+              children: [
+                // "Today" divider
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10.0),
+                  child: Text(
+                    'Today',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
+                ),
+                // Loading indicator for chat history
+                if (_isLoadingHistory)
+                  const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                // Chat messages list
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      // Determine if the message is from the current user
+                      final bool isMe = message.senderId == _currentUserEmail;
+
+                      return Align(
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 5, horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 15),
+                          decoration: BoxDecoration(
+                            color: isMe ? Colors.blueAccent : Colors.grey[700],
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(15),
+                              topRight: const Radius.circular(15),
+                              bottomLeft: isMe
+                                  ? const Radius.circular(15)
+                                  : const Radius.circular(0),
+                              bottomRight: isMe
+                                  ? const Radius.circular(0)
+                                  : const Radius.circular(15),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: isMe
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message.content,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 16),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 10),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Send button
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.blueAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: _sendMessage,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Microphone icon
-                Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.grey, // Grey color for microphone icon button
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.mic, color: Colors.white),
-                    onPressed: () {
-                      // Implement voice message recording
+                      );
                     },
                   ),
                 ),
-              ],
-            ),
-          ),
-          // Bottom Navigation Bar with additional options (only for chat view)
-          // This section is commented out as the main app now manages the global BottomNavigationBar.
-          /*
+                // Message input area
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: Row(
+                            children: [
+                              // Camera icon
+                              IconButton(
+                                icon: const Icon(Icons.camera_alt,
+                                    color: Colors.grey),
+                                onPressed:
+                                    _showMediaOptions, // Show media options
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  controller: _messageController,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    hintText: 'Say something...',
+                                    hintStyle:
+                                        TextStyle(color: Colors.grey[400]),
+                                    border: InputBorder.none,
+                                    filled:
+                                        true, // Ensure the TextField itself is filled
+                                    fillColor: Colors.grey[
+                                        700], // Set a distinct fill color for visibility
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
+                                  ),
+                                  onSubmitted: (_) => _sendMessage(),
+                                ),
+                              ),
+                              // Emoji icon
+                              IconButton(
+                                icon: const Icon(Icons.sentiment_satisfied_alt,
+                                    color: Colors.grey),
+                                onPressed: () {
+                                  // Implement emoji picker
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Send button
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.blueAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          onPressed: _sendMessage,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Microphone icon
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: Colors
+                              .grey, // Grey color for microphone icon button
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.mic, color: Colors.white),
+                          onPressed: () {
+                            // Implement voice message recording
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Bottom Navigation Bar with additional options (only for chat view)
+                // This section is commented out as the main app now manages the global BottomNavigationBar.
+                /*
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
@@ -827,8 +877,8 @@ class _MessageScreenState extends State<MessageScreen> {
                 ),
                 const SizedBox(height: 10), // Space for home indicator
                 */
-        ],
-      ),
+              ],
+            ),
     );
   }
 

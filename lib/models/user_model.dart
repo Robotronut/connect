@@ -1,74 +1,74 @@
-// lib/models/user_model.dart
-
 class UserModel {
-  final String id;
+  final String? id; // Made nullable
   final List<String> imageUrls;
-  final String status;
-  final int age;
-  final String height;
-  final String weight;
-  final String build;
-  final String aboutMe;
-  final String lookingFor;
-  final String meetAt;
-  final String nsfwPics;
-  final String distance;
-  final String gender;
-  final String pronouns;
-  final String race;
-  final String relationshipStatus;
-
-  final String
-      userName; // Assuming this is always present and non-null from API
+  final String? status;
+  final int? age;
+  final String? height;
+  final String? weight;
+  final String? bodyType;
+  final String? aboutMe;
+  final String? lookingFor;
+  final String? meetAt;
+  final bool acceptsNsfwPics;
+  final String? distance;
+  final String? gender;
+  final String? pronouns;
+  final String? race;
+  final String? relationshipStatus;
+  final String? userName;
+  final String? joined;
+  final bool isFresh;
 
   UserModel({
-    required this.id,
+    this.id, // No longer required
     required this.imageUrls,
-    required this.status,
-    required this.age,
-    required this.height,
-    required this.weight,
-    required this.build,
-    required this.aboutMe,
-    required this.lookingFor,
-    required this.meetAt,
-    required this.nsfwPics,
-    required this.distance,
-    required this.gender,
-    required this.pronouns,
-    required this.race,
-    required this.relationshipStatus,
-    required this.userName,
+    this.status,
+    this.age,
+    this.height,
+    this.bodyType,
+    this.aboutMe,
+    this.lookingFor,
+    this.meetAt,
+    required this.acceptsNsfwPics,
+    this.distance,
+    this.gender,
+    this.pronouns,
+    this.race,
+    this.relationshipStatus,
+    this.userName,
+    this.joined,
+    required this.isFresh,
+    this.weight, // Ensure weight is also included here if it was missing
   });
 
   // Factory constructor for creating a UserModel from a JSON map
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
-      imageUrls: List<String>.from(
-          json['imageUrls'] ?? []), // Safely handle null/empty list
-      status: json['status'] as String,
-      age: json['age'] as int,
-      height: json['height'] as String,
-      weight: json['weight'] as String,
-      build: json['build'] as String,
-      aboutMe: json['aboutMe'] as String,
-      lookingFor: json['lookingFor'] as String,
-      meetAt: json['meetAt'] as String,
-      nsfwPics: json['nsfwPics'] as String,
-      distance: json['distance'] as String,
-      gender: json['gender'] as String,
-      pronouns: json['pronouns'] as String,
-      race: json['race'] as String,
-      relationshipStatus: json['relationshipStatus'] as String,
-      userName:
-          json['userName'] as String, // Ensure this matches API key and type
+      id: json['id'] as String?, // Safely parse nullable String
+      imageUrls: List<String>.from(json['imageUrls'] ?? []),
+      status: json['status'] as String?,
+      age: json['age'] as int?,
+      height: json['height'] as String?,
+      weight: json['weight'] as String?,
+      bodyType: json['bodyType'] as String?,
+      aboutMe: json['aboutMe'] as String?,
+      lookingFor: json['lookingFor'] as String?,
+      meetAt: json['meetAt'] as String?,
+      acceptsNsfwPics: json['acceptsNsfwPics'] is bool
+          ? json['acceptsNsfwPics'] as bool
+          : false,
+      distance: json['distance'] as String?,
+      gender: json['gender'] as String?,
+      pronouns: json['pronouns'] as String?,
+      race: json['race'] as String?,
+      relationshipStatus: json['relationshipStatus'] as String?,
+      userName: json['userName'] as String?,
+      joined: json['joined'] as String?,
+      isFresh: json['isFresh'] is bool ? json['isFresh'] as bool : false,
     );
   }
 
-
   // Method to convert a UserModel instance to a JSON-compatible map
-  // This is often named 'toMap' or 'toJson'
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -77,17 +77,19 @@ class UserModel {
       'age': age,
       'height': height,
       'weight': weight,
-      'build': build,
+      'bodyType': bodyType,
       'aboutMe': aboutMe,
       'lookingFor': lookingFor,
       'meetAt': meetAt,
-      'nsfwPics': nsfwPics,
+      'acceptsNsfwPics': acceptsNsfwPics,
       'distance': distance,
       'gender': gender,
       'pronouns': pronouns,
       'race': race,
       'relationshipStatus': relationshipStatus,
       'userName': userName,
+      'joined': joined,
+      'isFresh': isFresh,
     };
   }
 
@@ -99,17 +101,19 @@ class UserModel {
     int? age,
     String? height,
     String? weight,
-    String? build,
+    String? bodyType,
     String? aboutMe,
     String? lookingFor,
     String? meetAt,
-    String? nsfwPics,
+    bool? acceptsNsfwPics,
     String? distance,
     String? gender,
     String? pronouns,
     String? race,
     String? relationshipStatus,
     String? userName,
+    String? joined,
+    bool? isFresh,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -118,17 +122,19 @@ class UserModel {
       age: age ?? this.age,
       height: height ?? this.height,
       weight: weight ?? this.weight,
-      build: build ?? this.build,
+      bodyType: bodyType ?? this.bodyType,
       aboutMe: aboutMe ?? this.aboutMe,
       lookingFor: lookingFor ?? this.lookingFor,
       meetAt: meetAt ?? this.meetAt,
-      nsfwPics: nsfwPics ?? this.nsfwPics,
+      acceptsNsfwPics: acceptsNsfwPics ?? this.acceptsNsfwPics,
       distance: distance ?? this.distance,
       gender: gender ?? this.gender,
       pronouns: pronouns ?? this.pronouns,
       race: race ?? this.race,
       relationshipStatus: relationshipStatus ?? this.relationshipStatus,
       userName: userName ?? this.userName,
+      joined: joined ?? this.joined,
+      isFresh: isFresh ?? this.isFresh,
     );
   }
 }

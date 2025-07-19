@@ -2,7 +2,8 @@
     <application
         android:label="Connect 2"
         android:name="${applicationName}"
-        android:icon="@mipmap/icon_128">
+        android:icon="@mipmap/icon_128"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

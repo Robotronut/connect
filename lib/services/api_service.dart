@@ -66,11 +66,11 @@ UserModel _parseUserModel(String responseBody) {
 class ApiService {
   static const String _baseUrl = 'https://peek.thegwd.ca';
   // Base URL for chat specific API endpoints
-  static const String _chatBaseUrl = 'https://peek.thegwd.ca/api/Chat';
+  static const String _chatBaseUrl = 'https://peek.thegwd.ca';
 
   static HubConnection? _hubConnection;
   static final StreamController<Message> _messageStreamController =
-  StreamController<Message>.broadcast();
+      StreamController<Message>.broadcast();
 
   // Stream to listen for new incoming messages
   static Stream<Message> get onNewMessage => _messageStreamController.stream;
@@ -84,24 +84,25 @@ class ApiService {
       return;
     }
 
-    final String? securityStamp = await SecureStorageService.getApiKey();
+    final String? userId = await SecureStorageService.getUserId();
     final String? userEmail = await SecureStorageService.getEmail();
 
-    if (securityStamp == null || userEmail == null) {
+    if (userId == null || userEmail == null) {
       print('SignalR: User not authenticated. Cannot establish connection.');
       return;
     }
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-      '$_baseUrl/', // Your SignalR Hub URL
-      HttpConnectionOptions(
-        accessTokenFactory: () => Future.value(securityStamp), // Pass the security stamp as an access token
-        logging: (level, message) => print('SignalR Log: $message'),
-        // SkipNegotiation: true, // Might be needed for some server configurations
-        // Transport: HttpTransportType.WebSockets, // Force WebSockets if needed
-      ),
-    )
+          '$_baseUrl/', // Your SignalR Hub URL
+          HttpConnectionOptions(
+            accessTokenFactory: () => Future.value(
+                userId), // Pass the security stamp as an access token
+            logging: (level, message) => print('SignalR Log: $message'),
+            // SkipNegotiation: true, // Might be needed for some server configurations
+            // Transport: HttpTransportType.WebSockets, // Force WebSockets if needed
+          ),
+        )
         .build();
 
     // Register client-side method that the server can call
@@ -117,14 +118,16 @@ class ApiService {
 
         try {
           final Message receivedMessage = Message(
-            id: UniqueKey().toString(), // Generate a client-side ID if backend doesn't provide one in ChatDto
+            id: UniqueKey()
+                .toString(), // Generate a client-side ID if backend doesn't provide one in ChatDto
             senderId: user1Email,
             recipientId: user2Email,
             content: content,
             timestamp: DateTime.parse(timestampString),
           );
           _messageStreamController.add(receivedMessage);
-          print('Parsed and added message to stream: ${receivedMessage.content}');
+          print(
+              'Parsed and added message to stream: ${receivedMessage.content}');
         } catch (e) {
           print('Error parsing received message: $e');
         }
@@ -147,26 +150,20 @@ class ApiService {
   /// Sends a chat message via SignalR.
   /// Matches the SendMessageDto on the backend.
   static Future<void> sendChatMessage({
-    required String senderEmail,
-    required String recipientEmail,
+    required String senderId,
+    required String recipientId,
     required String content,
   }) async {
     if (_hubConnection?.state == HubConnectionState.connected) {
       try {
-        final String? securityStamp = await SecureStorageService.getApiKey();
-        if (securityStamp == null) {
-          print('Cannot send message: Security Stamp not found.');
-          return;
-        }
-
         // Invoke the server-side method 'SendMessageToUser'
         // Arguments should match your C# SendMessageDto properties:
         // SecurityStamp, SenderEmail, RecipientEmail, Content
         await _hubConnection!.invoke(
           'SendMessageToUser', // This should be the method name on your SignalR Hub
-          args: [securityStamp, senderEmail, recipientEmail, content],
+          args: [senderId, recipientId, content],
         );
-        print('Message sent via SignalR: $content to $recipientEmail');
+        print('Message sent via SignalR: $content to $recipientId');
       } catch (e) {
         print('Error sending message via SignalR: $e');
       }
@@ -178,7 +175,8 @@ class ApiService {
   }
 
   /// Fetches chat history between two users.
-  static Future<List<Message>> fetchChatHistory(String user1Email, String user2Email, {int count = 50, int offset = 0}) async {
+  static Future<List<Message>> fetchChatHistory(String user1Id, String user2Id,
+      {int count = 50, int offset = 0}) async {
     final String? securityStamp = await SecureStorageService.getApiKey();
     if (securityStamp == null) {
       print('Cannot fetch chat history: Security Stamp not found.');
@@ -186,22 +184,17 @@ class ApiService {
     }
 
     // Construct the URL based on the provided format
-    final uri = Uri.parse('$_chatBaseUrl/history/$securityStamp/$user1Email/$user2Email?count=$count&offset=$offset');
-
+    final uri = Uri.parse(_chatBaseUrl);
+    final headers = await _getHeaders();
     try {
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Security-Stamp': securityStamp, // Include security stamp in headers for history API
-        },
-      );
+      final response = await http.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         List<dynamic> jsonList = json.decode(response.body);
         return jsonList.map((json) => Message.fromJson(json)).toList();
       } else {
-        print("Failed to load chat history: ${response.statusCode} ${response.body}");
+        print(
+            "Failed to load chat history: ${response.statusCode} ${response.body}");
         return [];
       }
     } catch (e) {
@@ -260,8 +253,8 @@ class ApiService {
   /// Returns the key string if successful, null otherwise.
   static Future<String?> verifyOtp(
       {required String email, // Assuming email is needed for verification
-        required String otp,
-        required String username}) async {
+      required String otp,
+      required String username}) async {
     final url = Uri.parse('$_baseUrl/Verify-Otp');
     try {
       final response = await http.post(
@@ -301,108 +294,6 @@ class ApiService {
       }
     } catch (e) {
       print('Error verifying OTP: $e');
-      return null;
-    }
-  }
-
-  static Future<String?> verifyStamp({
-    required String email,
-    // The 'stamp' passed here is likely intended to be the OTP,
-    // not the security stamp/key from storage.
-    // Let's rename it to 'otpCode' for clarity if it's the OTP.
-    required String otpCode,
-  }) async {
-    // We need to retrieve the actual security stamp from SecureStorageService
-    // because the C# backend's 'Verify-Stamp' endpoint would typically
-    // expect a stamp for identity verification or a token.
-    // If 'stamp' in the C# code refers to the OTP, then your Dart
-    // parameter name 'stamp' is fine, but you still need to await the stored stamp.
-
-    String? storedSecurityStamp = await SecureStorageService.getApiKey();
-    String? storedEmail = await SecureStorageService.getEmail();
-    String? storedUserName = await SecureStorageService.getUserName();
-    String? storedUserId = await SecureStorageService.getUserId();
-    // Decide what 'stamp' you want to send in the request body.
-    // 1. If the 'stamp' in your C# Verify-Stamp endpoint's request model
-    //    is the OTP that the user typed in, then you should send 'otpCode' here.
-    // 2. If the 'stamp' in your C# Verify-Stamp endpoint's request model
-    //    is a *security stamp/token* that was previously stored, then you should send 'storedSecurityStamp'.
-
-    // Assuming 'stamp' in the C# request body for 'Verify-Stamp' is the
-    // security stamp/token you fetched from SecureStorageService.
-    // If your C# endpoint's 'stamp' parameter is actually the OTP,
-    // then use 'otpCode' below. Let's assume it's the security stamp for now.
-    String? stampToSend;
-    String? userNameToSend;
-
-    if (storedSecurityStamp != null &&
-        storedSecurityStamp.isNotEmpty &&
-        storedEmail != null &&
-        storedEmail.isNotEmpty &&
-        email == storedEmail) {
-      stampToSend = storedSecurityStamp;
-      userNameToSend = storedUserName;
-    } else {
-      print(
-          'Error: No security stamp found in storage to send for verification.');
-      stampToSend = otpCode;
-
-      // Cannot proceed without the stamp
-    }
-
-    final url = Uri.parse(
-        '$_baseUrl/Verify-Stamp'); // Ensure this matches your C# route (e.g., /api/Controller/Verify-Stamp)
-
-    try {
-      final response = await http.post(
-        url,
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-          // Potentially add the security stamp to headers as well if your API expects it there
-          // 'Authorization': 'Bearer $stampToSend', // Example if it's an auth token
-        },
-        body: jsonEncode(<String, String>{
-          'email': email,
-          'stamp': stampToSend,
-          'username': userNameToSend!,
-
-          // Use the correctly retrieved stamp value, assert non-null after the check
-          // If the C# endpoint expects the OTP here, change 'stampToSend' to 'otpCode'
-          // 'otp': otpCode, // If the C# endpoint model has an 'otp' field for the OTP
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        // Assuming your API returns a JSON object like: {"stamp": "user_stamp_string"}
-        // or {"token": "user_token_string"}
-        final String? receivedStamp =
-        responseData['stamp']; // Or 'token' if it returns a new token/stamp
-        final String receivedId = responseData[
-        'userid']; // Or 'token' if it returns a new token/stamp
-        final String userName = responseData['username'];
-        if (receivedStamp != null && receivedStamp.isNotEmpty) {
-          print(
-              'Stamp verification successful. Received stamp: $receivedStamp');
-          // You might want to save this new stamp if it's an updated one
-          await SecureStorageService.saveApiKey(receivedStamp);
-          await SecureStorageService.saveEmail(email);
-          await SecureStorageService.saveUserName(userName);
-          await SecureStorageService.saveUserId(receivedId);
-          return receivedStamp;
-        } else {
-          print(
-              'Stamp verification successful, but no new stamp found in response.');
-          return receivedStamp;
-        }
-      } else {
-        // It's good to log the full response body for debugging 4xx and 5xx errors
-        print(
-            'Stamp verification failed: ${response.statusCode} - ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      print('Error during stamp verification: $e');
       return null;
     }
   }
@@ -458,6 +349,38 @@ class ApiService {
     }
   }
 
+  /// Returns the JWT token string if successful, null otherwise.
+  static Future<bool> checktoken() async {
+    // Construct the full URL for the login endpoint
+    final url = Uri.parse(
+        '$_baseUrl/validtoken'); // Assuming '/login' is your login endpoint
+
+    final String? jwtToken = await SecureStorageService.getApiKey();
+    try {
+      // Make a POST request to the login API
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $jwtToken', // Attach the JWT here
+        },
+        body: json.encode({}),
+      );
+
+      // Check if the request was successful (HTTP status code 200)
+      if (response.statusCode == 200) {
+        // Parse the JSON response body
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      // Catch any network-related errors (e.g., no internet connection)
+      print('Error during login request: $e');
+      return false; // Request failed due to exception
+    }
+  }
+
   /// Handles user login.
   /// Returns the JWT token string if successful, null otherwise.
   static Future<String?> login(String email, String password) async {
@@ -470,8 +393,8 @@ class ApiService {
       final response = await http.post(
         url,
         headers: {
-          'Content-Type':
-          'application/json', // Set content type for JSON payload
+          'Content-Type': 'application/json',
+          // Set content type for JSON payload
         },
         body: json.encode({
           'email': email.toLowerCase(), // Send the user's email
@@ -485,15 +408,16 @@ class ApiService {
         final Map<String, dynamic> responseData = json.decode(response.body);
 
         // Extract the JWT token from the successful response
-        final String? jwtToken = responseData['jwtToken']; // Assuming the key is 'token'
+        final String? jwtToken =
+            responseData['jwtToken']; // Assuming the key is 'token'
         final String? userName = responseData['username'];
         final String? userId = responseData['userid'];
-
 
         // Check if the JWT token is present
         if (jwtToken != null && jwtToken.isNotEmpty) {
           // Save the token, username, and user ID securely
-          await SecureStorageService.saveApiKey(jwtToken); // Save the JWT token as API Key
+          await SecureStorageService.saveApiKey(
+              jwtToken); // Save the JWT token as API Key
           if (userName != null) {
             await SecureStorageService.saveUserName(userName);
           }
@@ -505,8 +429,7 @@ class ApiService {
           return jwtToken; // Login successful, return the JWT token
         } else {
           // If JWT token is missing in a successful response
-          print(
-              'Login successful but missing JWT token in response.');
+          print('Login successful but missing JWT token in response.');
           return null; // Treat as failure due to incomplete response
         }
       } else {
@@ -523,67 +446,116 @@ class ApiService {
 
   /// Fetches the user profile using a JWT token for verification.
   /// Returns a map of user profile data if successful.
-  static Future<Map<String, dynamic>> getUserProfile(String jwtToken) async {
-    final url = Uri.parse('$_baseUrl/api/User/get_user_profile'); // Adjust URL as per your API
+  static Future<UserModel?> getUserProfile(String? userId) async {
+    // if the userId is passed then this will return that userprofile
+    // if the userId is not pass then it is assumed the current User is getting there own profile
+    String? jwtToken = await SecureStorageService.getApiKey();
+    String? currentUserId = await SecureStorageService.getUserId();
+
+    if (jwtToken == null || jwtToken.isEmpty) {
+      print('JWT Token is null or empty. Cannot fetch user profile.');
+      return null; // Or throw an exception if a token is strictly required
+    }
+    // check if userId is empty and if so assign the logged in user to userId
+    // and ask api for return
+    if (userId == null || userId.isEmpty) {
+      userId = currentUserId;
+    }
+    final url =
+        Uri.parse('$_baseUrl/get_user_profile'); // Adjust URL as per your API
+
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $jwtToken', // Attach the JWT here
-        },
-      );
+      final body = jsonEncode({'UserId': userId});
+      final response = await http.post(url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $jwtToken', // Attach the JWT here
+          },
+          body: body);
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final Map<String, dynamic> userData =
+            json.decode(response.body) as Map<String, dynamic>;
+        // Convert the Map to a UserModel using the fromJson factory constructor
+        return UserModel.fromJson(userData);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        // Handle unauthorized/forbidden specifically
+        print(
+            'Authentication error fetching user profile: ${response.statusCode} ${response.body}');
+        return null; // Or throw a specific authentication exception
       } else {
-        print('Failed to load user profile: ${response.statusCode} ${response.body}');
-        throw Exception('Failed to load user profile: ${response.statusCode} ${response.body}');
+        print(
+            'Failed to load user profile: ${response.statusCode} ${response.body}');
+        throw Exception(
+            'Failed to load user profile: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
       print('Error fetching user profile for JWT verification: $e');
-      rethrow;
+      rethrow; // Re-throw the exception for the calling code to handle
     }
   }
 
   static Future<Map<String, String>> _getHeaders(
       {bool isMultipart = false}) async {
-    final String? email = await SecureStorageService.getEmail();
-    final String? securityStamp = await SecureStorageService.getApiKey();
+    String? jwtToken = await SecureStorageService.getApiKey();
 
-    if (email == null || securityStamp == null) {
+    if (jwtToken == null) {
       throw Exception("User credentials not found for API request.");
     }
-
     final headers = {
       if (!isMultipart) 'Content-Type': 'application/json',
-      'X-User-Email': email,
-      'X-Security-Stamp': securityStamp,
+      'Authorization': 'Bearer $jwtToken', // Attach the JWT here
     };
     return headers;
   }
 
-  static Future<List<UserModel>> getPeople({
-    required int pageNumber,
-    required int pageSize, bool? isRightNow, bool? hasAlbums, List<String>? genders, String? position, int? minAge, int? maxAge, bool? onlineStatus, bool? isFresh, bool? isFavorite, List<String>? tags, String? relationshipStatus, String? bodyType, List<String>? moreFilterPositions, bool? hasPhotos, String? height, bool? hasFacePics, String? weight, bool? acceptsNsfwPics, String? lookingFor, String? meetAt, bool? haventChattedToday,
-  }) async {
-    final String? email = await SecureStorageService.getEmail();
-    final String? securityStamp = await SecureStorageService.getApiKey();
-
-    if (email == null || securityStamp == null) {
-      throw Exception(
-          "Authentication required: Email or Security Stamp not found.");
-    }
-
+  static Future<List<UserModel>> getPeople(
+      {required int pageNumber,
+      required int pageSize,
+      String? id,
+      String? status,
+      int? minAge,
+      int? maxAge,
+      String? weight,
+      String? height,
+      String? bodyType,
+      String? aboutMe,
+      String? lookingFor,
+      String? meetAt,
+      required bool acceptsNsfwPics,
+      int? distance,
+      List<String>? genders,
+      String? pronouns,
+      String? race,
+      String? relationshipStatus,
+      String? userName,
+      String? joined,
+      bool? isFresh}) async {
     final url = Uri.parse('$_baseUrl/get_people');
 
     try {
       final headers = await _getHeaders();
       final body = jsonEncode({
-        'Email': email,
-        'SecurityStamp': securityStamp,
         'PageNumber': pageNumber,
         'PageSize': pageSize,
+        'Id': id,
+        'MinAge': minAge,
+        'MaxAge': maxAge,
+        'weight': weight,
+        'height': height,
+        'bodyType': bodyType,
+        'aboutMe': aboutMe,
+        'lookingFor': lookingFor,
+        'meetAt': meetAt,
+        'acceptsNsfwPics': acceptsNsfwPics,
+        'distance': distance,
+        'genders': genders,
+        'pronouns': pronouns,
+        'race': race,
+        'relationshipStatus': relationshipStatus,
+        'userName': userName,
+        'joined': joined,
+        'isFresh': isFresh,
       });
 
       final response = await http.post(
@@ -592,12 +564,13 @@ class ApiService {
         body: body,
       );
 
+      print(body);
       if (response.statusCode == 200) {
         // --- Using compute for off-main-isolate JSON parsing ---
         // Pass the response.body to the top-level _parseUserModels function
         // which will run in a separate isolate.
         final List<UserModel> userList =
-        await compute(_parseUserModels, response.body);
+            await compute(_parseUserModels, response.body);
         return userList;
       } else {
         print(
@@ -639,7 +612,7 @@ class ApiService {
       if (response.statusCode == 200) {
         // Use compute for single user profile parsing as well, especially if the profile can be complex
         final UserModel userProfile =
-        await compute(_parseUserModel, response.body);
+            await compute(_parseUserModel, response.body);
         return userProfile;
       } else {
         print(
@@ -653,56 +626,12 @@ class ApiService {
   }
 
   // --- NEW: Update User Profile ---
-  static Future<void> updateUserProfile(UserModel updatedProfile) async {
-    final String? email = await SecureStorageService.getEmail();
-    final String? securityStamp = await SecureStorageService.getApiKey();
-
-    if (email == null || securityStamp == null) {
-      throw Exception(
-          "Authentication required: Email or Security Stamp not found.");
-    }
-
-    final url = Uri.parse(
-        '$_baseUrl/update_user_profile'); // Your API's update endpoint
-
-    try {
-      final headers = await _getHeaders();
-      final body = jsonEncode({
-        ...updatedProfile.toMap(), // Convert UserProfile to map
-        'Email': email, // Include credentials if needed by update endpoint
-        'SecurityStamp': securityStamp,
-      });
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body,
-      );
-
-      if (response.statusCode == 200) {
-        // Successfully updated
-        print('Profile updated successfully!');
-      } else {
-        print(
-            'Failed to update profile: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to update profile: ${response.body}');
-      }
-    } catch (e) {
-      print('Error updating profile: $e');
-      rethrow;
-    }
-  }
 
 // --- NEW: Update User Profile ---
   static Future<void> updateExistingUserProfile(
       UserModel updatedProfile) async {
     final String? email = await SecureStorageService.getEmail();
     final String? securityStamp = await SecureStorageService.getApiKey();
-
-    if (email == null || securityStamp == null) {
-      throw Exception(
-          "Authentication required: Email or Security Stamp not found.");
-    }
 
     final url = Uri.parse(
         '$_baseUrl/update_existing_user_profile'); // Your API's update endpoint
@@ -711,10 +640,8 @@ class ApiService {
       final headers = await _getHeaders();
       final body = jsonEncode({
         ...updatedProfile.toMap(), // Convert UserProfile to map
-        'Email': email, // Include credentials if needed by update endpoint
-        'Stamp': securityStamp,
       });
-
+      print(body);
       final response = await http.post(
         url,
         headers: headers,
@@ -724,6 +651,7 @@ class ApiService {
       if (response.statusCode == 200) {
         // Successfully updated
         print('Profile updated successfully!');
+        return;
       } else {
         print(
             'Failed to update profile: ${response.statusCode} - ${response.body}');
@@ -739,23 +667,20 @@ class ApiService {
   // This is a generic image upload method. You might need separate
   // endpoints for profile picture vs. other gallery images depending on your backend.
   static Future<String> uploadImage(File imageFile) async {
-    final String? email = await SecureStorageService.getEmail();
     final String? securityStamp = await SecureStorageService.getApiKey();
 
-    if (email == null || securityStamp == null) {
+    if (securityStamp == null) {
       throw Exception(
           "Authentication required: Email or Security Stamp not found.");
     }
 
     final url =
-    Uri.parse('$_baseUrl/upload_image'); // Your API's image upload endpoint
+        Uri.parse('$_baseUrl/upload_image'); // Your API's image upload endpoint
 
     try {
       final request = http.MultipartRequest('POST', url);
       request.headers.addAll(await _getHeaders(
           isMultipart: true)); // No Content-Type for multipart
-      request.fields['Email'] = email; // Add user identification fields
-      request.fields['SecurityStamp'] = securityStamp;
 
       request.files.add(await http.MultipartFile.fromPath(
         'file', // This 'file' key must match what your C# backend expects for the file part
@@ -770,7 +695,7 @@ class ApiService {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         // Assuming your backend returns the URL of the uploaded image
         final String imageUrl =
-        jsonResponse['imageUrl']; // Adjust key based on your API response
+            jsonResponse['imageUrl']; // Adjust key based on your API response
         return imageUrl;
       } else {
         print(
@@ -786,22 +711,12 @@ class ApiService {
   // --- NEW: Delete Image ---
   // If your backend has an endpoint to remove specific images
   static Future<void> deleteImage(String imageUrlToDelete) async {
-    final String? email = await SecureStorageService.getEmail();
-    final String? securityStamp = await SecureStorageService.getApiKey();
-
-    if (email == null || securityStamp == null) {
-      throw Exception(
-          "Authentication required: Email or Security Stamp not found.");
-    }
-
     final url =
-    Uri.parse('$_baseUrl/delete_image'); // Your API's delete image endpoint
+        Uri.parse('$_baseUrl/delete_image'); // Your API's delete image endpoint
 
     try {
       final headers = await _getHeaders();
       final body = jsonEncode({
-        'Email': email,
-        'SecurityStamp': securityStamp,
         'ImageUrl': imageUrlToDelete, // The URL of the image to delete
       });
 

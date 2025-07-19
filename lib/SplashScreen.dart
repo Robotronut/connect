@@ -23,37 +23,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // 1. Attempt to retrieve the stored API key (security stamp) and email
     final String? storedStamp = await SecureStorageService.getApiKey();
-    final String? storedEmail = await SecureStorageService.getEmail();
 
     // Determine the next route based on stored credentials
     String nextRoute = '/login'; // Default to login screen
 
     // Proceed only if both a stamp and email are found in storage
-    if (storedStamp != null &&
-        storedStamp.isNotEmpty &&
-        storedEmail != null &&
-        storedEmail.isNotEmpty) {
+    if (storedStamp != null && storedStamp.isNotEmpty) {
       print('Found stored credentials. Attempting to verify stamp...');
+      bool ok = await ApiService.checktoken();
+      if (ok) {
+        nextRoute = '/grindr';
+      }
       // 2. If credentials exist, try to verify them with your backend
       // Ensure your ApiService.verifyStamp is designed to handle invalid stamps by returning null
-      final String? verifiedStamp = await ApiService.verifyStamp(
-        email: storedEmail,
-        otpCode: storedStamp, // This is the security stamp/token you stored
-      );
-
-      if (verifiedStamp != null) {
-        // Stamp verified successfully!
-        print('Stamp verified successfully. Navigating to Grindr.');
-        // If your API returns a new stamp upon verification, save it.
-        //await SecureStorageService.saveApiKey(verifiedStamp);
-        nextRoute = '/grindr'; // User is authenticated, go to Grindr
-      } else {
-        // Stamp verification failed (e.g., expired, invalid, network error)
-        print('Stamp verification failed. Navigating to Login.');
-        // Optionally, clear invalid credentials to ensure a fresh login
-        await SecureStorageService.deleteApiKey();
-        await SecureStorageService.deleteAllAuthData();
-      }
     } else {
       // No valid stamp or email found in storage, go to login
       print('No stored credentials found. Navigating to Login.');

@@ -4,7 +4,8 @@ import 'package:connect/services/secure_storage_service.dart';
 import 'package:connect/services/api_service.dart'; // Import your API service
 import 'package:connect/models/user_model.dart'; // Import your user model
 
-import 'package:connect/screens/edit_profile_screen.dart' hide UserModel; // Ensure this path is correct
+import 'package:connect/screens/edit_profile_screen.dart'
+    hide UserModel; // Ensure this path is correct
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
 import 'package:connect/screens/messaging_screen.dart'; // Import the MessageScreen
 // Import the new filter dialogs/screens
@@ -15,7 +16,6 @@ import 'package:connect/filters/fresh_filter_dialog.dart';
 import 'package:connect/filters/favorite_filter_dialog.dart';
 import 'package:connect/screens/tags_screen.dart';
 import 'package:connect/screens/more_filters_screen.dart';
-
 
 class MainBrowseScreen extends StatefulWidget {
   const MainBrowseScreen({super.key});
@@ -32,10 +32,11 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   final int _pageSize = 15; // Number of users to fetch per page
   bool _hasMore = true; // To know if there are more users to load
   final ScrollController _scrollController =
-  ScrollController(); // For infinite scrolling
+      ScrollController(); // For infinite scrolling
 
   // Add a variable to store the logged-in user's data
   UserModel? _loggedInUser;
+
   bool _isLoggedInUserLoading = true;
   String _loggedInUserErrorMessage = '';
 
@@ -43,18 +44,22 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   String? _selectedPosition; // Holds the selected position for filtering
   bool _isPositionFilterEnabled = false; // Controls the position filter toggle
 
-  RangeValues _selectedAgeRange = const RangeValues(18, 99); // Default age range
+  RangeValues _selectedAgeRange =
+      const RangeValues(18, 99); // Default age range
   bool _isAgeFilterEnabled = false; // Controls the age filter toggle
 
-  bool _showOnlyOnline = false; // True to filter for online users, false for all users
+  bool _showOnlyOnline =
+      false; // True to filter for online users, false for all users
   bool _isOnlineFilterEnabled = false; // Controls the online filter toggle
 
   bool _isFreshEnabled = false; // Controls the Fresh filter toggle
 
-  bool _showOnlyFavorites = false; // True to filter for favorites, false for all users
+  bool _showOnlyFavorites =
+      false; // True to filter for favorites, false for all users
   bool _isFavoriteFilterEnabled = false; // Controls the favorite filter toggle
 
-  List<String> _selectedTags = []; // Stores selected tags/tribes for individual filter
+  List<String> _selectedTags =
+      []; // Stores selected tags/tribes for individual filter
   bool _isTagsFilterEnabled = false; // Controls the tags filter toggle
 
   List<String> finalPositionsFromMoreFilters = [];
@@ -72,15 +77,17 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   String finalMeetAt = '';
   bool finalHaventChattedToday = false;
 
-
   // Filter states for MoreFiltersScreen (these will be updated by MoreFiltersScreen)
-  bool _isGlobalFilterEnabled = false; // Global toggle for all filters within MoreFiltersScreen
+  bool _isGlobalFilterEnabled =
+      false; // Global toggle for all filters within MoreFiltersScreen
   bool _selectedFavoritesFromMoreFilters = false; // From MoreFiltersScreen
   bool _selectedOnlineFromMoreFilters = false; // From MoreFiltersScreen
   bool _selectedRightNow = false;
-  String? _selectedMinAgeFromMoreFilters; // Age from MoreFiltersScreen, as a single String
+  String?
+      _selectedMinAgeFromMoreFilters; // Age from MoreFiltersScreen, as a single String
   List<String> _selectedGenders = [];
-  List<String> _selectedPositionsFromMoreFilters = []; // Positions from MoreFiltersScreen
+  List<String> _selectedPositionsFromMoreFilters =
+      []; // Positions from MoreFiltersScreen
   List<String> _selectedPhotos = [];
   List<String> _selectedTribes = []; // Tribes from MoreFiltersScreen
   String? _selectedBodyType;
@@ -91,10 +98,19 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   String? _selectedLookingFor;
   String? _selectedMeetAt;
   bool _haventChattedToday = false; // Filter options for dialogs/screens
-  final List<String> _ageOptions = List<int>.generate(82, (i) => i + 18).map((e) => e.toString()).toList(); // Ages from 18 to 99
+  final List<String> _ageOptions = List<int>.generate(82, (i) => i + 18)
+      .map((e) => e.toString())
+      .toList(); // Ages from 18 to 99
 
-  final List<String> _genderOptions = ['Men', 'Women', 'Non-Binary', 'More Genders', 'Not Specified'];
-  final List<Map<String, dynamic>> _positionFilterOptions = [ // Used by PositionFilterDialog and MoreFiltersScreen
+  final List<String> _genderOptions = [
+    'Men',
+    'Women',
+    'Non-Binary',
+    'More Genders',
+    'Not Specified'
+  ];
+  final List<Map<String, dynamic>> _positionFilterOptions = [
+    // Used by PositionFilterDialog and MoreFiltersScreen
     {'text': 'Top', 'icon': Icons.arrow_upward},
     {'text': 'Vers Top', 'icon': Icons.north_east},
     {'text': 'Versatile', 'icon': Icons.swap_vert},
@@ -103,27 +119,209 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     {'text': 'Side', 'icon': Icons.swap_horiz},
     {'text': 'Not Specified', 'icon': Icons.help_outline},
   ];
-  final List<String> _photoOptions = ['Has photos', 'Has face pics', 'Has album(s)'];
-  final List<String> _tribeOptions = ['Bear', 'Chub', 'Clean-cut', 'Daddy', 'Discreet', 'Geek', 'Jock', 'Leather', 'Masc', 'Otter', 'Poz', 'Rugged', 'Trans', 'Twink', 'Uniform'];
+  final List<String> _photoOptions = [
+    'Has photos',
+    'Has face pics',
+    'Has album(s)'
+  ];
+  final List<String> _tribeOptions = [
+    'Bear',
+    'Chub',
+    'Clean-cut',
+    'Daddy',
+    'Discreet',
+    'Geek',
+    'Jock',
+    'Leather',
+    'Masc',
+    'Otter',
+    'Poz',
+    'Rugged',
+    'Trans',
+    'Twink',
+    'Uniform'
+  ];
   final Map<String, List<String>> _allTagOptions = {
-    'Kinks': ['anon', 'bator', 'bb', 'bondage', 'bubblebutt', 'carplay', 'chastity', 'commando', 'condoms', 'condomsonly', 'cruising', 'cut', 'dirty', 'discreet', 'dl', 'dom', 'dtf', 'edging', 'feet', 'ff', 'flexible', 'furries', 'fwb', 'gear', 'gh', 'gooner', 'group', 'hands', 'hosting', 'hung', 'jo', 'kink', 'kissing', 'latex', 'leather', 'limits', 'lingerie', 'looking', 'muscle', 'nylon', 'otter', 'pic4pic', 'poz', 'sissy', 'smooth', 'sober', 't4t', 'trans', 'twink', 'twunk', 'uniform', 'visiting', 'watching', 'ws'],
-    'Hobbies': ['anime', 'apres ski', 'art', 'beach', 'brunch', 'concerts', 'cooking', 'dancing', 'diy', 'fashion', 'gaming', 'hiking', 'karaoke', 'movies', 'music', 'naps', 'popmusic', 'reading', 'rpdr', 'tattoos', 'tennis', 'theater', 'tv', 'weightlifting', 'workingout', 'writing', 'yoga'],
-    'Personality':
-    ['adventurous', 'catperson', 'chill', 'confident', 'curious', 'direct', 'dogperson', 'fun', 'goofy', 'kind', 'loyal', 'mature', 'outgoing', 'parent', 'reliable', 'romantic', 'shy', 'unicorn'],
-    'Other Tags': ['bear', 'beard', 'bi', 'chub', 'cleancut', 'college', 'couple', 'cub', 'cuddling', 'daddy', 'dating', 'drag', 'drugfree', 'femme', 'friends', 'gaymer', 'geek', 'hairy', 'jock', 'leather', 'masc', 'military', 'nosmoking', 'nylon', 'otter', 'pic4pic', 'poz', 'sissy', 'smooth', 'sober', 't4t', 'trans', 'twink', 'twunk', 'uniform'], // Combined from _tribeOptions and other possible tags
+    'Kinks': [
+      'anon',
+      'bator',
+      'bb',
+      'bondage',
+      'bubblebutt',
+      'carplay',
+      'chastity',
+      'commando',
+      'condoms',
+      'condomsonly',
+      'cruising',
+      'cut',
+      'dirty',
+      'discreet',
+      'dl',
+      'dom',
+      'dtf',
+      'edging',
+      'feet',
+      'ff',
+      'flexible',
+      'furries',
+      'fwb',
+      'gear',
+      'gh',
+      'gooner',
+      'group',
+      'hands',
+      'hosting',
+      'hung',
+      'jo',
+      'kink',
+      'kissing',
+      'latex',
+      'leather',
+      'limits',
+      'lingerie',
+      'looking',
+      'muscle',
+      'nylon',
+      'otter',
+      'pic4pic',
+      'poz',
+      'sissy',
+      'smooth',
+      'sober',
+      't4t',
+      'trans',
+      'twink',
+      'twunk',
+      'uniform',
+      'visiting',
+      'watching',
+      'ws'
+    ],
+    'Hobbies': [
+      'anime',
+      'apres ski',
+      'art',
+      'beach',
+      'brunch',
+      'concerts',
+      'cooking',
+      'dancing',
+      'diy',
+      'fashion',
+      'gaming',
+      'hiking',
+      'karaoke',
+      'movies',
+      'music',
+      'naps',
+      'popmusic',
+      'reading',
+      'rpdr',
+      'tattoos',
+      'tennis',
+      'theater',
+      'tv',
+      'weightlifting',
+      'workingout',
+      'writing',
+      'yoga'
+    ],
+    'Personality': [
+      'adventurous',
+      'catperson',
+      'chill',
+      'confident',
+      'curious',
+      'direct',
+      'dogperson',
+      'fun',
+      'goofy',
+      'kind',
+      'loyal',
+      'mature',
+      'outgoing',
+      'parent',
+      'reliable',
+      'romantic',
+      'shy',
+      'unicorn'
+    ],
+    'Other Tags': [
+      'bear',
+      'beard',
+      'bi',
+      'chub',
+      'cleancut',
+      'college',
+      'couple',
+      'cub',
+      'cuddling',
+      'daddy',
+      'dating',
+      'drag',
+      'drugfree',
+      'femme',
+      'friends',
+      'gaymer',
+      'geek',
+      'hairy',
+      'jock',
+      'leather',
+      'masc',
+      'military',
+      'nosmoking',
+      'nylon',
+      'otter',
+      'pic4pic',
+      'poz',
+      'sissy',
+      'smooth',
+      'sober',
+      't4t',
+      'trans',
+      'twink',
+      'twunk',
+      'uniform'
+    ], // Combined from _tribeOptions and other possible tags
   };
-  final List<String> _bodyTypeOptions = ['Slim', 'Average', 'Athletic', 'Muscular', 'A few extra pounds'];
-  final List<String> _heightOptions = List<int>.generate(61, (i) => i + 150).map((e) => '${e} cm').toList(); // 150cm to 210cm
-  final List<String> _weightOptions = List<int>.generate(101, (i) => i + 50).map((e) => '${e} kg').toList(); // 50kg to 150kg
-  final List<String> _relationshipStatusOptions = ['Single', 'In a Relationship', 'Married', 'Complicated'];
-  final List<String> _lookingForOptions = ['Chat', 'Friendship', 'Hookups', 'Long-term Relationship', 'Dating'];
-  final List<String> _meetAtOptions = ['My Place', 'Your Place', 'Public Place', 'Online'];
+  final List<String> _bodyTypeOptions = [
+    'Slim',
+    'Average',
+    'Athletic',
+    'Muscular',
+    'A few extra pounds'
+  ];
+  final List<String> _heightOptions = List<int>.generate(61, (i) => i + 150)
+      .map((e) => '${e} cm')
+      .toList(); // 150cm to 210cm
+  final List<String> _weightOptions = List<int>.generate(101, (i) => i + 50)
+      .map((e) => '${e} kg')
+      .toList(); // 50kg to 150kg
+  final List<String> _relationshipStatusOptions = [
+    'Single',
+    'In a Relationship',
+    'Married',
+    'Complicated'
+  ];
+  final List<String> _lookingForOptions = [
+    'Chat',
+    'Friendship',
+    'Hookups',
+    'Long-term Relationship',
+    'Dating'
+  ];
+  final List<String> _meetAtOptions = [
+    'My Place',
+    'Your Place',
+    'Public Place',
+    'Online'
+  ];
 
   // Added _selectedIndex to manage the active tab in the bottom navigation bar
   int _selectedIndex = 0;
   // PageController to manage the different views in the body
   late PageController _pageController;
-
 
   @override
   void initState() {
@@ -149,24 +347,25 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       _loggedInUserErrorMessage = '';
     });
     try {
-      final String? userId = await SecureStorageService.getUserId();
-      if (userId == null) {
+      final String? jwtToken = await SecureStorageService.getApiKey();
+      if (jwtToken == null) {
         setState(() {
           _loggedInUserErrorMessage = 'User not logged in.';
           _isLoggedInUserLoading = false;
         });
         return;
       }
-      final user = await ApiService.getUserProfile(userId);
+      final user = await ApiService.getUserProfile(
+          await SecureStorageService.getUserId());
       setState(() {
-        _loggedInUser = user as UserModel?;
+        _loggedInUser = user as UserModel;
         _isLoggedInUserLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoggedInUserLoading = false;
         _loggedInUserErrorMessage =
-        'Failed to load logged-in user: ${e.toString()}';
+            'Failed to load logged-in user: ${e.toString()}';
         print(_loggedInUserErrorMessage);
       });
     }
@@ -175,6 +374,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   /// Fetches users from the API, with optional pagination and filtering.
   Future<void> _fetchUsers({bool isLoadMore = false}) async {
     if (!_hasMore && isLoadMore) {
+      final _users = await ApiService.getPeople(
+          pageNumber: 1, pageSize: 15, acceptsNsfwPics: false);
       setState(() {
         _isLoading = false;
       });
@@ -200,15 +401,19 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       bool? finalIsFavorite;
       List<String>? finalTagsToApi; // Consolidated tags parameter for API
 
-
       // If global filter is enabled from MoreFiltersScreen, override individual filters
       if (_isGlobalFilterEnabled) {
         finalIsFavorite = _selectedFavoritesFromMoreFilters;
         finalOnlineStatus = _selectedOnlineFromMoreFilters;
-        finalMinAge = _selectedMinAgeFromMoreFilters != null ? int.tryParse(_selectedMinAgeFromMoreFilters!) : null;
+        finalMinAge = _selectedMinAgeFromMoreFilters != null
+            ? int.tryParse(_selectedMinAgeFromMoreFilters!)
+            : null;
         finalMaxAge = _selectedMinAgeFromMoreFilters != null ? 99 : null;
         finalGenders = (_selectedGenders.isNotEmpty ? _selectedGenders : null)!;
-        finalPositionsFromMoreFilters = (_selectedPositionsFromMoreFilters.isNotEmpty ? _selectedPositionsFromMoreFilters : null)!;
+        finalPositionsFromMoreFilters =
+            (_selectedPositionsFromMoreFilters.isNotEmpty
+                ? _selectedPositionsFromMoreFilters
+                : null)!;
         finalHasPhotos = _selectedPhotos.contains('Has photos');
         finalHasFacePics = _selectedPhotos.contains('Has face pics');
         finalHasAlbums = _selectedPhotos.contains('Has album(s)');
@@ -220,7 +425,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         finalLookingFor = _selectedLookingFor!;
         finalMeetAt = _selectedMeetAt!;
         finalHaventChattedToday = _haventChattedToday;
-        finalIsFresh = _selectedRightNow; // Assuming "Right Now" covers "Fresh" in MoreFiltersScreen
+        finalIsFresh =
+            _selectedRightNow; // Assuming "Right Now" covers "Fresh" in MoreFiltersScreen
 
         // When global filter is ON, use _selectedTribes for the consolidated tags parameter
         finalTagsToApi = _selectedTribes.isNotEmpty ? _selectedTribes : null;
@@ -231,8 +437,11 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         _isOnlineFilterEnabled = false;
         _isFreshEnabled = false;
         _isFavoriteFilterEnabled = false;
-        _isTagsFilterEnabled = false; // Important: turn off individual tags filter
-        _selectedTags.clear(); // Clear individual tags selection to avoid stale data
+        
+        _isTagsFilterEnabled =
+            false; // Important: turn off individual tags filter
+        _selectedTags
+            .clear(); // Clear individual tags selection to avoid stale data
       } else {
         // Apply filters from individual dialogs if global filter is OFF
         if (_isPositionFilterEnabled) {
@@ -265,40 +474,27 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       print('Final Max Age sent to API: $finalMaxAge');
       print('isGlobalFilterEnabled: $_isGlobalFilterEnabled');
       if (_isGlobalFilterEnabled) {
-        print('Selected Min Age from More Filters (string): $_selectedMinAgeFromMoreFilters');
+        print(
+            'Selected Min Age from More Filters (string): $_selectedMinAgeFromMoreFilters');
       }
       print('--------------------------');
       // --- End Debugging Print Statements ---
 
-
       final fetchedUsers = await ApiService.getPeople(
         pageNumber: _currentPage,
         pageSize: _pageSize,
-        position: finalPosition,
         minAge: finalMinAge,
         maxAge: finalMaxAge,
-        onlineStatus: finalOnlineStatus,
-        isFresh: finalIsFresh,
-        isFavorite: finalIsFavorite,
-        tags: finalTagsToApi, // Pass consolidated tags parameter
-        // The 'tribes' parameter is removed from here to avoid redundancy and potential conflicts
-        // if your API considers 'tags' and 'tribes' as different facets of the same filtering concept.
-
-        // Remaining MoreFiltersScreen specific filters (will be null if _isGlobalFilterEnabled is false)
-        isRightNow: _isGlobalFilterEnabled ? _selectedRightNow : null,
         genders: _isGlobalFilterEnabled ? finalGenders : null,
-        moreFilterPositions: _isGlobalFilterEnabled ? finalPositionsFromMoreFilters : null,
-        hasPhotos: _isGlobalFilterEnabled ? finalHasPhotos : null,
-        hasFacePics: _isGlobalFilterEnabled ? finalHasFacePics : null,
-        hasAlbums: _isGlobalFilterEnabled ? finalHasAlbums : null,
         bodyType: _isGlobalFilterEnabled ? finalBodyType : null,
         height: _isGlobalFilterEnabled ? finalHeight : null,
         weight: _isGlobalFilterEnabled ? finalWeight : null,
-        relationshipStatus: _isGlobalFilterEnabled ? finalRelationshipStatus : null,
-        acceptsNsfwPics: _isGlobalFilterEnabled ? finalAcceptsNsfwPics : null,
+        relationshipStatus:
+            _isGlobalFilterEnabled ? finalRelationshipStatus : null,
+        acceptsNsfwPics: _isGlobalFilterEnabled ? finalAcceptsNsfwPics : false,
         lookingFor: _isGlobalFilterEnabled ? finalLookingFor : null,
         meetAt: _isGlobalFilterEnabled ? finalMeetAt : null,
-        haventChattedToday: _isGlobalFilterEnabled ? finalHaventChattedToday : null,
+        isFresh: finalIsFresh,
       );
 
       setState(() {
@@ -544,7 +740,6 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           initialSelectedLookingFor: _selectedLookingFor,
           initialSelectedMeetAt: _selectedMeetAt,
           initialHaventChattedToday: _haventChattedToday,
-
           ageOptions: _ageOptions,
           genderOptions: _genderOptions,
           positionOptions: _positionFilterOptions,
@@ -562,12 +757,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     if (result != null && result is Map<String, dynamic>) {
       setState(() {
         _isGlobalFilterEnabled = result['isGlobalFilterEnabled'] ?? false;
-        _selectedFavoritesFromMoreFilters = result['selectedFavorites'] ?? false;
+        _selectedFavoritesFromMoreFilters =
+            result['selectedFavorites'] ?? false;
         _selectedOnlineFromMoreFilters = result['selectedOnline'] ?? false;
         _selectedRightNow = result['selectedRightNow'] ?? false;
         _selectedMinAgeFromMoreFilters = result['selectedMinAge'];
         _selectedGenders = List<String>.from(result['selectedGenders'] ?? []);
-        _selectedPositionsFromMoreFilters = List<String>.from(result['selectedPositions'] ?? []);
+        _selectedPositionsFromMoreFilters =
+            List<String>.from(result['selectedPositions'] ?? []);
         _selectedPhotos = List<String>.from(result['selectedPhotos'] ?? []);
         _selectedTribes = List<String>.from(result['selectedTribes'] ?? []);
         _selectedBodyType = result['selectedBodyType'];
@@ -595,7 +792,6 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     ImageProvider userAvatarImage;
@@ -614,14 +810,18 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
             _selectedIndex = index;
           });
         },
-        physics: const NeverScrollableScrollPhysics(), // Disable swiping between pages
+        physics:
+            const NeverScrollableScrollPhysics(), // Disable swiping between pages
         children: [
           // 0: Browse Screen
           Container(
             color: Colors.black,
             child: Column(
               children: [
-                AppBar(toolbarHeight: 0, backgroundColor: Colors.black,), // AppBar for browse screen content
+                AppBar(
+                  toolbarHeight: 0,
+                  backgroundColor: Colors.black,
+                ), // AppBar for browse screen content
                 Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Row(
@@ -631,7 +831,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const EditProfileScreen(),
+                              builder: (context) =>
+                                  EditProfileScreen(user: _loggedInUser),
                             ),
                           );
                         },
@@ -648,8 +849,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: 'Explore more profiles',
-                              hintStyle: TextStyle(
-                                  color: Colors.white.withAlpha(178)),
+                              hintStyle:
+                                  TextStyle(color: Colors.white.withAlpha(178)),
                               prefixIcon: Icon(Icons.search,
                                   color: Colors.white.withAlpha(229)),
                               filled: true,
@@ -673,13 +874,21 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                     scrollDirection: Axis.horizontal,
                     children: [
                       const SizedBox(width: 8.0),
-                      _buildPillButton(Icons.star_outline, "Favorite", onTap: _showFavoriteFilterDialog), // Favorite filter
-                      _buildPillButton(Icons.cake, "Age", onTap: _showAgeFilterDialog), // Age filter
-                      _buildPillButton(Icons.wifi, "Online", onTap: _showOnlineFilterDialog), // Online filter
-                      _buildPillButton(Icons.location_on, "Position", onTap: _showPositionFilterDialog),
-                      _buildPillButton(Icons.fiber_new, "Fresh", onTap: _showFreshFilterDialog), // Fresh filter
-                      _buildPillButton(Icons.tag, "Tags", onTap: _showTagsFilterScreen), // Tags filter now goes to TagsScreen
-                      _buildPillButton(Icons.filter_list, "More Filters", onTap: _showMoreFiltersScreen),
+                      _buildPillButton(Icons.star_outline, "Favorite",
+                          onTap: _showFavoriteFilterDialog), // Favorite filter
+                      _buildPillButton(Icons.cake, "Age",
+                          onTap: _showAgeFilterDialog), // Age filter
+                      _buildPillButton(Icons.wifi, "Online",
+                          onTap: _showOnlineFilterDialog), // Online filter
+                      _buildPillButton(Icons.location_on, "Position",
+                          onTap: _showPositionFilterDialog),
+                      _buildPillButton(Icons.fiber_new, "Fresh",
+                          onTap: _showFreshFilterDialog), // Fresh filter
+                      _buildPillButton(Icons.tag, "Tags",
+                          onTap:
+                              _showTagsFilterScreen), // Tags filter now goes to TagsScreen
+                      _buildPillButton(Icons.filter_list, "More Filters",
+                          onTap: _showMoreFiltersScreen),
                       const SizedBox(width: 8.0),
                     ],
                   ),
@@ -690,139 +899,144 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                     padding: const EdgeInsets.all(8.0),
                     child: _errorMessage.isNotEmpty
                         ? Center(
-                        child: Text(_errorMessage,
-                            style: const TextStyle(color: Colors.red)))
+                            child: Text(_errorMessage,
+                                style: const TextStyle(color: Colors.red)))
                         : (_isLoading && _users.isEmpty)
-                        ? const Center(
-                        child: CircularProgressIndicator(color: Colors.white))
-                        : RefreshIndicator(
-                      onRefresh: _refreshUsers,
-                      color: Colors.white,
-                      backgroundColor: Colors.grey[900],
-                      child: GridView.builder(
-                        controller: _scrollController,
-                        gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 2.0,
-                          mainAxisSpacing: 2.0,
-                          childAspectRatio: 1,
-                        ),
-                        itemCount: _users.length + (_hasMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _users.length) {
-                            return _isLoading
-                                ? const Center(
+                            ? const Center(
                                 child: CircularProgressIndicator(
                                     color: Colors.white))
-                                : const SizedBox.shrink();
-                          }
-                          final user = _users[index];
-                          final imageUrl = user.imageUrls.isNotEmpty
-                              ? user.imageUrls[0]
-                              : 'https://via.placeholder.com/150';
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ProfileScreen(
-                                    userId: user.id,
+                            : RefreshIndicator(
+                                onRefresh: _refreshUsers,
+                                color: Colors.white,
+                                backgroundColor: Colors.grey[900],
+                                child: GridView.builder(
+                                  controller: _scrollController,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    crossAxisSpacing: 2.0,
+                                    mainAxisSpacing: 2.0,
+                                    childAspectRatio: 1,
                                   ),
-                                ),
-                              );
-                            },
-                            child: Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(2.0),
-                                  child: Image.network(
-                                    imageUrl,
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                    errorBuilder:
-                                        (context, error, stackTrace) {
-                                      return Image.asset(
-                                        'assets/placeholder_error.jpg',
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                      );
-                                    },
-                                    loadingBuilder: (context, child,
-                                        loadingProgress) {
-                                      if (loadingProgress == null)
-                                        return child;
-                                      return Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress
-                                              .expectedTotalBytes !=
-                                              null
-                                              ? loadingProgress
-                                              .cumulativeBytesLoaded /
-                                              loadingProgress
-                                                  .expectedTotalBytes!
-                                              : null,
-                                          color: Colors.grey,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: Container(
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.bottomCenter,
-                                        end: Alignment.topCenter,
-                                        colors: [
-                                          Colors.black.withOpacity(0.9),
-                                          Colors.transparent
+                                  itemCount: _users.length + (_hasMore ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    if (index == _users.length) {
+                                      return _isLoading
+                                          ? const Center(
+                                              child: CircularProgressIndicator(
+                                                  color: Colors.white))
+                                          : const SizedBox.shrink();
+                                    }
+                                    final user = _users[index];
+                                    final imageUrl = user.imageUrls!.isNotEmpty
+                                        ? user.imageUrls![0]
+                                        : 'https://via.placeholder.com/150';
+                                    return GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProfileScreen(
+                                              userId: user.id.toString(),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Stack(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(2.0),
+                                            child: Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Image.asset(
+                                                  'assets/placeholder_error.jpg',
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  height: double.infinity,
+                                                );
+                                              },
+                                              loadingBuilder: (context, child,
+                                                  loadingProgress) {
+                                                if (loadingProgress == null)
+                                                  return child;
+                                                return Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                    value: loadingProgress
+                                                                .expectedTotalBytes !=
+                                                            null
+                                                        ? loadingProgress
+                                                                .cumulativeBytesLoaded /
+                                                            loadingProgress
+                                                                .expectedTotalBytes!
+                                                        : null,
+                                                    color: Colors.grey,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          Positioned(
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            child: Container(
+                                              height: 50,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.bottomCenter,
+                                                  end: Alignment.topCenter,
+                                                  colors: [
+                                                    Colors.black
+                                                        .withOpacity(0.9),
+                                                    Colors.transparent
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          Positioned(
+                                            bottom: 8.0,
+                                            left: 8.0,
+                                            child: Row(
+                                              children: [
+                                                if (user.status!
+                                                    .toLowerCase()
+                                                    .contains('online')) ...[
+                                                  Container(
+                                                    width: 10.0,
+                                                    height: 10.0,
+                                                    decoration:
+                                                        const BoxDecoration(
+                                                      color: Colors.green,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  ),
+                                                ],
+                                                const SizedBox(width: 4.0),
+                                                Text(
+                                                  user.userName.toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10.0,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ],
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 ),
-                                Positioned(
-                                  bottom: 8.0,
-                                  left: 8.0,
-                                  child: Row(
-                                    children: [
-                                      if (user.status
-                                          .toLowerCase()
-                                          .contains('online')) ...[
-                                        Container(
-                                          width: 10.0,
-                                          height: 10.0,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.green,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                      ],
-                                      const SizedBox(width: 4.0),
-                                      Text(
-                                        user.userName,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10.0,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                              ),
                   ),
                 ),
               ],

@@ -176,7 +176,8 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
               ),
             ),
             Container(
@@ -249,12 +250,15 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 8.0),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.yellow : Colors.grey[800],
                       borderRadius: BorderRadius.circular(20.0),
                       border: Border.all(
-                        color: isSelected ? Colors.yellow.shade700 : Colors.grey.shade700,
+                        color: isSelected
+                            ? Colors.yellow.shade700
+                            : Colors.grey.shade700,
                         width: 1.5,
                       ),
                     ),
@@ -312,7 +316,8 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('More Filters', style: TextStyle(color: Colors.white)),
+        title:
+            const Text('More Filters', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -323,7 +328,8 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
         actions: [
           TextButton(
             onPressed: _resetFilters,
-            child: const Text('Reset All', style: TextStyle(color: Colors.yellow)),
+            child:
+                const Text('Reset All', style: TextStyle(color: Colors.yellow)),
           ),
         ],
       ),
@@ -412,7 +418,9 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
             ),
             _buildMultiSelectChipFilter(
               title: 'Positions',
-              options: widget.positionOptions.map((e) => e['text'].toString()).toList(),
+              options: widget.positionOptions
+                  .map((e) => e['text'].toString())
+                  .toList(),
               selectedValues: _tempSelectedPositions,
               isEnabled: filtersInteractable,
             ),

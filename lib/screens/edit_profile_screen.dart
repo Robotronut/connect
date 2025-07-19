@@ -12,7 +12,9 @@ import 'package:flutter/services.dart'; // Required for TextInputFormatter
 /// This screen allows users to update their bio, physical attributes,
 /// preferences, and manage their profile images.
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  final UserModel? user; // Declare the parameter
+
+  const EditProfileScreen({Key? key, this.user}) : super(key: key);
 
   @override
   EditProfileScreenState createState() => EditProfileScreenState();
@@ -45,7 +47,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 // Corrected _lookingForOptions
   final List<String> _lookingForOptions = [
     'Chat',
-    'Friendship', // Corrected from 'Friends'
+    'Friends', // Corrected from 'Friends'
     'Hookups',
     'Long-term Relationship', // Added this option
     'Dating'
@@ -64,12 +66,9 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedMeetAt;
 
 // Corrected _nsfwPicsOptions
-  final List<String> _nsfwPicsOptions = [
-    'Yes',
-    'No',
-    'Not At First',
-    'Maybe'
-  ]; // Added 'Maybe'
+  final List<String> _nsfwPicsOptions = ['Yes', 'No'];
+
+  // Added 'Maybe'
   String? _selectedNsfwPics;
 
 // Corrected _genderOptions
@@ -128,7 +127,13 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    if (widget.user != null) {
+      _currentUserProfile = widget.user;
+      _loadUserProfile();
+      // Example: _userNameController.text = widget.user!.userName ?? '';
+    } else {
+      _loadUserProfile();
+    }
   }
 
   @override
@@ -149,39 +154,33 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      final String? loggedInUserId = await SecureStorageService.getUserId();
-      if (loggedInUserId == null) {
+      //final UserModel? _currentUserProfile;
+      if (_currentUserProfile == null) {
         throw Exception(
-            "Authentication error: No logged-in user ID found. Please log in again.");
+            "Profile error: No logged-in user ID found. Please log in again.");
       }
 
-      final UserModel fetchedProfile =
-          (await ApiService.getUserProfile(loggedInUserId)) as UserModel;
-      _currentUserProfile = fetchedProfile;
-
-      _bioController.text = fetchedProfile.aboutMe;
-      // Populate username and email from secure storage,
-      // as they might not be part of the general user profile API response.
-      _usernameController.text = await SecureStorageService.getUserName() ??
-          fetchedProfile.userName; // Fallback to fetched profile username
+      _bioController.text = _currentUserProfile!.aboutMe!;
+      _usernameController.text = _currentUserProfile!.userName!;
       _emailController.text = await SecureStorageService.getEmail() ??
           'myemail@example.com'; // Placeholder if email not in secure storage
 
       // Remove units for editing
-      _heightController.text = fetchedProfile.height.replaceAll(' cm', '');
-      _weightController.text = fetchedProfile.weight.replaceAll(' kg', '');
-
-      _selectedBuild = fetchedProfile.build;
-      _selectedLookingFor = fetchedProfile.lookingFor;
-      _selectedMeetAt = fetchedProfile.meetAt;
-      _selectedNsfwPics = fetchedProfile.nsfwPics;
-      _selectedGender = fetchedProfile.gender;
-      _selectedPronouns = fetchedProfile.pronouns;
-      _selectedRace = fetchedProfile.race;
-      _selectedRelationshipStatus = fetchedProfile.relationshipStatus;
+      _heightController.text =
+          _currentUserProfile!.height!.replaceAll(' cm', '');
+      _weightController.text =
+          _currentUserProfile!.weight!.replaceAll(' kg', '');
+      _selectedBuild = _currentUserProfile!.bodyType;
+      _selectedLookingFor = _currentUserProfile!.lookingFor;
+      _selectedMeetAt = _currentUserProfile!.meetAt;
+      _selectedNsfwPics = _currentUserProfile!.acceptsNsfwPics ? 'Yes' : 'No';
+      _selectedGender = _currentUserProfile!.gender;
+      _selectedPronouns = _currentUserProfile!.pronouns;
+      _selectedRace = _currentUserProfile!.race;
+      _selectedRelationshipStatus = _currentUserProfile!.relationshipStatus;
 
       _imageUrls.clear();
-      _imageUrls.addAll(fetchedProfile.imageUrls);
+      _imageUrls.addAll(_currentUserProfile!.imageUrls as Iterable<String>);
     } catch (e) {
       // More user-friendly error messages
       if (e.toString().contains("401")) {
@@ -210,79 +209,45 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
   /// Saves the updated user profile to the API.
   Future<void> _saveProfile() async {
+    final updatedProfile = UserModel(
+        bodyType: _selectedBuild,
+        imageUrls: _imageUrls,
+        acceptsNsfwPics: true,
+        aboutMe: _bioController.text,
+        age: _currentUserProfile!.age,
+        meetAt: _selectedMeetAt,
+        height: _heightController.text,
+        weight: _weightController.text,
+        pronouns: _selectedPronouns,
+        race: _selectedRace,
+        relationshipStatus: _selectedRelationshipStatus,
+        isFresh: _currentUserProfile!.isFresh,
+        status: _currentUserProfile!.status,
+        userName: _currentUserProfile!.userName,
+        id: _currentUserProfile!.id,
+        gender: _selectedGender,
+        lookingFor: _selectedLookingFor,
+        joined: _currentUserProfile!.joined);
+    await ApiService.updateExistingUserProfile(updatedProfile);
+
+    _currentUserProfile = updatedProfile;
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (_currentUserProfile == null) {
-      if (!mounted) return; // Add mounted check before using context
+      if (!mounted) return;
+      // Add mounted check before using context
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cannot save: User profile not loaded.')),
       );
       return;
-    }
+    } else {}
 
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
-
-    try {
-      final updatedProfile = UserModel(
-        id: _currentUserProfile!.id,
-        aboutMe: _bioController.text,
-        // Ensure height and weight are numbers before adding units
-        height: _heightController.text.isNotEmpty &&
-                int.tryParse(_heightController.text) != null
-            ? '${_heightController.text} cm'
-            : _currentUserProfile!.height, // Keep existing if invalid
-        weight: _weightController.text.isNotEmpty &&
-                int.tryParse(_weightController.text) != null
-            ? '${_weightController.text} kg'
-            : _currentUserProfile!.weight, // Keep existing if invalid
-        build: _selectedBuild ?? _currentUserProfile!.build,
-        lookingFor: _selectedLookingFor ?? _currentUserProfile!.lookingFor,
-        meetAt: _selectedMeetAt ?? _currentUserProfile!.meetAt,
-        nsfwPics: _selectedNsfwPics ?? _currentUserProfile!.nsfwPics,
-        gender: _selectedGender ?? _currentUserProfile!.gender,
-        pronouns: _selectedPronouns ?? _currentUserProfile!.pronouns,
-        race: _selectedRace ?? _currentUserProfile!.race,
-        relationshipStatus: _selectedRelationshipStatus ??
-            _currentUserProfile!.relationshipStatus,
-        imageUrls: _imageUrls, // Pass the current list of image URLs
-        status: _currentUserProfile!.status,
-        age: _currentUserProfile!.age,
-        distance: _currentUserProfile!.distance,
-        userName: _usernameController
-            .text, // Use the updated username from the controller
-      );
-
-      await ApiService.updateUserProfile(updatedProfile);
-
-      // Also update username and email locally if they are part of profile
-      await SecureStorageService.saveUserName(_usernameController.text);
-      await SecureStorageService.saveEmail(_emailController.text);
-
-      if (!mounted) return; // Add mounted check before using context
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile updated successfully!')),
-      );
-      if (mounted) {
-        Navigator.of(context).pop(); // Go back after successful save
-      }
-    } catch (e) {
-      _errorMessage =
-          'Failed to save profile: ${e.toString().split(':').last.trim()}';
-
-      if (!mounted) return; // Add mounted check before using context
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_errorMessage)),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   /// Allows the user to pick an image from the gallery and uploads it.
@@ -380,7 +345,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         title,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 16.0,
+          fontSize: 12.0,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -393,27 +358,32 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title:
-            const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'This is You',
+          style: TextStyle(
+              color: Colors.yellow,
+              fontWeight: FontWeight.bold), // Changed to white
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: const Icon(Icons.save, color: Colors.white),
-            onPressed: (_isLoading ||
-                    _isImageProcessing) // Disable save button while any operation is loading
-                ? null
+            onPressed: (_isLoading || _isImageProcessing)
+                ? null // Disable save button while any operation is loading
                 : _saveProfile,
           ),
         ],
       ),
-      body: _isLoading &&
-              _currentUserProfile ==
-                  null // Show loading indicator only on initial profile load
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+      body: _isLoading && _currentUserProfile == null
+          ? const Center(child: CircularProgressIndicator(color: Colors.yellow))
           : _errorMessage.isNotEmpty
               ? Center(
-                  child: Text(_errorMessage,
-                      style: const TextStyle(color: Colors.red)))
+                  child: Text(
+                    _errorMessage,
+                    style: const TextStyle(
+                        color: Colors.red), // Red for error messages
+                  ),
+                )
               : Form(
                   key: _formKey,
                   child: Padding(
@@ -422,59 +392,133 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _usernameController
-                                .text, // Display username from controller
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20.0,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          // --- Profile Photo and Username Row ---
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // Main profile image (Square with radius)
+                              GestureDetector(
+                                onTap: _isImageProcessing ? null : _pickImage,
+                                child: Container(
+                                  width: 100.0,
+                                  height: 100.0,
+                                  decoration: BoxDecoration(
+                                    color: Colors
+                                        .grey[800], // Background for avatar
+                                    borderRadius: BorderRadius.circular(
+                                        5.0), // Apply radius
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    child: _imageUrls.isNotEmpty
+                                        ? Image.network(
+                                            _imageUrls[
+                                                0], // First image in the list
+                                            fit: BoxFit.cover,
+                                            width: 100,
+                                            height: 100,
+                                            errorBuilder: (context, error,
+                                                    stackTrace) =>
+                                                Image.asset(
+                                                    'assets/placeholder_error.jpg',
+                                                    fit: BoxFit.cover),
+                                            loadingBuilder: (context, child,
+                                                loadingProgress) {
+                                              if (loadingProgress == null)
+                                                return child;
+                                              return Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                  value: loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                      : null,
+                                                  color: Colors.white54,
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        : Image.asset(
+                                            'assets/placeholder_error.jpg', // Use asset for placeholder
+                                            fit: BoxFit.cover,
+                                            width: 100,
+                                            height: 100,
+                                          ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(
+                                  width:
+                                      16), // Space between photo and username
+                              Expanded(
+                                child: Text(
+                                  _usernameController
+                                      .text, // Display username from controller
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize:
+                                        12.0, // Increased font size for prominence
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                  overflow: TextOverflow
+                                      .ellipsis, // Handle long usernames
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 10),
-                          // Main profile image
-                          GestureDetector(
-                            onTap: _isImageProcessing
-                                ? null
-                                : _pickImage, // Allow picking a new main image, disable if image processing
-                            child: CircleAvatar(
-                              radius: 50.0,
-                              backgroundColor:
-                                  Colors.grey[800], // Background for avatar
-                              backgroundImage: _imageUrls.isNotEmpty
-                                  ? NetworkImage(_imageUrls[0])
-                                  : null, // Use NetworkImage, null if no image
-                              child: _imageUrls.isEmpty
-                                  ? ClipOval(
-                                      child: Image.asset(
-                                        'assets/placeholder_error.jpg', // Use asset for placeholder
-                                        fit: BoxFit.cover,
-                                        width:
-                                            100, // Ensure it fills the circle
-                                        height: 100,
-                                      ),
-                                    )
-                                  : null,
-                            ),
+                          // --- End Profile Photo and Username Row ---
+
+                          const SizedBox(height: 30), //Increasedspacing
+                          _buildSectionTitle('Tell about you'),
+                          _buildTextField(
+                            _bioController,
+                            'Enteryourbio',
+                            maxLines: 3,
                           ),
                           const SizedBox(height: 20),
-                          _buildSectionTitle('Bio'),
-                          _buildTextField(_bioController, 'Enter your bio',
-                              maxLines: 3),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Height (cm)'),
-                          _buildTextField(_heightController, 'e.g., 175',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly
-                              ]), // Only allow digits
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Weight (kg)'),
-                          _buildTextField(_weightController, 'e.g., 70',
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly
-                              ]), // Only allow digits
+                          //---StartofRowforHeightandWeight---
+                          Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start, //Aligntitlesatthetop
+                            children: [
+                              Expanded(
+                                //AllowsHeightsectiontotakeavailablespace
+                                child: Column(
+                                  //Keeptitleandtextfieldstacked
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Height(cm)'),
+                                    _buildTextField(_heightController, '',
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly
+                                        ]),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                  width: 16), //SpacebetweenHeightandWeight
+                              Expanded(
+                                //AllowsWeightsectiontotakeavailablespace
+                                child: Column(
+                                  //Keeptitleandtextfieldstacked
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Weight(kg)'),
+                                    _buildTextField(_weightController, '',
+                                        keyboardType: TextInputType.number,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly
+                                        ]),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 20),
                           _buildSectionTitle('Build'),
                           _buildDropdown(_buildOptions, _selectedBuild,
@@ -502,8 +546,9 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                           }),
                           const SizedBox(height: 20),
                           _buildSectionTitle('NSFW Pics'),
-                          _buildDropdown(_nsfwPicsOptions, _selectedNsfwPics,
-                              (newValue) {
+                          _buildDropdown(
+                              _nsfwPicsOptions, // Corrected to use String list
+                              _selectedNsfwPics, (newValue) {
                             setState(() {
                               _selectedNsfwPics = newValue;
                             });
@@ -553,30 +598,27 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                 if (index == _imageUrls.length) {
                                   // This is the "Add Image" button
                                   return GestureDetector(
-                                    onTap: _isImageProcessing
-                                        ? null
-                                        : _pickImage, // Disable while uploading/deleting an image
+                                    onTap:
+                                        _isImageProcessing ? null : _pickImage,
                                     child: Container(
                                       width: 100,
                                       height: 100,
+                                      margin: const EdgeInsets.only(
+                                          right: 10.0), // Margin for add button
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withAlpha(
-                                            25), // Corrected from withValues(alpha: 25)
+                                        color: Colors.white.withOpacity(
+                                            0.05), // Lighter grey for background
                                         borderRadius:
                                             BorderRadius.circular(10.0),
                                         border: Border.all(
-                                            color: Colors.white.withAlpha(
-                                                13)), // Corrected from withValues(alpha: 13)
+                                            color: Colors.grey[800]!),
                                       ),
-                                      child:
-                                          _isImageProcessing // Show small loader if an image operation is in progress
-                                              ? const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                          color: Colors.white))
-                                              : const Icon(Icons.add_a_photo,
-                                                  color: Colors.white54,
-                                                  size: 40),
+                                      child: _isImageProcessing
+                                          ? const Center(
+                                              child: CircularProgressIndicator(
+                                                  color: Colors.white54))
+                                          : const Icon(Icons.add_a_photo,
+                                              color: Colors.white54, size: 40),
                                     ),
                                   );
                                 }
@@ -591,7 +633,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                         decoration: BoxDecoration(
                                           borderRadius:
                                               BorderRadius.circular(10.0),
-                                          // Removed redundant DecorationImage to rely on Image.network error/loading builders
+                                          color: Colors.grey[
+                                              800], // Background while loading/error
                                         ),
                                         child: ClipRRect(
                                           borderRadius:
@@ -619,7 +662,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                                           loadingProgress
                                                               .expectedTotalBytes!
                                                       : null,
-                                                  color: Colors.grey,
+                                                  color: Colors.white54,
                                                 ),
                                               );
                                             },
@@ -627,16 +670,16 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                         ),
                                       ),
                                       Positioned(
-                                        top: 0,
-                                        right: 0,
+                                        top: 5,
+                                        right: 5,
                                         child: GestureDetector(
                                           onTap: _isImageProcessing
                                               ? null
-                                              : () => _removeImage(
-                                                  imageUrl), // Disable while loading
+                                              : () => _removeImage(imageUrl),
                                           child: Container(
-                                            decoration: const BoxDecoration(
-                                              color: Colors.red,
+                                            decoration: BoxDecoration(
+                                              color: Colors.red[
+                                                  600], // Slightly darker red for visibility
                                               shape: BoxShape.circle,
                                             ),
                                             child: const Icon(
@@ -658,12 +701,14 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                             child: ElevatedButton.icon(
                               onPressed: (_isLoading || _isImageProcessing)
                                   ? null
-                                  : _performLogout, // Disable while any operation is loading
+                                  : _performLogout,
                               icon:
                                   const Icon(Icons.logout, color: Colors.white),
-                              label: const Text('Log Out'),
+                              label: const Text('Log Out',
+                                  style: TextStyle(color: Colors.white)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
+                                backgroundColor:
+                                    Colors.transparent, // Darker red for logout
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 30, vertical: 15),
@@ -681,121 +726,117 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                 ),
     );
   }
+}
 
-  /// Helper widget for consistent text form fields.
-  Widget _buildTextField(TextEditingController controller, String hintText,
-      {int maxLines = 1,
-      TextInputType keyboardType = TextInputType.text,
-      List<TextInputFormatter>? inputFormatters}) {
-    return TextFormField(
-      controller: controller,
-      // --- START TEXTFORMFIELD COLOR CHANGES ---
-      style: const TextStyle(
-          color: Colors
-              .lightGreenAccent), // <--- CHANGE THIS for the text the user types
-      // --- END TEXTFORMFIELD COLOR CHANGES ---
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters, // Apply formatters
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(
-            color: Colors.cyan), // <--- CHANGE THIS for the hint text color
-        // --- START INPUTDECORATION COLOR CHANGES ---
-        filled: true, // MUST be true for fillColor to work
-        fillColor: Colors.deepPurple.withAlpha(
-            76), // <--- CHANGED THIS from withOpacity(0.3) for the background color of the input field
-        // --- END INPUTDECORATION COLOR CHANGES ---
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(
-              color: Colors
-                  .orange), // <--- CHANGE THIS for the default border color
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(
-              color: Colors
-                  .orange), // <--- CHANGE THIS for the border color when enabled
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: const BorderSide(
-              color: Colors
-                  .red), // <--- CHANGE THIS for the border color when focused
-        ),
+/// Helper widget for consistent text form fields.
+Widget _buildTextField(TextEditingController controller, String hintText,
+    {int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters}) {
+  return TextFormField(
+    controller: controller,
+    // --- START TEXTFORMFIELD COLOR CHANGES ---
+    style: const TextStyle(
+        color: Colors.yellow), // <--- CHANGE THIS for the text the user types
+    // --- END TEXTFORMFIELD COLOR CHANGES ---
+    keyboardType: keyboardType,
+    inputFormatters: inputFormatters, // Apply formatters
+    decoration: InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(
+          color: Colors.red), // <--- CHANGE THIS for the hint text color
+      // --- START INPUTDECORATION COLOR CHANGES ---
+      filled: true, // MUST be true for fillColor to work
+      fillColor: Colors.white70.withAlpha(
+          10), // <--- CHANGED THIS from withOpacity(0.3) for the background color of the input field
+      // --- END INPUTDECORATION COLOR CHANGES ---
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: const BorderSide(
+            color: Colors
+                .blueGrey), // <--- CHANGE THIS for the default border color
       ),
-      maxLines: maxLines,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'This field cannot be empty';
-        }
-        // Specific validation for height and weight
-        if (keyboardType == TextInputType.number) {
-          if (int.tryParse(value) == null) {
-            return 'Please enter a valid number';
-          }
-          // Add range validation if desired (e.g., height > 0, weight > 0)
-          if (int.parse(value) <= 0) {
-            return 'Value must be greater than 0';
-          }
-        }
-        return null;
-      },
-    );
-  }
-
-  /// Helper widget for consistent dropdown form fields.
-  Widget _buildDropdown(List<String> items, String? selectedValue,
-      ValueChanged<String?> onChanged) {
-    return DropdownButtonFormField<String>(
-      value: selectedValue,
-      // 1. Background color for the dropdown *menu* itself (when it's open)
-      dropdownColor:
-          Colors.deepPurple.shade800, // <--- CHANGE THIS (Example: dark purple)
-
-      // 2. Text color for the *selected item* displayed in the closed dropdown field
-      style: const TextStyle(
-          color:
-              Colors.lightBlueAccent), // <--- CHANGE THIS (Example: light blue)
-
-      decoration: InputDecoration(
-        filled: true,
-        // 3. Background color for the dropdown *field* itself (the visible box)
-        fillColor: Colors.blueGrey.shade800.withOpacity(
-            0.5), // <--- CHANGE THIS (Example: semi-transparent dark blue-grey)
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide:
-              BorderSide.none, // You currently have no border here, keeping it
-        ),
-        // Optionally, define borders for enabled and focused states for more control
-        enabledBorder: OutlineInputBorder(
-          // <<< FIXED SYNTAX HERE
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide:
-              BorderSide.none, // Corrected missing parenthesis/completion
-        ),
-        // Add focusedBorder if needed for consistency with TextField
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide:
-              const BorderSide(color: Colors.red), // Example focused border
-        ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: const BorderSide(
+            color: Colors
+                .blueGrey), // <--- CHANGE THIS for the border color when enabled
       ),
-      items: items.map<DropdownMenuItem<String>>((String value) {
-        return DropdownMenuItem<String>(
-          value: value,
-          child: Text(value),
-        );
-      }).toList(),
-      onChanged: onChanged,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please select an option';
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: const BorderSide(
+            color: Colors
+                .yellow), // <--- CHANGE THIS for the border color when focused
+      ),
+    ),
+    maxLines: maxLines,
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'This field cannot be empty';
+      }
+      // Specific validation for height and weight
+      if (keyboardType == TextInputType.number) {
+        if (int.tryParse(value) == null) {
+          return 'Please enter a valid number';
         }
-        return null;
-      },
-    );
-  }
+        // Add range validation if desired (e.g., height > 0, weight > 0)
+        if (int.parse(value) <= 0) {
+          return 'Value must be greater than 0';
+        }
+      }
+      return null;
+    },
+  );
+}
+
+/// Helper widget for consistent dropdown form fields.
+Widget _buildDropdown(List<String> items, String? selectedValue,
+    ValueChanged<String?> onChanged) {
+  return DropdownButtonFormField<String>(
+    value: selectedValue,
+    // 1. Background color for the dropdown *menu* itself (when it's open)
+    dropdownColor: Colors.blueGrey, // <--- CHANGE THIS (Example: dark purple)
+
+    // 2. Text color for the *selected item* displayed in the closed dropdown field
+    style: const TextStyle(
+        color: Colors.yellow), // <--- CHANGE THIS (Example: light blue)
+
+    decoration: InputDecoration(
+      filled: true,
+      // 3. Background color for the dropdown *field* itself (the visible box)
+      fillColor: Colors.blueGrey.shade800.withOpacity(
+          0.5), // <--- CHANGE THIS (Example: semi-transparent dark blue-grey)
+
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide:
+            BorderSide.none, // You currently have no border here, keeping it
+      ),
+      // Optionally, define borders for enabled and focused states for more control
+      enabledBorder: OutlineInputBorder(
+        // <<< FIXED SYNTAX HERE
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide.none, // Corrected missing parenthesis/completion
+      ),
+      // Add focusedBorder if needed for consistency with TextField
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide:
+            const BorderSide(color: Colors.yellow), // Example focused border
+      ),
+    ),
+    items: items.map<DropdownMenuItem<String>>((String value) {
+      return DropdownMenuItem<String>(
+        value: value,
+        child: Text(value),
+      );
+    }).toList(),
+    onChanged: onChanged,
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'Please select an option';
+      }
+      return null;
+    },
+  );
 }

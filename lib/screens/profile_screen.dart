@@ -8,6 +8,12 @@ import 'package:connect/screens/edit_profile_screen.dart';
 import 'package:connect/screens/photo_detail_screen.dart'; // Import the photo detail screen
 import 'package:connect/screens/messaging_screen.dart'; // Import the MessageScreen
 
+// Assuming UserModel and ImageUrl are defined as they were in the previous example
+// and have the necessary fields (age, status, distance, height, weight, bodytype,
+// aboutMe, gender, pronouns, race, relationshipStatus, lookingFor, meetAt, acceptsNsfwPics)
+// IMPORTANT: This version assumes imageUrls is List<String>, NOT List<ImageUrl>
+// If you have a custom ImageUrl object, you'll need to re-add the .url access.
+
 class ProfileScreen extends StatefulWidget {
   final String userId;
 
@@ -20,20 +26,20 @@ class ProfileScreen extends StatefulWidget {
 class ProfileScreenState extends State<ProfileScreen> {
   final PageController _pageController = PageController();
   final DraggableScrollableController _sheetController =
-  DraggableScrollableController();
+      DraggableScrollableController();
 
   UserModel? _userProfile;
   bool _isLoading = true;
   String? _errorMessage;
   String? _currentLoggedInUserId;
   String? _displayUsername;
-  int _currentPageIndex = 0; // << NEW: To track current image index
+  int _currentPageIndex = 0;
 
-  final double _maxSheetExtent = 0.90; // Max height the sheet can expand to
-  final double _initialChildSize =
-  0.90; // Example: sheet starts at 65% of screen height
-  final double _minChildSize =
-  0.15; // Example: sheet can shrink to 15% (showing just header)
+  final double _initialChildSize = 0.90; // Starts showing most of the content including photo
+  final double _minChildSize = 0.15; // Sheet can shrink to 15% (showing just header)
+  final double _maxSheetExtent = 0.90; // Max height the sheet can expand to (almost full screen)
+
+  double _sheetScrollOpacity = 0.0;
 
   @override
   void initState() {
@@ -41,8 +47,20 @@ class ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
     _pageController.addListener(() {
       setState(() {
-        // Update the current page index when the PageView scrolls
         _currentPageIndex = _pageController.page?.round() ?? 0;
+      });
+    });
+
+    _sheetController.addListener(() {
+      final double currentExtent = _sheetController.size;
+      double normalizedOpacity = 0.0;
+
+      if (currentExtent > _minChildSize) {
+        normalizedOpacity = ((currentExtent - _minChildSize) / (_maxSheetExtent - _minChildSize)).clamp(0.0, 1.0);
+      }
+      
+      setState(() {
+        _sheetScrollOpacity = normalizedOpacity;
       });
     });
   }
@@ -54,8 +72,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
-      final UserModel fetchedProfile =
-      (await ApiService.getUserProfile(widget.userId)) as UserModel;
+      final UserModel? fetchedProfile = await ApiService.getUserProfile(widget.userId);
 
       String? storedUsername;
       if (widget.userId == _currentLoggedInUserId) {
@@ -65,11 +82,11 @@ class ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _userProfile = fetchedProfile;
         if (_isOwnProfile) {
-          _displayUsername = storedUsername ?? fetchedProfile.userName;
+          _displayUsername = storedUsername ?? fetchedProfile!.userName;
         } else {
-          _displayUsername = fetchedProfile.userName;
+          _displayUsername = fetchedProfile!.userName;
         }
-        _currentPageIndex = 0; // Reset index when new profile is loaded
+        _currentPageIndex = 0;
       });
     } catch (e) {
       setState(() {
@@ -94,19 +111,17 @@ class ProfileScreenState extends State<ProfileScreen> {
     return _userProfile != null && widget.userId == _currentLoggedInUserId;
   }
 
-  // << NEW: Helper method to build the page indicator dots >>
   Widget _buildPageIndicator() {
-    if (_userProfile == null || _userProfile!.imageUrls.length <= 1) {
-      return const SizedBox.shrink(); // Hide if only one or no images
+    if (_userProfile == null || _userProfile!.imageUrls == null || _userProfile!.imageUrls!.length <= 1) {
+      return const SizedBox.shrink();
     }
     return Positioned(
-      bottom:
-      10, // Position slightly above the bottom edge of the image container
+      bottom: 10,
       left: 0,
       right: 0,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(_userProfile!.imageUrls.length, (index) {
+        children: List.generate(_userProfile!.imageUrls!.length, (index) {
           return Container(
             width: 8.0,
             height: 8.0,
@@ -114,8 +129,8 @@ class ProfileScreenState extends State<ProfileScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _currentPageIndex == index
-                  ? Colors.white // Active dot
-                  : Colors.white.withOpacity(0.4), // Inactive dot
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.4),
             ),
           );
         }),
@@ -123,7 +138,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Helper method for consistent stat rows
   Widget _buildStatRow(IconData icon, String text, {bool showInfo = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -141,7 +155,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Helper method for consistent expectation rows
   Widget _buildExpectationRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -157,7 +170,6 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Function to navigate to MessageScreen with initial chat user
   void _navigateToChatScreen() {
     if (_userProfile != null) {
       Navigator.push(
@@ -167,10 +179,12 @@ class ProfileScreenState extends State<ProfileScreen> {
             initialChatUser: {
               'id': _userProfile!.id,
               'name': _userProfile!.userName,
-              'profilePic': _userProfile!.imageUrls.isNotEmpty
-                  ? _userProfile!.imageUrls[0]
+              // CORRECTED: Accessing the URL directly from the list element
+              'profilePic': _userProfile!.imageUrls != null && _userProfile!.imageUrls!.isNotEmpty
+                  ? _userProfile!.imageUrls![0]
                   : 'https://placehold.co/100x100/000000/FFFFFF?text=P',
-              'isOnline': _userProfile!.status.toLowerCase().contains('online'),
+              'isOnline':
+                  _userProfile!.status!.toLowerCase().contains('online'),
             },
           ),
         ),
@@ -180,6 +194,9 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final double screenHeight = MediaQuery.of(context).size.height;
+    final double photoHeightInSheet = screenHeight * 0.70;
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -234,8 +251,9 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.black.withOpacity(_sheetScrollOpacity),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -253,7 +271,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                   MaterialPageRoute(
                       builder: (context) => const EditProfileScreen()),
                 );
-                _loadProfileData(); // Refresh data after editing
+                _loadProfileData();
               },
             ),
           if (!_isOwnProfile) ...[
@@ -278,95 +296,85 @@ class ProfileScreenState extends State<ProfileScreen> {
           ],
         ],
       ),
-      extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          // The DraggableScrollableSheet now contains the photo and all profile details
-          NotificationListener<DraggableScrollableNotification>(
-            onNotification: (notification) {
-              setState(() {
-                // Adjust threshold as needed, e.g., 0.8 means 80% expanded
-              });
-              return true; // Allow the notification to continue bubbling
-            },
-            child: DraggableScrollableSheet(
-              controller: _sheetController,
-              initialChildSize: _initialChildSize, // Set initial size
-              minChildSize: _minChildSize, // Set minimum size
-              maxChildSize: _maxSheetExtent,
-              expand: true, // Allows the sheet to take up available space
-              builder:
-                  (BuildContext context, ScrollController scrollController) {
-                return Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black,
-                    // Add border radius to the top of the sheet
-                    borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(20)),
+      body: DraggableScrollableSheet(
+        controller: _sheetController,
+        initialChildSize: _initialChildSize,
+        minChildSize: _minChildSize,
+        maxChildSize: _maxSheetExtent,
+        expand: true,
+        builder: (BuildContext context, ScrollController scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.only(top: 10, bottom: 15),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[700],
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
                   ),
-                  child: SingleChildScrollView(
-                    controller:
-                    scrollController, // Pass the sheet's scroll controller to its content
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // --- PHOTO SECTION (now inside the scrollable sheet) ---
-                        // Give the PageView a fixed height or an AspectRatio to control its size
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height *
-                              0.70, // Example: photo takes 70% of screen height
-                          // Adjust this height to control how much of the photo is seen
-                          // and how far you have to scroll to see the rest of the profile.
-                          child: Stack(
-                            // << NEW: Use Stack to overlay dots on PageView
+
+                  SizedBox(
+                    height: photoHeightInSheet,
+                    width: double.infinity,
+                    child: _userProfile!.imageUrls == null || _userProfile!.imageUrls!.isEmpty
+                        ? Container(
+                            color: Colors.grey[800],
+                            child: const Center(
+                              child: Icon(Icons.person, size: 100, color: Colors.grey),
+                            ),
+                          )
+                        : Stack(
                             children: [
                               PageView.builder(
                                 controller: _pageController,
-                                itemCount: _userProfile!.imageUrls.length,
+                                itemCount: _userProfile!.imageUrls!.length,
                                 itemBuilder: (context, index) {
-                                  final imageUrl =
-                                  _userProfile!.imageUrls[index];
+                                  // CORRECTED: Direct access to the URL string
+                                  final String imageUrl = _userProfile!.imageUrls![index];
                                   return GestureDetector(
                                     onTap: () {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) =>
-                                              PhotoDetailScreen(
-                                                imageUrl: imageUrl,
-                                                heroTag:
-                                                'profilePhoto$index', // Unique tag for Hero animation
-                                              ),
+                                          builder: (context) => PhotoDetailScreen(
+                                            // CORRECTED: Pass the URL string directly
+                                            imageUrl: _userProfile!.imageUrls![index],
+                                            heroTag: 'profilePhoto$index',
+                                          ),
                                         ),
                                       );
                                     },
                                     child: Hero(
-                                      tag:
-                                      'profilePhoto$index', // Matches the tag in PhotoDetailScreen
+                                      tag: 'profilePhoto$index',
                                       child: Image.network(
                                         imageUrl,
-                                        fit: BoxFit
-                                            .cover, // Fills the container, cropping if necessary
-                                        errorBuilder: (context, error,
-                                            stackTrace) =>
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        errorBuilder: (context, error, stackTrace) =>
                                             Image.asset(
                                                 'assets/placeholder_error.jpg',
                                                 fit: BoxFit.cover),
-                                        loadingBuilder:
-                                            (context, child, loadingProgress) {
-                                          if (loadingProgress == null)
-                                            return child;
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
                                           return Center(
                                             child: CircularProgressIndicator(
-                                              value: loadingProgress
-                                                  .expectedTotalBytes !=
-                                                  null
-                                                  ? loadingProgress
-                                                  .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                                                   : null,
-                                              color: Colors.grey,
+                                              color: Colors.white,
                                             ),
                                           );
                                         },
@@ -375,204 +383,197 @@ class ProfileScreenState extends State<ProfileScreen> {
                                   );
                                 },
                               ),
-                              _buildPageIndicator(), // << NEW: Call the page indicator helper
+                              _buildPageIndicator(),
                             ],
                           ),
-                        ),
-                        // --- END PHOTO SECTION ---
+                  ),
 
-                        // --- PROFILE DETAILS SECTION (now below the photo) ---
-                        // Wrap the rest of your content in a Padding to control spacing
-                        Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    _displayUsername ?? 'N/A',
-                                    style: const TextStyle(
-                                      fontSize: 34,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    _userProfile!.age.toString(),
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              _displayUsername ?? 'N/A',
+                              style: const TextStyle(
+                                fontSize: 34,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Text(_userProfile!.status,
-                                      style:
-                                      TextStyle(color: Colors.grey[400])),
-                                  const SizedBox(width: 5),
-                                  Icon(Icons.near_me,
-                                      size: 16, color: Colors.grey[400]),
-                                  const SizedBox(width: 2),
-                                  Text(_userProfile!.distance,
-                                      style:
-                                      TextStyle(color: Colors.grey[400])),
-                                ],
+                            ),
+                            const Spacer(),
+                            Text(
+                              _userProfile!.age.toString(),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                color: Colors.white70,
                               ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Icon(Icons.edit,
-                                      size: 16, color: Colors.grey[400]),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                      '${_userProfile!.height} | ${_userProfile!.weight} | ${_userProfile!.build}',
-                                      style:
-                                      const TextStyle(color: Colors.white)),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              // "Say something..." entry or "Your profile"
-                              GestureDetector(
-                                onTap: _isOwnProfile ? null : _navigateToChatScreen, // Navigate only if not own profile
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 12, horizontal: 16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[850],
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: Text(
-                                    _isOwnProfile
-                                        ? 'This is your profile.'
-                                        : 'Say something...',
-                                    style: TextStyle(color: Colors.grey[500]),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Text(
-                                'ABOUT ME',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[400]),
-                              ),
-                              const SizedBox(height: 10),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(15),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[850],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  _userProfile!.aboutMe,
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Text(
-                                'STATS',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[400]),
-                              ),
-                              const SizedBox(height: 10),
-                              _buildStatRow(Icons.male,
-                                  '${_userProfile!.gender} | ${_userProfile!.pronouns}',
-                                  showInfo: true),
-                              _buildStatRow(Icons.person, _userProfile!.race),
-                              _buildStatRow(Icons.person,
-                                  _userProfile!.relationshipStatus),
-                              const SizedBox(height: 20),
-                              Text(
-                                'EXPECTATIONS',
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[400]),
-                              ),
-                              const SizedBox(height: 10),
-                              _buildExpectationRow(Icons.people, 'Looking For',
-                                  _userProfile!.lookingFor),
-                              _buildExpectationRow(
-                                  Icons.home, 'Meet At', _userProfile!.meetAt),
-                              _buildExpectationRow(Icons.camera_alt,
-                                  'NSFW pics?', _userProfile!.nsfwPics),
-                              const SizedBox(height: 50),
-                            ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Text(_userProfile!.status.toString(),
+                                style: TextStyle(color: Colors.grey[400])),
+                            const SizedBox(width: 5),
+                            Icon(Icons.near_me,
+                                size: 16, color: Colors.grey[400]),
+                            const SizedBox(width: 2),
+                            Text(_userProfile!.distance.toString(),
+                                style: TextStyle(color: Colors.grey[400])),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Icon(Icons.monitor_weight,
+                                size: 16, color: Colors.grey[400]),
+                            const SizedBox(width: 5),
+                            Text(
+                                '${_userProfile!.height} | ${_userProfile!.weight} | ${_userProfile!.bodyType}',
+                                style:
+                                    const TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: _isOwnProfile
+                              ? null
+                              : _navigateToChatScreen,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[850],
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: Text(
+                              _isOwnProfile
+                                  ? 'This is your profile.'
+                                  : 'Say something...',
+                              style: TextStyle(color: Colors.grey[500]),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'ABOUT ME',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[400]),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[850],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            _userProfile!.aboutMe.toString(),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'STATS',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[400]),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildStatRow(Icons.male,
+                            '${_userProfile!.gender} | ${_userProfile!.pronouns}',
+                            showInfo: true),
+                        _buildStatRow(
+                            Icons.person, _userProfile!.race.toString()),
+                        _buildStatRow(Icons.person,
+                            _userProfile!.relationshipStatus.toString()),
+                        const SizedBox(height: 20),
+                        Text(
+                          'EXPECTATIONS',
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[400]),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildExpectationRow(Icons.people, 'Looking For',
+                            _userProfile!.lookingFor.toString()),
+                        _buildExpectationRow(Icons.home, 'Meet At',
+                            _userProfile!.meetAt.toString()),
+                        _buildExpectationRow(
+                            Icons.camera_alt,
+                            'NSFW pics?',
+                            _userProfile!.acceptsNsfwPics.toString()),
+                        const SizedBox(height: 50),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          // Action buttons remain positioned at the bottom, on top of the sheet
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: GestureDetector( // Wrap with GestureDetector
-                    onTap: _isOwnProfile ? null : _navigateToChatScreen, // Navigate only if not own profile
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 12, horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[850],
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Text(
-                        _isOwnProfile ? 'Your profile' : 'Say something...',
-                        style: TextStyle(color: Colors.grey[500]),
-                        textAlign: TextAlign.center,
+                  if (!_isOwnProfile)
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          left: 20.0, right: 20.0, bottom: 20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: _navigateToChatScreen,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[850],
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Text(
+                                  'Say something...',
+                                  style: TextStyle(color: Colors.grey[500]),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[850],
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.local_fire_department,
+                                color: Colors.orange, size: 28),
+                          ),
+                          const SizedBox(width: 15),
+                          GestureDetector(
+                            onTap: _navigateToChatScreen,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[850],
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.chat_bubble_outline,
+                                  color: Colors.yellow, size: 28),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 15),
-                if (!_isOwnProfile) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[850],
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.local_fire_department,
-                        color: Colors.orange, size: 28),
-                  ),
-                  const SizedBox(width: 15),
-                  GestureDetector( // Wrap with GestureDetector
-                    onTap: _navigateToChatScreen, // Navigate to chat screen
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[850],
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.chat_bubble_outline,
-                          color: Colors.yellow, size: 28),
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
