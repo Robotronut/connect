@@ -17,6 +17,7 @@ import 'package:connect/filters/favorite_filter_dialog.dart';
 import 'package:connect/screens/tags_screen.dart';
 import 'package:connect/screens/more_filters_screen.dart';
 import 'package:connect/screens/subscription_page.dart'; // Import the SubscriptionPage
+import 'package:connect/screens/interests_screen.dart'; // Import the InterestScreen
 
 class MainBrowseScreen extends StatefulWidget {
   const MainBrowseScreen({super.key});
@@ -1052,16 +1053,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
               ),
             ),
           ),
-          // 1: Interest Screen (Placeholder)
-          Container(
-            color: Colors.black,
-            child: const Center(
-              child: Text(
-                'Interest Screen Placeholder',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-          ),
+          // 1: Interest Screen
+          const InterestScreen(),
           // 2: Inbox Screen (MessageScreen)
           const MessageScreen(),
           // 3: Store Screen (Placeholder - will be navigated to)

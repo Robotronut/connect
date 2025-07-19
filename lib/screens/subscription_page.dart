@@ -467,7 +467,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
               child: Transform.rotate(
                 angle: 0.2, // Slightly rotate the badge
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.yellow,
                     borderRadius: BorderRadius.circular(8),
@@ -487,21 +487,21 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           if (isBestValue)
             Positioned(
               top: 5,
-              right: -3,
+              right: 0,
               child: Transform.rotate(
-                angle: 0.3, // Slightly rotate the badge
+                angle: 0.2, // Slightly rotate the badge
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.yellow,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'BEST VALUE',
+                    'POPULAR',
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
-                      fontSize: 9,
+                      fontSize: 9.5,
                     ),
                   ),
                 ),
