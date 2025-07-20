@@ -15,39 +15,50 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isPasswordVisible = false; // New state for password visibility
 
   Future<void> _loginUser() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _isLoading = true;
+        _isLoading = true; // Start loading spinner
       });
 
       final String email = _emailController.text;
       final String password = _passwordController.text;
 
-      final String? jwtToken = await ApiService.login(email, password);
-      _isLoading = false; // Set loading to false after the login attempt
+      try {
+        final String? jwtToken = await ApiService.login(email, password);
 
-      if (jwtToken != null && jwtToken.isNotEmpty) {
-        // Login was successful, save the JWT token
-        await SecureStorageService.saveApiKey(jwtToken);
-        Navigator.pushReplacementNamed(context,
-            '/grindr'); // Navigate on successful login and verification
-      } else {
-        // Login failed
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Login failed. Please check your credentials.')),
-        );
-        _isLoading = false;
-      }
-
-      // Ensure _isLoading is set to false in all paths to prevent UI getting stuck
-      if (_isLoading) {
-        // Only set to false if it's still true from the initial setState
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) { // Ensure widget is still mounted before setState/ScaffoldMessenger
+          if (jwtToken != null && jwtToken.isNotEmpty) {
+            // Login was successful, save the JWT token
+            await SecureStorageService.saveApiKey(jwtToken);
+            // Navigate on successful login and verification
+            Navigator.pushReplacementNamed(context, '/grindr');
+          } else {
+            // Login failed (e.g., incorrect credentials, API returned null/empty token)
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Login failed. Please check your credentials.')),
+            );
+          }
+        }
+      } catch (e) {
+        // Catch any exceptions during the API call (e.g., network error)
+        print('Login error: $e'); // Log the error for debugging
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('An error occurred during login: ${e.toString()}')),
+          );
+        }
+      } finally {
+        // Ensure _isLoading is set to false in all paths (success, failure, error)
+        if (mounted) {
+          setState(() {
+            _isLoading = false; // Stop loading spinner
+          });
+        }
       }
     }
   }
@@ -61,9 +72,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Get the color from the "Welcome Back!"
-    // title for consistency
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -105,14 +113,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 0), // Space between label and TextField
                     TextFormField(
                       controller: _emailController,
-                      // Removed labelText from InputDecoration
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.email),
                         prefixIconColor: Color(0xFFFF0000),
-                        alignLabelWithHint:
-                            true, // Keep this if you want hint to align with label when it's there
-                        hintText:
-                            'Enter your email', // Add hint text if you like
+                        alignLabelWithHint: true,
+                        hintText: 'Enter your email',
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
@@ -137,15 +142,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 0), // Space between label and TextField
                     TextFormField(
                       controller: _passwordController,
-                      // Removed labelText from InputDecoration
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.lock),
-                        prefixIconColor: Color(
-                            0xFFFF0000), // Assuming you want this color for password icon too
-                        hintText:
-                            'Enter your password', // Add hint text if you like
+                      obscureText: !_isPasswordVisible, // Use the new state here
+                      decoration: InputDecoration( // Changed to InputDecoration to use suffixIcon
+                        prefixIcon: const Icon(Icons.lock),
+                        prefixIconColor: const Color(0xFFFF0000),
+                        hintText: 'Enter your password',
+                        suffixIcon: IconButton( // Add the eyeball icon
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.grey, // Adjust color as needed
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible; // Toggle visibility
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your password';
