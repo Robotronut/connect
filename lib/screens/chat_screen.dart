@@ -242,14 +242,7 @@ class _ChatScreenState extends State<ChatScreen> {
             _messages.addAll(loadedMessages
                 .reversed); // Display oldest first if not reversed
             // Add a system message indicating history loaded
-            _messages.insert(
-                0,
-                ChatMessage(
-                  senderId: 'System',
-                  recipientId: widget.currentUserId,
-                  content: 'Chat history loaded.',
-                  timestamp: DateTime.now(),
-                ));
+            
           });
           print('Chat history loaded successfully.');
         }
