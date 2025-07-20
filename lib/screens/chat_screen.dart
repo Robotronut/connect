@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:signalr_core/signalr_core.dart';
 import 'package:http/io_client.dart'; // Required for IOClient
+import 'package:intl/intl.dart'; // Import for date formatting
 
 import 'package:connect/services/secure_storage_service.dart';
 
@@ -415,47 +416,77 @@ class _ChatScreenState extends State<ChatScreen> {
                     horizontal: 10.0,
                     vertical: 8.0), // Overall padding for list
                 itemBuilder: (context, index) {
-                  // Access the ChatMessage object directly
                   final chatMessage = _messages[index];
+
+                  // Determine alignment for the whole message block (bubble + timestamp)
+                  final Alignment messageAlignment = chatMessage.isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft;
+
+                  // Determine cross-axis alignment for content within the block
+                  final CrossAxisAlignment contentAlignment = chatMessage.isMe
+                      ? CrossAxisAlignment.end
+                      : CrossAxisAlignment.start;
+
                   return Align(
-                    // Use chatMessage.isMe for alignment
-                    alignment: chatMessage.isMe
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width *
-                            0.75, // Limit bubble width
-                      ),
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 4.0), // Vertical spacing between bubbles
-                      padding:
-                          const EdgeInsets.all(12), // Padding inside the bubble
-                      decoration: BoxDecoration(
-                        // Use chatMessage.isMe for color
-                        color: chatMessage.isMe
-                            ? Colors.red.shade400
-                            : Colors.lightBlue
-                                .shade400, // Orange for sent, Light Blue for received
-                        borderRadius:
-                            BorderRadius.circular(16), // More rounded corners
-                        boxShadow: [
-                          // Subtle shadow for depth
-                          BoxShadow(
-                            color: Colors.black.withOpacity(
-                                0.2), // Darker shadow for dark theme
-                            blurRadius: 3,
-                            offset: const Offset(0, 2),
+                    alignment: messageAlignment,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Column(
+                        crossAxisAlignment: contentAlignment,
+                        children: [
+                          Container(
+                            constraints: BoxConstraints(
+                              maxWidth: MediaQuery.of(context).size.width *
+                                  0.75, // Limit bubble width
+                            ),
+                            padding: const EdgeInsets.all(
+                                8), // Padding inside the bubble
+                            decoration: BoxDecoration(
+                              color: Colors
+                                  .transparent, // Set the fill color to transparent
+                              borderRadius: BorderRadius.circular(
+                                  16), // Keep rounded corners
+                              border: Border.all(
+                                color: chatMessage.isMe
+                                    ? Colors
+                                        .red // Orange outline for sent messages
+                                    : Colors.lightBlue
+                                        .shade400, // Light Blue outline for received messages
+                                width:
+                                    1.0, // Adjust the width of the outline as desired
+                              ),
+                              boxShadow: [
+                                // Subtle shadow for depth (keep as is)
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(
+                                      0.2), // Darker shadow for dark theme
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              chatMessage.content,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                color: Colors
+                                    .white, // White text for message content
+                              ),
+                            ),
+                          ),
+                          const SizedBox(
+                              height:
+                                  4), // Small space between bubble and timestamp
+                          Text(
+                            DateFormat('MMM dd hh:mm a').format(chatMessage.timestamp),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors
+                                  .grey.shade400, // Lighter grey for timestamp
+                            ),
                           ),
                         ],
-                      ),
-                      child: Text(
-                        // Display only the message content
-                        chatMessage.content,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.white, // White text for message content
-                        ),
                       ),
                     ),
                   );
@@ -514,17 +545,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         color: Colors.white), // White text for input
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.red.shade400,
-                        Colors.red.shade700
-                      ], // Orange gradient for send button
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    color: Colors.transparent, // Make the fill transparent
+                    border: Border.all(
+                      color: Colors.red.shade400, // The color of your outline
+                      width: 1.0, // The thickness of your outline
                     ),
                   ),
                   child: FloatingActionButton(

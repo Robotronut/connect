@@ -81,5 +81,6 @@ class SecureStorageService {
     await deleteApiKey();
     await deleteEmail();
     await deleteUserName();
+    await deleteUserId();
   }
 }

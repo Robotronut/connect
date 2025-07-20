@@ -1,3 +1,4 @@
+import 'package:connect/screens/chat_Inbox_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Keep this import even if not directly used in MainBrowseScreen
 import 'package:connect/services/secure_storage_service.dart';
@@ -101,6 +102,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   final List<String> _ageOptions = List<int>.generate(82, (i) => i + 18)
       .map((e) => e.toString())
       .toList(); // Ages from 18 to 99
+  static final List<Widget> _widgetOptions = <Widget>[
+    Text('Browse Screen Content'), // Placeholder for Browse
+    Text('Interest Screen Content'), // Placeholder for Interest
+    // The InboxScreen will be pushed onto the navigator, not directly placed here
+    Text(
+        'Inbox Placeholder - Should navigate to InboxScreen'), // Placeholder for Inbox
+    Text('Store Screen Content'), // Placeholder for Store
+  ];
 
   final List<String> _genderOptions = [
     'Men',
@@ -369,6 +378,31 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         print(_loggedInUserErrorMessage);
       });
     }
+  }
+
+  Future<void> _onItemTapped(int index) async {
+    setState(() {
+      _selectedIndex = index;
+    });
+    final String url = 'https://peek.thegwd.ca/chathub';
+    // Check if the tapped item is 'Inbox' (index 2)
+    if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InboxScreen(
+            currentUserId:
+                _loggedInUser!.id.toString(), // Pass your current user ID
+            chatHubUrl: url, // Pass your SignalR hub URL
+          ),
+        ),
+      );
+    }
+    // You would add navigation logic for other tabs here if they are full screens
+    // For example:
+    // else if (index == 0) {
+    //   // Navigate to Browse screen
+    // }
   }
 
   /// Fetches users from the API, with optional pagination and filtering.
@@ -785,12 +819,6 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   }
 
   // Function to handle bottom navigation bar taps
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      _pageController.jumpToPage(index); // Jump to the selected page
-    });
-  }
 
   Future<void> _navigateToEditProfile() async {
     // Await the result from EditProfileScreen
@@ -819,6 +847,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _fetchLoggedInUser();
     ImageProvider userAvatarImage;
     if (_loggedInUser != null && _loggedInUser!.imageUrls.isNotEmpty) {
       userAvatarImage = NetworkImage(_loggedInUser!.imageUrls[0]);
@@ -1120,29 +1149,30 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     );
   }
 }
+
 Widget _buildPillButton(IconData icon, String label, {VoidCallback? onTap}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: GestureDetector(
-        // Added GestureDetector to make the button tappable
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(25),
-            borderRadius: BorderRadius.circular(25.0),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 12.0),
-              const SizedBox(width: 4.0),
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white, fontSize: 10.0),
-              ),
-            ],
-          ),
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    child: GestureDetector(
+      // Added GestureDetector to make the button tappable
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(25),
+          borderRadius: BorderRadius.circular(25.0),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 12.0),
+            const SizedBox(width: 4.0),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 10.0),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}

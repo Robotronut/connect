@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(
               content: Text('Login failed. Please check your credentials.')),
         );
-        return;
+        _isLoading = false;
       }
 
       // Ensure _isLoading is set to false in all paths to prevent UI getting stuck

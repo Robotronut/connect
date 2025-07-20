@@ -33,6 +33,8 @@ class _SplashScreenState extends State<SplashScreen> {
       bool ok = await ApiService.checktoken();
       if (ok) {
         nextRoute = '/grindr';
+      } else {
+        nextRoute = '/login';
       }
       // 2. If credentials exist, try to verify them with your backend
       // Ensure your ApiService.verifyStamp is designed to handle invalid stamps by returning null
