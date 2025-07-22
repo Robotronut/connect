@@ -124,7 +124,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     Navigator.of(dialogContext).pop(); // Close the dialog
                     // Guard the navigation too
                     if (!mounted) return;
-                    Navigator.pushReplacementNamed(context, '/grindr');
+                    Navigator.pushReplacementNamed(context, '/login');
                   },
                   child: const Text('OK'),
                 ),
