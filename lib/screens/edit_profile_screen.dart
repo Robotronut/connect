@@ -606,8 +606,9 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                                     fit: BoxFit.cover),
                                             loadingBuilder: (context, child,
                                                 loadingProgress) {
-                                              if (loadingProgress == null)
+                                              if (loadingProgress == null) {
                                                 return child;
+                                              }
                                               return Center(
                                                 child:
                                                     CircularProgressIndicator(

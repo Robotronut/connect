@@ -4,7 +4,7 @@ import 'package:connect/services/api_service.dart'; // Ensure this path is corre
 
 class SplashScreen extends StatefulWidget {
   // We no longer need 'nextScreen' as we'll determine the next route internally
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
