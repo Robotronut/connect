@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 
 /// A dialog widget for selecting a position filter.
 class PositionFilterDialog extends StatefulWidget {
-  final String? initialSelectedPosition;
+  // Changed to a List<String> to support multiple initial selections
+  final List<String> initialSelectedPositions;
   final bool initialFilterEnabled;
   final List<Map<String, dynamic>> positionOptions;
 
   const PositionFilterDialog({
     super.key,
-    this.initialSelectedPosition,
+    // Updated parameter name and type
+    this.initialSelectedPositions = const [], // Default to empty list if not provided
     required this.initialFilterEnabled,
     required this.positionOptions,
   });
@@ -19,14 +21,16 @@ class PositionFilterDialog extends StatefulWidget {
 }
 
 class _PositionFilterDialogState extends State<PositionFilterDialog> {
-  String? _tempSelectedPosition;
+  Set<String> _tempSelectedPositions = {}; // Changed to a Set for multiple selections
   late bool _tempIsFilterEnabled;
 
   @override
   void initState() {
     super.initState();
-    _tempSelectedPosition = widget.initialSelectedPosition;
     _tempIsFilterEnabled = widget.initialFilterEnabled;
+
+    // Initialize _tempSelectedPositions from the provided list
+    _tempSelectedPositions.addAll(widget.initialSelectedPositions);
   }
 
   @override
@@ -51,7 +55,7 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _tempSelectedPosition = null; // Reset selection
+                    _tempSelectedPositions.clear(); // Clear all selections
                     _tempIsFilterEnabled = false; // Turn off filter
                   });
                 },
@@ -70,6 +74,9 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
                 onChanged: (bool value) {
                   setState(() {
                     _tempIsFilterEnabled = value;
+                    // Optionally, if the filter is turned off, clear selections
+                    // or disable the selection interaction. For now, the AbsorbPointer
+                    // handles disabling interaction.
                   });
                 },
                 activeColor: Colors.yellow,
@@ -95,11 +102,16 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
                 itemCount: widget.positionOptions.length,
                 itemBuilder: (context, index) {
                   final option = widget.positionOptions[index];
-                  final isSelected = _tempSelectedPosition == option['text'];
+                  // Check if the current option is in the set of selected positions
+                  final isSelected = _tempSelectedPositions.contains(option['text']);
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _tempSelectedPosition = isSelected ? null : option['text'];
+                        if (isSelected) {
+                          _tempSelectedPositions.remove(option['text']); // Deselect
+                        } else {
+                          _tempSelectedPositions.add(option['text']); // Select
+                        }
                       });
                     },
                     child: Container(
@@ -150,14 +162,14 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              // The onPressed is always active, allowing the user to apply changes
+              // even if the filter is currently disabled or reset.
+              onPressed: () {
                 Navigator.of(context).pop({
-                  'selectedPosition': _tempSelectedPosition,
+                  'selectedPositions': _tempSelectedPositions.toList(), // Return as a List
                   'filterEnabled': _tempIsFilterEnabled,
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,

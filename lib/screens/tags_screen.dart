@@ -197,7 +197,9 @@ class _TagsScreenState extends State<TagsScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _filtersInteractable ? _applyFilters : null,
+                  // The onPressed is now always active, allowing the user to apply changes
+                  // even if the filter is currently disabled or reset.
+                  onPressed: _applyFilters,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.yellow,
                     foregroundColor: Colors.black,

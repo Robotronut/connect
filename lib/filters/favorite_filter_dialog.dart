@@ -116,14 +116,14 @@ class _FavoriteFilterDialogState extends State<FavoriteFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              // The onPressed is now always active, allowing the user to apply changes
+              // even if the filter is currently disabled or reset.
+              onPressed: () {
                 Navigator.of(context).pop({
                   'showOnlyFavorites': _tempShowOnlyFavorites,
                   'filterEnabled': _tempIsFilterEnabled,
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,

@@ -317,7 +317,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
     return Scaffold(
       appBar: AppBar(
         title:
-            const Text('More Filters', style: TextStyle(color: Colors.white)),
+        const Text('More Filters', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -329,7 +329,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
           TextButton(
             onPressed: _resetFilters,
             child:
-                const Text('Reset All', style: TextStyle(color: Colors.yellow)),
+            const Text('Reset All', style: TextStyle(color: Colors.yellow)),
           ),
         ],
       ),
@@ -528,7 +528,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: filtersInteractable ? _applyFilters : null,
+                  onPressed: _applyFilters, // Always enabled
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.yellow,
                     foregroundColor: Colors.black,
