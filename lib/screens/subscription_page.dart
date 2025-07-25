@@ -24,13 +24,7 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           'Choose A Plan', // Title of the subscription page.
           style: TextStyle(color: Colors.white), // White text for app bar title
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white), // White close icon.
-          onPressed: () {
-            // This pop will go back to the MainBrowseScreen
-            Navigator.of(context).pop();
-          },
-        ),
+        // Removed the leading IconButton (the "X" button)
         backgroundColor: Colors.black, // AppBar background to black
         elevation: 0, // Remove shadow
       ),
@@ -278,15 +272,15 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           ),
           const SizedBox(height: 6),
           _buildFeatureRow(Icons.person, '600 Profiles'), // Placeholder icon for 600 Profiles
-          _buildFeatureRow(Icons.block, 'No more Ads'),
-          _buildFeatureRow(Icons.timer, 'Expiring Albums'), // Placeholder icon for Expiring Albums
+          //_buildFeatureRow(Icons.block, 'No more Ads'),
+          //_buildFeatureRow(Icons.timer, 'Expiring Albums'), // Placeholder icon for Expiring Albums
           _buildFeatureRow(Icons.filter_alt, 'Filter All Chats'),
-          _buildFeatureRow(Icons.photo_album, 'Multiple Albums'),
+          //_buildFeatureRow(Icons.photo_album, 'Multiple Albums'),
           _buildFeatureRow(Icons.explore, 'Chat in Explore'),
           _buildFeatureRow(Icons.receipt_long, 'Read Receipts'),
-          _buildFeatureRow(Icons.notes, 'Saved Phrases'),
-          _buildFeatureRow(Icons.chat_bubble, 'Mark Chatted'),
-          _buildFeatureRow(Icons.rss_feed, 'Right Now Feed 40 posts'), // Placeholder icon for Right Now Feed
+          //_buildFeatureRow(Icons.notes, 'Saved Phrases'),
+          //_buildFeatureRow(Icons.chat_bubble, 'Mark Chatted'),
+          //_buildFeatureRow(Icons.rss_feed, 'Right Now Feed 40 posts'), // Placeholder icon for Right Now Feed
           _buildFeatureRow(Icons.history, 'Tap History'), // Placeholder icon for Tap History
         ],
       ),
@@ -323,12 +317,12 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
           ),
           const SizedBox(height: 2),
           _buildFeatureRow(Icons.people_alt, 'Unlimited Profiles'), // Placeholder icon
-          _buildFeatureRow(Icons.chat, 'For You Chats', isNew: true), // Placeholder icon
+          //_buildFeatureRow(Icons.chat, 'For You Chats', isNew: true), // Placeholder icon
           _buildFeatureRow(Icons.visibility, 'Viewed Me'), // Placeholder icon
-          _buildFeatureRow(Icons.timer_off, 'Expiring Photos & Albums'), // Placeholder icon
+          //_buildFeatureRow(Icons.timer_off, 'Expiring Photos & Albums'), // Placeholder icon
           _buildFeatureRow(Icons.visibility_off, 'Incognito'), // Placeholder icon
-          _buildFeatureRow(Icons.undo, 'Unsend Messages'), // Placeholder icon
-          _buildFeatureRow(Icons.rss_feed, 'Right Now Feed 100 posts'), // Placeholder icon
+          // _buildFeatureRow(Icons.undo, 'Unsend Messages'), // Placeholder icon
+          //_buildFeatureRow(Icons.rss_feed, 'Right Now Feed 100 posts'), // Placeholder icon
           _buildFeatureRow(Icons.history, 'Tap History'), // Placeholder icon
           const SizedBox(height: 12),
           const Text(
@@ -340,9 +334,9 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
             ),
           ),
           const SizedBox(height: 10),
-          _buildFeatureRow(Icons.block, 'No more Ads'),
+          //_buildFeatureRow(Icons.block, 'No more Ads'),
           _buildFeatureRow(Icons.filter_alt, 'Filter All Chats'),
-          _buildFeatureRow(Icons.photo_album, 'Multiple Albums'),
+          //_buildFeatureRow(Icons.photo_album, 'Multiple Albums'),
           _buildFeatureRow(Icons.explore, 'Chat in Explore'),
           _buildFeatureRow(Icons.receipt_long, 'Read Receipts'),
           // The image shows some XTRA features under "Includes All XTRA Features"
