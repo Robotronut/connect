@@ -1,3 +1,4 @@
+import 'package:connect/screens/chat_inbox_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Keep this import even if not directly used in MainBrowseScreen
 import 'package:connect/services/secure_storage_service.dart';
@@ -7,7 +8,6 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 import 'package:connect/screens/edit_profile_screen.dart'
     hide UserModel; // Ensure this path is correct
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
-import 'package:connect/screens/messaging_screen.dart'; // Import the MessageScreen
 // Import the new filter dialogs/screens
 import 'package:connect/filters/position_filter_dialog.dart';
 import 'package:connect/filters/age_filter_dialog.dart';
@@ -16,8 +16,9 @@ import 'package:connect/filters/fresh_filter_dialog.dart';
 import 'package:connect/filters/favorite_filter_dialog.dart';
 import 'package:connect/screens/tags_screen.dart';
 import 'package:connect/screens/more_filters_screen.dart';
-import 'package:connect/screens/subscription_page.dart'; // Import the SubscriptionPage
+import 'package:connect/screens/location_picker_screen.dart'; // New import for location picker
 import 'package:connect/screens/interests_screen.dart'; // Import the InterestScreen
+import 'package:connect/screens/subscription_page.dart'; // Import the SubscriptionPage
 
 class MainBrowseScreen extends StatefulWidget {
   const MainBrowseScreen({super.key});
@@ -43,7 +44,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   String _loggedInUserErrorMessage = '';
 
   // Filter states for individual dialogs
-  String? _selectedPosition; // Holds the selected position for filtering
+  // Changed to a List<String> to hold multiple selected positions
+  List<String> _selectedPositions = [];
   bool _isPositionFilterEnabled = false; // Controls the position filter toggle
 
   RangeValues _selectedAgeRange =
@@ -64,19 +66,22 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   []; // Stores selected tags/tribes for individual filter
   bool _isTagsFilterEnabled = false; // Controls the tags filter toggle
 
+  // New state variable for selected map location
+  Map<String, double>? _selectedMapLocation; // { 'latitude': ..., 'longitude': ... }
+
   List<String> finalPositionsFromMoreFilters = [];
   List<String> finalGenders = [];
   bool finalHasPhotos = false;
   bool finalHasFacePics = false;
 
   bool finalHasAlbums = false;
-  String finalBodyType = '';
-  String finalHeight = '';
-  String finalWeight = '';
-  String finalRelationshipStatus = '';
+  String? finalBodyType; // Changed to nullable
+  String? finalHeight; // Changed to nullable
+  String? finalWeight; // Changed to nullable
+  String? finalRelationshipStatus; // Changed to nullable
   bool finalAcceptsNsfwPics = false;
-  String finalLookingFor = '';
-  String finalMeetAt = '';
+  String? finalLookingFor; // Changed to nullable
+  String? finalMeetAt; // Changed to nullable
   bool finalHaventChattedToday = false;
 
   // Filter states for MoreFiltersScreen (these will be updated by MoreFiltersScreen)
@@ -103,6 +108,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   final List<String> _ageOptions = List<int>.generate(82, (i) => i + 18)
       .map((e) => e.toString())
       .toList(); // Ages from 18 to 99
+  // Removed static final List<Widget> _widgetOptions as it's no longer directly used for PageView children
+  // and the children are defined inline in the build method.
 
   final List<String> _genderOptions = [
     'Men',
@@ -372,13 +379,17 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     }
   }
 
+  Future<void> _onItemTapped(int index) async {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // Use PageController to switch pages for all main tabs
+    _pageController.jumpToPage(index);
+  }
+
   /// Fetches users from the API, with optional pagination and filtering.
   Future<void> _fetchUsers({bool isLoadMore = false}) async {
     if (!_hasMore && isLoadMore) {
-      // This part seems to be an anomaly, it fetches page 1 and size 15 even if there's no more data.
-      // It might be intended to reset the user list or handle a specific scenario.
-      // For typical infinite scrolling, you'd just return here if !_hasMore.
-      // Keeping it as is based on the provided code, but noting its behavior.
       final _users = await ApiService.getPeople(
           pageNumber: 1, pageSize: 15, acceptsNsfwPics: false);
       setState(() {
@@ -398,13 +409,17 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       // Priority: MoreFiltersScreen if its global toggle is enabled.
       // Otherwise, individual dialog filters take effect.
 
-      String? finalPosition;
       int? finalMinAge;
       int? finalMaxAge;
       bool? finalOnlineStatus;
       bool? finalIsFresh;
       bool? finalIsFavorite;
       List<String>? finalTagsToApi; // Consolidated tags parameter for API
+      List<String>? finalPositionsToApi; // Added for multiple positions
+
+      // Location filter variables
+      double? finalLatitude;
+      double? finalLongitude;
 
       // If global filter is enabled from MoreFiltersScreen, override individual filters
       if (_isGlobalFilterEnabled) {
@@ -422,22 +437,24 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         finalHasPhotos = _selectedPhotos.contains('Has photos');
         finalHasFacePics = _selectedPhotos.contains('Has face pics');
         finalHasAlbums = _selectedPhotos.contains('Has album(s)');
-        finalBodyType = _selectedBodyType!;
-        finalHeight = _selectedHeight!;
-        finalWeight = _selectedWeight!;
-        finalRelationshipStatus = _selectedRelationshipStatus!;
+        finalBodyType = _selectedBodyType; // No '!'
+        finalHeight = _selectedHeight; // No '!'
+        finalWeight = _selectedWeight; // No '!'
+        finalRelationshipStatus = _selectedRelationshipStatus; // No '!'
         finalAcceptsNsfwPics = _acceptsNsfwPics;
-        finalLookingFor = _selectedLookingFor!;
-        finalMeetAt = _selectedMeetAt!;
+        finalLookingFor = _selectedLookingFor; // No '!'
+        finalMeetAt = _selectedMeetAt; // No '!'
         finalHaventChattedToday = _haventChattedToday;
         finalIsFresh =
             _selectedRightNow; // Assuming "Right Now" covers "Fresh" in MoreFiltersScreen
 
         // When global filter is ON, use _selectedTribes for the consolidated tags parameter
         finalTagsToApi = _selectedTribes.isNotEmpty ? _selectedTribes : null;
+        finalPositionsToApi = _selectedPositionsFromMoreFilters.isNotEmpty ? _selectedPositionsFromMoreFilters : null;
 
         // Reset individual filter states if global filter is active
         _isPositionFilterEnabled = false;
+        _selectedPositions.clear(); // Clear individual position selection
         _isAgeFilterEnabled = false;
         _isOnlineFilterEnabled = false;
         _isFreshEnabled = false;
@@ -447,10 +464,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         false; // Important: turn off individual tags filter
         _selectedTags
             .clear(); // Clear individual tags selection to avoid stale data
+
+        // Location from More Filters (if applicable) - currently not in MoreFiltersScreen
+        // For now, location filter will be independent of global filter
       } else {
         // Apply filters from individual dialogs if global filter is OFF
         if (_isPositionFilterEnabled) {
-          finalPosition = _selectedPosition;
+          finalPositionsToApi = _selectedPositions.isNotEmpty ? _selectedPositions : null;
         }
         if (_isAgeFilterEnabled) {
           finalMinAge = _selectedAgeRange.start.round();
@@ -471,6 +491,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         }
       }
 
+      // Apply location filter if set
+      if (_selectedMapLocation != null) {
+        finalLatitude = _selectedMapLocation!['latitude'];
+        finalLongitude = _selectedMapLocation!['longitude'];
+      }
+
+
       // --- Debugging Print Statements for Age Filter ---
       print('--- Age Filter Debugging ---');
       print('isAgeFilterEnabled: $_isAgeFilterEnabled');
@@ -490,15 +517,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         pageSize: _pageSize,
         minAge: finalMinAge,
         maxAge: finalMaxAge,
-        genders: _isGlobalFilterEnabled ? finalGenders : null,
-        bodyType: _isGlobalFilterEnabled ? finalBodyType : null,
-        height: _isGlobalFilterEnabled ? finalHeight : null,
-        weight: _isGlobalFilterEnabled ? finalWeight : null,
-        relationshipStatus:
-        _isGlobalFilterEnabled ? finalRelationshipStatus : null,
-        acceptsNsfwPics: _isGlobalFilterEnabled ? finalAcceptsNsfwPics : false,
-        lookingFor: _isGlobalFilterEnabled ? finalLookingFor : null,
-        meetAt: _isGlobalFilterEnabled ? finalMeetAt : null,
+        genders: finalGenders, // Pass directly, already null-checked
+        bodyType: finalBodyType,
+        height: finalHeight,
+        weight: finalWeight,
+        relationshipStatus: finalRelationshipStatus,
+        acceptsNsfwPics: finalAcceptsNsfwPics,
+        lookingFor: finalLookingFor,
+        meetAt: finalMeetAt,
         isFresh: finalIsFresh,
       );
 
@@ -561,7 +587,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
             bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
           ),
           child: PositionFilterDialog(
-            initialSelectedPosition: _selectedPosition,
+            // Pass the list of selected positions
             initialFilterEnabled: _isPositionFilterEnabled,
             positionOptions: _positionFilterOptions,
           ),
@@ -570,7 +596,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     );
     if (result != null) {
       setState(() {
-        _selectedPosition = result['selectedPosition'];
+        // Update the state with the list of selected positions
+        _selectedPositions = List<String>.from(result['selectedPositions'] ?? []);
         _isPositionFilterEnabled = result['filterEnabled'];
         _currentPage = 1;
         _hasMore = true;
@@ -789,23 +816,56 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     }
   }
 
-  // Function to handle bottom navigation bar taps
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      if (index == 3) { // If "Store" tab is tapped
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SubscriptionPage()),
-        );
-      } else {
-        _pageController.jumpToPage(index); // Jump to the selected page for other tabs
-      }
-    });
+  /// Shows the location picker screen for map-based location selection.
+  Future<void> _showLocationPicker() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerScreen(
+          initialLocation: _selectedMapLocation, // Pass current selected location
+        ),
+      ),
+    );
+
+    if (result != null && result is Map<String, double>) {
+      setState(() {
+        _selectedMapLocation = result; // Update with the new selected location
+        _currentPage = 1;
+        _hasMore = true;
+        _users.clear();
+      });
+      _fetchUsers(); // Refetch users with the new location filter
+    }
+  }
+
+  Future<void> _navigateToEditProfile() async {
+    // Await the result from EditProfileScreen
+    final bool? profileUpdated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(user: _loggedInUser),
+      ),
+    );
+
+    // If profileUpdated is true, it means the profile was saved successfully
+    if (profileUpdated == true) {
+      // Trigger a refresh of the current page's data from the backend
+      await _fetchUsers();
+      await _fetchLoggedInUser();
+      setState(() {
+        // Update any local state that depends on the profile, if necessary
+        // For example, if _loggedInUser is a state variable, update it here:
+        // _loggedInUser = fetchedNewProfileData;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile data refreshed!')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    _fetchLoggedInUser();
     ImageProvider userAvatarImage;
     if (_loggedInUser != null && _loggedInUser!.imageUrls.isNotEmpty) {
       userAvatarImage = NetworkImage(_loggedInUser!.imageUrls[0]);
@@ -815,6 +875,9 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     }
 
     return Scaffold(
+      // The body of the Scaffold contains a PageView, which holds multiple screens.
+      // To ensure all screens within the PageView respect the safe area,
+      // each child of the PageView should be wrapped in SafeArea.
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
@@ -826,25 +889,22 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         const NeverScrollableScrollPhysics(), // Disable swiping between pages
         children: [
           // 0: Browse Screen
+          // This screen already has SafeArea applied to its Column child.
           Container(
             color: Colors.black,
-            child: SafeArea( // Added SafeArea to handle system intrusions
+            child: SafeArea(
+              // Existing SafeArea for Browse Screen
               child: Column(
                 children: [
-                  // Removed AppBar here to reduce unnecessary top space
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0), // Reduced vertical padding
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                        vertical: 8.0), // Reduced vertical padding
                     child: Row(
                       children: [
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    EditProfileScreen(user: _loggedInUser),
-                              ),
-                            );
+                            _navigateToEditProfile();
                           },
                           child: CircleAvatar(
                             radius: 20.0,
@@ -856,11 +916,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                           child: Container(
                             constraints: const BoxConstraints(maxHeight: 30.0),
                             child: TextField(
+                              readOnly: true, // Make TextField read-only
+                              onTap: _showLocationPicker, // Call the new method on tap
                               style: const TextStyle(color: Colors.white),
                               decoration: InputDecoration(
                                 hintText: 'Explore more profiles',
-                                hintStyle:
-                                TextStyle(color: Colors.white.withAlpha(178)),
+                                hintStyle: TextStyle(
+                                    color: Colors.white.withAlpha(178)),
                                 prefixIcon: Icon(Icons.search,
                                     color: Colors.white.withAlpha(229)),
                                 filled: true,
@@ -885,7 +947,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                       children: [
                         const SizedBox(width: 8.0),
                         _buildPillButton(Icons.star_outline, "Favorite",
-                            onTap: _showFavoriteFilterDialog), // Favorite filter
+                            onTap:
+                            _showFavoriteFilterDialog), // Favorite filter
                         _buildPillButton(Icons.cake, "Age",
                             onTap: _showAgeFilterDialog), // Age filter
                         _buildPillButton(Icons.wifi, "Online",
@@ -928,27 +991,30 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                             mainAxisSpacing: 2.0,
                             childAspectRatio: 1,
                           ),
-                          itemCount: _users.length + (_hasMore ? 1 : 0),
+                          itemCount:
+                          _users.length + (_hasMore ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (index == _users.length) {
                               return _isLoading
                                   ? const Center(
-                                  child: CircularProgressIndicator(
+                                  child:
+                                  CircularProgressIndicator(
                                       color: Colors.white))
                                   : const SizedBox.shrink();
                             }
                             final user = _users[index];
-                            final imageUrl = user.imageUrls!.isNotEmpty
-                                ? user.imageUrls![0]
-                                : 'https://via.placeholder.com/150';
+                            final imageUrl = user.imageUrls.isNotEmpty
+                                ? user.imageUrls[0]
+                                : 'assets/placeholder_user.jpg';
                             return GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => ProfileScreen(
-                                      userId: user.id.toString(),
-                                    ),
+                                    builder: (context) =>
+                                        ProfileScreen(
+                                          userId: user.id.toString(),
+                                        ),
                                   ),
                                 );
                               },
@@ -962,8 +1028,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                                       fit: BoxFit.cover,
                                       width: double.infinity,
                                       height: double.infinity,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
+                                      errorBuilder: (context, error,
+                                          stackTrace) {
                                         return Image.asset(
                                           'assets/placeholder_error.jpg',
                                           fit: BoxFit.cover,
@@ -1000,7 +1066,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                                       height: 50,
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          begin: Alignment.bottomCenter,
+                                          begin:
+                                          Alignment.bottomCenter,
                                           end: Alignment.topCenter,
                                           colors: [
                                             Colors.black
@@ -1035,7 +1102,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 10.0,
-                                            fontWeight: FontWeight.bold,
+                                            fontWeight:
+                                            FontWeight.bold,
                                           ),
                                         ),
                                       ],
@@ -1054,19 +1122,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
             ),
           ),
           // 1: Interest Screen
-          const InterestScreen(),
+          const InterestScreen(), // Directly use the InterestScreen widget
           // 2: Inbox Screen (MessageScreen)
-          const MessageScreen(),
-          // 3: Store Screen (Placeholder - will be navigated to)
-          Container(
-            color: Colors.black,
-            child: const Center(
-              child: Text(
-                'Store Screen Placeholder', // This will be replaced by the SubscriptionPage
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
+          InboxScreen(
+            currentUserId: _loggedInUser?.id.toString() ?? 'default_user_id', // Provide a default or handle null
+            chatHubUrl: 'https://peek.thegwd.ca/chathub', // Provide the actual chat hub URL
           ),
+          // 3: Store Screen (SubscriptionPage)
+          const SubscriptionPage(), // Directly use the SubscriptionPage widget
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -1086,31 +1149,31 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       ),
     );
   }
+}
 
-  Widget _buildPillButton(IconData icon, String label, {VoidCallback? onTap}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: GestureDetector(
-        // Added GestureDetector to make the button tappable
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(25),
-            borderRadius: BorderRadius.circular(25.0),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white, size: 12.0),
-              const SizedBox(width: 4.0),
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white, fontSize: 10.0),
-              ),
-            ],
-          ),
+Widget _buildPillButton(IconData icon, String label, {VoidCallback? onTap}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    child: GestureDetector(
+      // Added GestureDetector to make the button tappable
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 0),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(25),
+          borderRadius: BorderRadius.circular(25.0),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 12.0),
+            const SizedBox(width: 4.0),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 10.0),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
