@@ -100,6 +100,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       });
 
       if (key != null) {
+        if (key == '8') {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Looks like you already have an account. Try Password Reset.')));
+          if (!mounted) return;
+          // Navigate to forgot_password and then definitively return
+          Navigator.pushReplacementNamed(context, '/forgot_password');
+          return; // <-- This return now correctly exits the function for '8'
+        }
+
+        // This block only executes if key is NOT '8' and is NOT null
         await SecureStorageService.saveApiKey(key);
         // Guard the use of context
         if (!mounted) return;
@@ -133,6 +143,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           },
         );
       } else {
+        // This block executes if key is null
         // Guard the use of context
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

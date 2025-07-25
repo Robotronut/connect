@@ -274,6 +274,10 @@ class ApiService {
         // Assuming your API returns a JSON object like: {"key": "your_secret_key"}
         final String? key = responseData['token'];
         final String? userName = responseData['username'];
+        final String? message = responseData['message'];
+        if (message != null) {
+          return message;
+        }
         if (key != null) {
           print('OTP verification successful. Key: $key');
           // save key and email
