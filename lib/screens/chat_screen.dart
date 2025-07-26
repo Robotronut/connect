@@ -242,7 +242,6 @@ class _ChatScreenState extends State<ChatScreen> {
             _messages.addAll(loadedMessages
                 .reversed); // Display oldest first if not reversed
             // Add a system message indicating history loaded
-            
           });
           print('Chat history loaded successfully.');
         }
@@ -501,10 +500,16 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end, // Align items to the bottom of the row
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    // --- START FIX FOR WRAPPING ---
+                    keyboardType: TextInputType.multiline, // Essential for multiline input
+                    maxLines: null, // Allows the TextField to grow vertically as needed
+                    minLines: 1, // Start with at least one line
+                    // --- END FIX FOR WRAPPING ---
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
                       hintStyle: TextStyle(
