@@ -42,7 +42,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   String _loggedInUserErrorMessage = '';
 
   // Filter states for individual dialogs
-  String? _selectedPosition; // Holds the selected position for filtering
+  List<String>? _selectedPosition; // Holds the selected position for filtering
   bool _isPositionFilterEnabled = false; // Controls the position filter toggle
 
   RangeValues _selectedAgeRange =
@@ -364,8 +364,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         });
         return;
       }
-      final user = await ApiService.getUserProfile(
-          await SecureStorageService.getUserId());
+      final user = await ApiService.getUserProfileById(null);
       setState(() {
         _loggedInUser = user as UserModel;
         _isLoggedInUserLoading = false;
@@ -408,8 +407,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   /// Fetches users from the API, with optional pagination and filtering.
   Future<void> _fetchUsers({bool isLoadMore = false}) async {
     if (!_hasMore && isLoadMore) {
-      final _users = await ApiService.getPeople(
-          pageNumber: 1, pageSize: 15, acceptsNsfwPics: false);
+      final _users = await ApiService.getPeople(pageNumber: 1, pageSize: 15);
       setState(() {
         _isLoading = false;
       });
@@ -427,7 +425,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       // Priority: MoreFiltersScreen if its global toggle is enabled.
       // Otherwise, individual dialog filters take effect.
 
-      String? finalPosition;
+      List<String>? finalPosition;
       int? finalMinAge;
       int? finalMaxAge;
       bool? finalOnlineStatus;
@@ -515,21 +513,22 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       // --- End Debugging Print Statements ---
 
       final fetchedUsers = await ApiService.getPeople(
-        pageNumber: _currentPage,
-        pageSize: _pageSize,
-        minAge: finalMinAge,
-        maxAge: finalMaxAge,
-        genders: _isGlobalFilterEnabled ? finalGenders : null,
-        bodyType: _isGlobalFilterEnabled ? finalBodyType : null,
-        height: _isGlobalFilterEnabled ? finalHeight : null,
-        weight: _isGlobalFilterEnabled ? finalWeight : null,
-        relationshipStatus:
-            _isGlobalFilterEnabled ? finalRelationshipStatus : null,
-        acceptsNsfwPics: _isGlobalFilterEnabled ? finalAcceptsNsfwPics : false,
-        lookingFor: _isGlobalFilterEnabled ? finalLookingFor : null,
-        meetAt: _isGlobalFilterEnabled ? finalMeetAt : null,
-        isFresh: finalIsFresh,
-      );
+          pageNumber: _currentPage,
+          pageSize: _pageSize,
+          minAge: finalMinAge,
+          maxAge: finalMaxAge,
+          genders: _isGlobalFilterEnabled ? finalGenders : null,
+          bodyType: _isGlobalFilterEnabled ? finalBodyType : null,
+          height: _isGlobalFilterEnabled ? finalHeight : null,
+          weight: _isGlobalFilterEnabled ? finalWeight : null,
+          relationshipStatus:
+              _isGlobalFilterEnabled ? finalRelationshipStatus : null,
+          acceptsNsfwPics:
+              _isGlobalFilterEnabled ? finalAcceptsNsfwPics : false,
+          lookingFor: _isGlobalFilterEnabled ? finalLookingFor : null,
+          meetAt: _isGlobalFilterEnabled ? finalMeetAt : null,
+          isFresh: finalIsFresh,
+          position: _isPositionFilterEnabled ? finalPosition : null);
 
       setState(() {
         if (isLoadMore) {
@@ -575,7 +574,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       _errorMessage = '';
     });
     await _fetchUsers();
-    await _fetchLoggedInUser();
+    //await _fetchLoggedInUser();
   }
 
   /// Shows the Position filter dialog as a bottom sheet.
@@ -590,9 +589,12 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
             bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
           ),
           child: PositionFilterDialog(
-            initialSelectedPosition: _selectedPosition,
+            // CORRECTED: Pass to initialSelectedPositions
+            initialSelectedPositions:
+                _selectedPosition ?? [], // Pass the current state
             initialFilterEnabled: _isPositionFilterEnabled,
             positionOptions: _positionFilterOptions,
+            // REMOVED: initialSelectedPosition: _selectedPosition,
           ),
         );
       },
@@ -798,7 +800,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         _selectedMinAgeFromMoreFilters = result['selectedMinAge'];
         _selectedGenders = List<String>.from(result['selectedGenders'] ?? []);
         _selectedPositionsFromMoreFilters =
-            List<String>.from(result['selectedPositions'] ?? []);
+            List<String>.from(result['selectedPosition'] ?? []);
         _selectedPhotos = List<String>.from(result['selectedPhotos'] ?? []);
         _selectedTribes = List<String>.from(result['selectedTribes'] ?? []);
         _selectedBodyType = result['selectedBodyType'];
@@ -833,7 +835,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     if (profileUpdated == true) {
       // Trigger a refresh of the current page's data from the backend
       await _fetchUsers();
-      await _fetchLoggedInUser();
+      //await _fetchLoggedInUser();
       setState(() {
         // Update any local state that depends on the profile, if necessary
         // For example, if _loggedInUser is a state variable, update it here:
@@ -847,7 +849,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    _fetchLoggedInUser();
+    //_fetchLoggedInUser();
     ImageProvider userAvatarImage;
     if (_loggedInUser != null && _loggedInUser!.imageUrls.isNotEmpty) {
       userAvatarImage = NetworkImage(_loggedInUser!.imageUrls[0]);

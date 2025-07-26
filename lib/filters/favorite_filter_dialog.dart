@@ -29,7 +29,7 @@ class _FavoriteFilterDialogState extends State<FavoriteFilterDialog> {
   @override
   Widget build(BuildContext context) {
     bool filtersInteractable = _tempIsFilterEnabled;
-
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.black,
@@ -38,7 +38,7 @@ class _FavoriteFilterDialogState extends State<FavoriteFilterDialog> {
           topRight: Radius.circular(15.0),
         ),
       ),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0 + bottomPadding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -52,7 +52,8 @@ class _FavoriteFilterDialogState extends State<FavoriteFilterDialog> {
                     _tempIsFilterEnabled = false;
                   });
                 },
-                child: const Text('Reset', style: TextStyle(color: Colors.yellow)),
+                child:
+                    const Text('Reset', style: TextStyle(color: Colors.yellow)),
               ),
               const Text(
                 'Favorites',
@@ -86,8 +87,11 @@ class _FavoriteFilterDialogState extends State<FavoriteFilterDialog> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _tempShowOnlyFavorites ? 'Show Favorite Users Only' : 'Show All Users',
-                        style: const TextStyle(color: Colors.white, fontSize: 18),
+                        _tempShowOnlyFavorites
+                            ? 'Show Favorite Users Only'
+                            : 'Show All Users',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 18),
                       ),
                       const SizedBox(width: 10),
                       Switch(
@@ -116,14 +120,14 @@ class _FavoriteFilterDialogState extends State<FavoriteFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              // The onPressed is now always active, allowing the user to apply changes
+              // even if the filter is currently disabled or reset.
+              onPressed: () {
                 Navigator.of(context).pop({
                   'showOnlyFavorites': _tempShowOnlyFavorites,
                   'filterEnabled': _tempIsFilterEnabled,
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,

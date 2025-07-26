@@ -50,11 +50,18 @@ class Message {
   }
 }
 
+
 // This is a TOP-LEVEL function, outside of the ApiService class
 // It's designed to be run in a separate isolate using compute
+// This function should be a top-level or static function
 List<UserModel> _parseUserModels(String responseBody) {
-  final List<dynamic> jsonList = jsonDecode(responseBody);
-  return jsonList.map((json) => UserModel.fromJson(json)).toList();
+  final Map<String, dynamic> responseData = json.decode(responseBody);
+  // Assuming your API returns a structure like { "users": [...], "totalCount": ... }
+  // Adjust this based on your actual API response structure.
+  final List<dynamic> usersJson = responseData[
+      'users']; // <--- THIS IS THE CRITICAL LINE FOR YOUR "MAP ERROR"
+
+  return usersJson.map((json) => UserModel.fromJson(json)).toList();
 }
 
 // This is a TOP-LEVEL function for parsing a single user model
@@ -450,7 +457,7 @@ class ApiService {
 
   /// Fetches the user profile using a JWT token for verification.
   /// Returns a map of user profile data if successful.
-  static Future<UserModel?> getUserProfile(String? userId) async {
+  /* static Future<UserModel?> getUserProfile(String? userId) async {
     // if the userId is passed then this will return that userprofile
     // if the userId is not pass then it is assumed the current User is getting there own profile
     String? jwtToken = await SecureStorageService.getApiKey();
@@ -497,7 +504,7 @@ class ApiService {
       print('Error fetching user profile for JWT verification: $e');
       rethrow; // Re-throw the exception for the calling code to handle
     }
-  }
+  } */
 
   static Future<Map<String, String>> _getHeaders(
       {bool isMultipart = false}) async {
@@ -526,7 +533,7 @@ class ApiService {
       String? aboutMe,
       String? lookingFor,
       String? meetAt,
-      required bool acceptsNsfwPics,
+      bool? acceptsNsfwPics,
       int? distance,
       List<String>? genders,
       String? pronouns,
@@ -534,7 +541,8 @@ class ApiService {
       String? relationshipStatus,
       String? userName,
       String? joined,
-      bool? isFresh}) async {
+      bool? isFresh,
+      List<String>? position}) async {
     final url = Uri.parse('$_baseUrl/get_people');
 
     try {
@@ -560,6 +568,7 @@ class ApiService {
         'userName': userName,
         'joined': joined,
         'isFresh': isFresh,
+        'position': position
       });
 
       final response = await http.post(
@@ -588,11 +597,10 @@ class ApiService {
   }
 
   // --- NEW: Fetch a single user's profile by ID ---
-  static Future<UserModel> getUserProfileById(String userId) async {
-    final String? email = await SecureStorageService.getEmail();
+  static Future<UserModel> getUserProfileById(String? userId) async {
     final String? securityStamp = await SecureStorageService.getApiKey();
 
-    if (email == null || securityStamp == null) {
+    if (securityStamp == null) {
       throw Exception(
           "Authentication required: Email or Security Stamp not found.");
     }
@@ -602,7 +610,6 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final body = jsonEncode({
-        'Email': email,
         'SecurityStamp': securityStamp,
         'UserId': userId,
       });
@@ -634,9 +641,6 @@ class ApiService {
 // --- NEW: Update User Profile ---
   static Future<void> updateExistingUserProfile(
       UserModel updatedProfile) async {
-    final String? email = await SecureStorageService.getEmail();
-    final String? securityStamp = await SecureStorageService.getApiKey();
-
     final url = Uri.parse(
         '$_baseUrl/update_existing_user_profile'); // Your API's update endpoint
 

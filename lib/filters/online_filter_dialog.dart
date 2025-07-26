@@ -30,6 +30,7 @@ class _OnlineFilterDialogState extends State<OnlineFilterDialog> {
   @override
   Widget build(BuildContext context) {
     bool filtersInteractable = _tempIsFilterEnabled;
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
       decoration: const BoxDecoration(
@@ -39,7 +40,7 @@ class _OnlineFilterDialogState extends State<OnlineFilterDialog> {
           topRight: Radius.circular(15.0),
         ),
       ),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0 + bottomPadding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -53,7 +54,8 @@ class _OnlineFilterDialogState extends State<OnlineFilterDialog> {
                     _tempIsFilterEnabled = false; // Turn off filter
                   });
                 },
-                child: const Text('Reset', style: TextStyle(color: Colors.yellow)),
+                child:
+                    const Text('Reset', style: TextStyle(color: Colors.yellow)),
               ),
               const Text(
                 'Online',
@@ -87,8 +89,11 @@ class _OnlineFilterDialogState extends State<OnlineFilterDialog> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _tempShowOnlyOnline ? 'Show Online Only' : 'Show All Users',
-                        style: const TextStyle(color: Colors.white, fontSize: 18),
+                        _tempShowOnlyOnline
+                            ? 'Show Online Only'
+                            : 'Show All Users',
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 18),
                       ),
                       const SizedBox(width: 10),
                       Switch(
@@ -99,7 +104,8 @@ class _OnlineFilterDialogState extends State<OnlineFilterDialog> {
                           });
                         },
                         activeColor: Colors.green, // Green for online toggle
-                        inactiveThumbColor: Colors.red, // Red for offline/all toggle
+                        inactiveThumbColor:
+                            Colors.red, // Red for offline/all toggle
                         inactiveTrackColor: Colors.red.withOpacity(0.5),
                       ),
                     ],
@@ -117,14 +123,14 @@ class _OnlineFilterDialogState extends State<OnlineFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              // The onPressed is now always active, allowing the user to apply changes
+              // even if the filter is currently disabled or reset.
+              onPressed: () {
                 Navigator.of(context).pop({
                   'showOnlyOnline': _tempShowOnlyOnline,
                   'filterEnabled': _tempIsFilterEnabled,
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,

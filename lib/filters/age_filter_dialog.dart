@@ -20,17 +20,26 @@ class _AgeFilterDialogState extends State<AgeFilterDialog> {
   late RangeValues _tempAgeRange;
   late bool _tempIsFilterEnabled;
 
+  // Define age constants for better maintainability
+  static const double minAge = 18;
+  static const double maxAge = 99;
+
   @override
   void initState() {
     super.initState();
-    _tempAgeRange = widget.initialAgeRange;
+    // Initialize temporary state with initial values, clamping if necessary
+    _tempAgeRange = RangeValues(
+      widget.initialAgeRange.start.clamp(minAge, maxAge),
+      widget.initialAgeRange.end.clamp(minAge, maxAge),
+    );
     _tempIsFilterEnabled = widget.initialFilterEnabled;
   }
 
   @override
   Widget build(BuildContext context) {
+    // This variable controls the opacity and absorbency of the slider section
     bool filtersInteractable = _tempIsFilterEnabled;
-
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.black,
@@ -39,7 +48,7 @@ class _AgeFilterDialogState extends State<AgeFilterDialog> {
           topRight: Radius.circular(15.0),
         ),
       ),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0 + bottomPadding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -49,11 +58,13 @@ class _AgeFilterDialogState extends State<AgeFilterDialog> {
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _tempAgeRange = const RangeValues(18, 99); // Reset to default
-                    _tempIsFilterEnabled = false; // Turn off filter
+                    // Reset to default age range and turn off filter
+                    _tempAgeRange = const RangeValues(minAge, maxAge);
+                    _tempIsFilterEnabled = false;
                   });
                 },
-                child: const Text('Reset', style: TextStyle(color: Colors.yellow)),
+                child:
+                    const Text('Reset', style: TextStyle(color: Colors.yellow)),
               ),
               const Text(
                 'Age',
@@ -77,6 +88,7 @@ class _AgeFilterDialogState extends State<AgeFilterDialog> {
             ],
           ),
           const SizedBox(height: 20),
+          // AbsorbPointer and Opacity control the interaction and visual state of the slider
           AbsorbPointer(
             absorbing: !filtersInteractable,
             child: Opacity(
@@ -85,14 +97,18 @@ class _AgeFilterDialogState extends State<AgeFilterDialog> {
                 children: [
                   Text(
                     '${_tempAgeRange.start.round()} - ${_tempAgeRange.end.round()}',
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
                   RangeSlider(
                     values: _tempAgeRange,
-                    min: 18,
-                    max: 99,
-                    divisions: 81, // (99 - 18)
+                    min: minAge,
+                    max: maxAge,
+                    divisions: (maxAge - minAge)
+                        .round(), // Calculate divisions based on constants
                     labels: RangeLabels(
                       _tempAgeRange.start.round().toString(),
                       _tempAgeRange.end.round().toString(),
@@ -117,14 +133,14 @@ class _AgeFilterDialogState extends State<AgeFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              // The onPressed is now always active, allowing the user to apply changes
+              // even if the filter is currently disabled or reset.
+              onPressed: () {
                 Navigator.of(context).pop({
                   'selectedAgeRange': _tempAgeRange,
                   'filterEnabled': _tempIsFilterEnabled,
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,

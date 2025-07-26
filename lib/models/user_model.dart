@@ -18,53 +18,56 @@ class UserModel {
   final String? userName;
   final String? joined;
   final bool isFresh;
+  final List<String>? position;
 
-  UserModel({
-    this.id, // No longer required
-    required this.imageUrls,
-    this.status,
-    this.age,
-    this.height,
-    this.bodyType,
-    this.aboutMe,
-    this.lookingFor,
-    this.meetAt,
-    required this.acceptsNsfwPics,
-    this.distance,
-    this.gender,
-    this.pronouns,
-    this.race,
-    this.relationshipStatus,
-    this.userName,
-    this.joined,
-    required this.isFresh,
-    this.weight, // Ensure weight is also included here if it was missing
-  });
+  UserModel(
+      {this.id, // No longer required
+      required this.imageUrls,
+      this.status,
+      this.age,
+      this.height,
+      this.bodyType,
+      this.aboutMe,
+      this.lookingFor,
+      this.meetAt,
+      required this.acceptsNsfwPics,
+      this.distance,
+      this.gender,
+      this.pronouns,
+      this.race,
+      this.relationshipStatus,
+      this.userName,
+      this.joined,
+      required this.isFresh,
+      this.weight,
+      this.position // Ensure weight is also included here if it was missing
+      });
 
   // Factory constructor for creating a UserModel from a JSON map
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String?, // Safely parse nullable String
-      imageUrls: List<String>.from(json['imageUrls'] ?? []),
-      status: json['status'] as String?,
-      age: json['age'] as int?,
-      height: json['height'] as String?,
-      weight: json['weight'] as String?,
-      bodyType: json['bodyType'] as String?,
-      aboutMe: json['aboutMe'] as String?,
-      lookingFor: json['lookingFor'] as String?,
-      meetAt: json['meetAt'] as String?,
-      acceptsNsfwPics: json['acceptsNsfwPics'] is bool
-          ? json['acceptsNsfwPics'] as bool
-          : false,
-      distance: json['distance'] as String?,
-      gender: json['gender'] as String?,
-      pronouns: json['pronouns'] as String?,
-      race: json['race'] as String?,
-      relationshipStatus: json['relationshipStatus'] as String?,
-      userName: json['userName'] as String?,
-      joined: json['joined'] as String?,
-      isFresh: json['isFresh'] is bool ? json['isFresh'] as bool : false,
+        id: json['id'] as String?, // Safely parse nullable String
+        imageUrls: List<String>.from(json['imageUrls'] ?? []),
+        position: List<String>.from(json['position'] ?? []),
+        status: json['status'] as String?,
+        age: json['age'] as int?,
+        height: json['height'] as String?,
+        weight: json['weight'] as String?,
+        bodyType: json['bodyType'] as String?,
+        aboutMe: json['aboutMe'] as String?,
+        lookingFor: json['lookingFor'] as String?,
+        meetAt: json['meetAt'] as String?,
+        acceptsNsfwPics: json['acceptsNsfwPics'] is bool
+            ? json['acceptsNsfwPics'] as bool
+            : false,
+        distance: json['distance'] as String?,
+        gender: json['gender'] as String?,
+        pronouns: json['pronouns'] as String?,
+        race: json['race'] as String?,
+        relationshipStatus: json['relationshipStatus'] as String?,
+        userName: json['userName'] as String?,
+        joined: json['joined'] as String?,
+        isFresh: json['isFresh'] is bool ? json['isFresh'] as bool : false,
     );
   }
 
@@ -90,51 +93,52 @@ class UserModel {
       'userName': userName,
       'joined': joined,
       'isFresh': isFresh,
+      'position': position
     };
   }
 
   // You can also add a copyWith method for immutability and easy updates
-  UserModel copyWith({
-    String? id,
-    List<String>? imageUrls,
-    String? status,
-    int? age,
-    String? height,
-    String? weight,
-    String? bodyType,
-    String? aboutMe,
-    String? lookingFor,
-    String? meetAt,
-    bool? acceptsNsfwPics,
-    String? distance,
-    String? gender,
-    String? pronouns,
-    String? race,
-    String? relationshipStatus,
-    String? userName,
-    String? joined,
-    bool? isFresh,
-  }) {
+  UserModel copyWith(
+      {String? id,
+      List<String>? imageUrls,
+      String? status,
+      int? age,
+      String? height,
+      String? weight,
+      String? bodyType,
+      String? aboutMe,
+      String? lookingFor,
+      String? meetAt,
+      bool? acceptsNsfwPics,
+      String? distance,
+      String? gender,
+      String? pronouns,
+      String? race,
+      String? relationshipStatus,
+      String? userName,
+      String? joined,
+      bool? isFresh,
+      List<String>? position}) {
     return UserModel(
-      id: id ?? this.id,
-      imageUrls: imageUrls ?? this.imageUrls,
-      status: status ?? this.status,
-      age: age ?? this.age,
-      height: height ?? this.height,
-      weight: weight ?? this.weight,
-      bodyType: bodyType ?? this.bodyType,
-      aboutMe: aboutMe ?? this.aboutMe,
-      lookingFor: lookingFor ?? this.lookingFor,
-      meetAt: meetAt ?? this.meetAt,
-      acceptsNsfwPics: acceptsNsfwPics ?? this.acceptsNsfwPics,
-      distance: distance ?? this.distance,
-      gender: gender ?? this.gender,
-      pronouns: pronouns ?? this.pronouns,
-      race: race ?? this.race,
-      relationshipStatus: relationshipStatus ?? this.relationshipStatus,
-      userName: userName ?? this.userName,
-      joined: joined ?? this.joined,
-      isFresh: isFresh ?? this.isFresh,
-    );
+        id: id ?? this.id,
+        imageUrls: imageUrls ?? this.imageUrls,
+        status: status ?? this.status,
+        age: age ?? this.age,
+        height: height ?? this.height,
+        weight: weight ?? this.weight,
+        bodyType: bodyType ?? this.bodyType,
+        aboutMe: aboutMe ?? this.aboutMe,
+        lookingFor: lookingFor ?? this.lookingFor,
+        meetAt: meetAt ?? this.meetAt,
+        acceptsNsfwPics: acceptsNsfwPics ?? this.acceptsNsfwPics,
+        distance: distance ?? this.distance,
+        gender: gender ?? this.gender,
+        pronouns: pronouns ?? this.pronouns,
+        race: race ?? this.race,
+        relationshipStatus: relationshipStatus ?? this.relationshipStatus,
+        userName: userName ?? this.userName,
+        joined: joined ?? this.joined,
+        isFresh: isFresh ?? this.isFresh,
+        position: position ?? this.position);
   }
 }

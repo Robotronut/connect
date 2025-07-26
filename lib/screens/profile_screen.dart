@@ -79,7 +79,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
       final UserModel? fetchedProfile =
-          await ApiService.getUserProfile(widget.userId);
+          await ApiService.getUserProfileById(widget.userId);
 
       setState(() {
         _userProfile = fetchedProfile;

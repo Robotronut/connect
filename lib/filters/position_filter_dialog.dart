@@ -1,17 +1,18 @@
-// position_filter_dialog.dart
 import 'package:flutter/material.dart';
 
 /// A dialog widget for selecting a position filter.
 class PositionFilterDialog extends StatefulWidget {
-  final String? initialSelectedPosition;
+  // CORRECTED: Only one parameter for initial selections
+  final List<String> initialSelectedPositions;
   final bool initialFilterEnabled;
   final List<Map<String, dynamic>> positionOptions;
 
   const PositionFilterDialog({
     super.key,
-    this.initialSelectedPosition,
+    this.initialSelectedPositions = const [], // Default to empty list
     required this.initialFilterEnabled,
-    required this.positionOptions,
+    required this.positionOptions, List<String>? initialSelectedPosition,
+    // REMOVED: initialSelectedPosition parameter entirely
   });
 
   @override
@@ -19,20 +20,22 @@ class PositionFilterDialog extends StatefulWidget {
 }
 
 class _PositionFilterDialogState extends State<PositionFilterDialog> {
-  String? _tempSelectedPosition;
+  Set<String> _tempSelectedPositions = {};
   late bool _tempIsFilterEnabled;
 
   @override
   void initState() {
     super.initState();
-    _tempSelectedPosition = widget.initialSelectedPosition;
     _tempIsFilterEnabled = widget.initialFilterEnabled;
+
+    // Correctly initialize _tempSelectedPositions from widget.initialSelectedPositions
+    _tempSelectedPositions.addAll(widget.initialSelectedPositions);
   }
 
   @override
   Widget build(BuildContext context) {
     bool filtersInteractable = _tempIsFilterEnabled;
-
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.black,
@@ -41,7 +44,7 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
           topRight: Radius.circular(15.0),
         ),
       ),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0 + bottomPadding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -51,7 +54,7 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _tempSelectedPosition = null; // Reset selection
+                    _tempSelectedPositions.clear(); // Clear all selections
                     _tempIsFilterEnabled = false; // Turn off filter
                   });
                 },
@@ -70,6 +73,10 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
                 onChanged: (bool value) {
                   setState(() {
                     _tempIsFilterEnabled = value;
+                    // If filter is turned off, clear selections
+                    if (!value) {
+                      _tempSelectedPositions.clear();
+                    }
                   });
                 },
                 activeColor: Colors.yellow,
@@ -95,11 +102,19 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
                 itemCount: widget.positionOptions.length,
                 itemBuilder: (context, index) {
                   final option = widget.positionOptions[index];
-                  final isSelected = _tempSelectedPosition == option['text'];
+                  final isSelected = _tempSelectedPositions.contains(option['text']);
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        _tempSelectedPosition = isSelected ? null : option['text'];
+                        if (isSelected) {
+                          _tempSelectedPositions.remove(option['text']);
+                        } else {
+                          _tempSelectedPositions.add(option['text']);
+                        }
+                        // If selections are made, ensure filter is enabled
+                        if (_tempSelectedPositions.isNotEmpty && !_tempIsFilterEnabled) {
+                          _tempIsFilterEnabled = true;
+                        }
                       });
                     },
                     child: Container(
@@ -112,13 +127,13 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
                         ),
                         boxShadow: isSelected
                             ? [
-                          BoxShadow(
-                            color: Colors.yellow.withOpacity(0.2),
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                                BoxShadow(
+                                  color: Colors.yellow.withOpacity(0.2),
+                                  spreadRadius: 2,
+                                  blurRadius: 5,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
                             : [],
                       ),
                       child: Row(
@@ -150,14 +165,12 @@ class _PositionFilterDialogState extends State<PositionFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              onPressed: () {
                 Navigator.of(context).pop({
-                  'selectedPosition': _tempSelectedPosition,
+                  'selectedPosition': _tempSelectedPositions.toList(),
                   'filterEnabled': _tempIsFilterEnabled,
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,

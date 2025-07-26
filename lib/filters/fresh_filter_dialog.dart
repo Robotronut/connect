@@ -15,17 +15,24 @@ class FreshFilterDialog extends StatefulWidget {
 
 class _FreshFilterDialogState extends State<FreshFilterDialog> {
   late bool _tempIsFreshEnabled;
+  late bool _tempShowFreshUsersOnly; // New state variable for the inner toggle
 
   @override
   void initState() {
     super.initState();
     _tempIsFreshEnabled = widget.initialIsFreshEnabled;
+    // Initialize the inner toggle's state based on the initial filter state
+    // or set a default if it should be truly independent from the start.
+    // For now, it will mirror the initialIsFreshEnabled state.
+    _tempShowFreshUsersOnly = widget.initialIsFreshEnabled;
   }
 
   @override
   Widget build(BuildContext context) {
+    // This variable controls the opacity and absorbency of the inner filter section.
+    // It should still be based on the main filter's enabled state.
     bool filtersInteractable = _tempIsFreshEnabled;
-
+ final double bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.black,
@@ -34,7 +41,7 @@ class _FreshFilterDialogState extends State<FreshFilterDialog> {
           topRight: Radius.circular(15.0),
         ),
       ),
-      padding: const EdgeInsets.all(16.0),
+       padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0 + bottomPadding),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -44,7 +51,8 @@ class _FreshFilterDialogState extends State<FreshFilterDialog> {
               TextButton(
                 onPressed: () {
                   setState(() {
-                    _tempIsFreshEnabled = false; // Reset filter
+                    _tempIsFreshEnabled = false; // Reset main filter toggle
+                    _tempShowFreshUsersOnly = false; // Reset inner toggle as well
                   });
                 },
                 child: const Text('Reset', style: TextStyle(color: Colors.yellow)),
@@ -62,6 +70,10 @@ class _FreshFilterDialogState extends State<FreshFilterDialog> {
                 onChanged: (bool value) {
                   setState(() {
                     _tempIsFreshEnabled = value;
+                    // When the main filter is turned off, also turn off the inner filter
+                    if (!value) {
+                      _tempShowFreshUsersOnly = false;
+                    }
                   });
                 },
                 activeColor: Colors.yellow,
@@ -81,15 +93,17 @@ class _FreshFilterDialogState extends State<FreshFilterDialog> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        _tempIsFreshEnabled ? 'Show Fresh Users Only' : 'Show All Users',
+                        // This text now depends on the new _tempShowFreshUsersOnly state
+                        _tempShowFreshUsersOnly ? 'Show Fresh Users Only' : 'Show All Users',
                         style: const TextStyle(color: Colors.white, fontSize: 18),
                       ),
                       const SizedBox(width: 10),
                       Switch(
-                        value: _tempIsFreshEnabled,
+                        // This switch now controls _tempShowFreshUsersOnly
+                        value: _tempShowFreshUsersOnly,
                         onChanged: (bool value) {
                           setState(() {
-                            _tempIsFreshEnabled = value;
+                            _tempShowFreshUsersOnly = value;
                           });
                         },
                         activeColor: Colors.green,
@@ -111,13 +125,12 @@ class _FreshFilterDialogState extends State<FreshFilterDialog> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: filtersInteractable
-                  ? () {
+              onPressed: () {
                 Navigator.of(context).pop({
                   'isFreshEnabled': _tempIsFreshEnabled,
+                  'showFreshUsersOnly': _tempShowFreshUsersOnly, // Return the new state
                 });
-              }
-                  : null,
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.yellow,
                 foregroundColor: Colors.black,
