@@ -383,10 +383,10 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   Future<void> _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
-      _pageController.jumpToPage(index);
     });
     final String url = 'https://peek.thegwd.ca/chathub';
     // Check if the tapped item is 'Inbox' (index 2)
+
     if (index == 2) {
       Navigator.push(
         context,
@@ -398,7 +398,15 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           ),
         ),
       );
+    } else if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InterestScreen(),
+        ),
+      );
     }
+
     // You would add navigation logic for other tabs here if they are full screens
     // For example:
     // else if (index == 0) {
@@ -1106,25 +1114,6 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
             ),
           ),
           // 1: Interest Screen (Placeholder) - Wrapped with SafeArea
-          SafeArea(
-            child: const InterestScreen(),
-          ),
-          // 2: Inbox Screen (MessageScreen) - Wrapped with SafeArea
-          SafeArea(
-            child: const MessageScreen(),
-          ),
-          // 3: Store Screen (Placeholder) - Wrapped with SafeArea
-          SafeArea(
-            child: Container(
-              color: Colors.black,
-              child: const Center(
-                child: Text(
-                  'Store Screen Placeholder',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

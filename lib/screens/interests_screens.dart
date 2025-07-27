@@ -339,7 +339,7 @@ class _InterestScreenState extends State<InterestScreen>
         ],
       ),
       bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.only(bottom: 50),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
