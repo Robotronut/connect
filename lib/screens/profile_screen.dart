@@ -2,6 +2,7 @@
 
 import 'package:connect/models/user_model.dart';
 import 'package:connect/screens/chat_screen.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:connect/services/api_service.dart';
 import 'package:connect/services/secure_storage_service.dart';
@@ -35,7 +36,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   String? _currentLoggedInUserId;
   String? _displayUsername;
   int _currentPageIndex = 0;
-
+  bool _isFlameTapped = false;
   final double _initialChildSize =
       1; // Starts showing most of the content including photo
   final double _minChildSize =
@@ -170,6 +171,16 @@ class ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+ void _navigateToTap() {
+    setState(() {
+      _isFlameTapped = !_isFlameTapped; // Toggle the state
+      final userProfile = _userProfile;
+      if (userProfile != null) {
+        ApiService.sendTap(userProfile.id);
+      }
+    });
   }
 
   void _navigateToChatScreen() {
@@ -542,14 +553,22 @@ class ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(width: 15),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[850],
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.local_fire_department,
-                              color: Colors.orange, size: 28),
+                        GestureDetector(
+                          onTap: _navigateToTap,
+                          child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[850],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                // Conditionally choose the icon based on _isFlameTapped
+                                _isFlameTapped
+                                    ? CupertinoIcons.flame
+                                    : CupertinoIcons.flame_fill,
+                                color: Colors.orange,
+                                size: 28,
+                              )),
                         ),
                         const SizedBox(width: 15),
                         GestureDetector(
@@ -560,7 +579,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                               color: Colors.grey[850],
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.chat_bubble_outline,
+                            child: const Icon(CupertinoIcons.chat_bubble_2,
                                 color: Colors.yellow, size: 28),
                           ),
                         ),

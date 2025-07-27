@@ -79,7 +79,14 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     'Non-binary' // Corrected from 'Non-Binary', removed 'Transgender', 'Prefer not to say'
   ];
   String? _selectedGender;
-
+  final List<String> _positionOptions = [
+    'Top',
+    'Versatile',
+    'Bottom',
+    'Side',
+    'Not Applicable'
+  ];
+  List<String> _selectedPositions = [];
 // Corrected _pronounsOptions
 // Note: Frontend typically shows all available pronouns, and backend logic handles which are valid for a selected gender.
 // Based on your backend, 'He/Him/His', 'She/Her/Hers', 'They/Them/Theirs' are the main options.
@@ -179,7 +186,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       _selectedPronouns = _currentUserProfile!.pronouns;
       _selectedRace = _currentUserProfile!.race;
       _selectedRelationshipStatus = _currentUserProfile!.relationshipStatus;
-
+      _selectedPositions = _currentUserProfile!.position ??
+          []; // Initialize with an empty list if null
       _imageUrls.clear();
       _imageUrls.addAll(_currentUserProfile!.imageUrls as Iterable<String>);
     } catch (e) {
@@ -211,50 +219,50 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   /// Saves the updated user profile to the API.
   Future<void> _saveProfile() async {
     final updatedProfile = UserModel(
-        bodyType: _selectedBuild,
-        imageUrls: _imageUrls,
-        acceptsNsfwPics: true,
-        aboutMe: _bioController.text,
-        age: _currentUserProfile!.age,
-        meetAt: _selectedMeetAt,
-        height: _heightController.text,
-        weight: _weightController.text,
-        pronouns: _selectedPronouns,
-        race: _selectedRace,
-        relationshipStatus: _selectedRelationshipStatus,
-        isFresh: _currentUserProfile!.isFresh,
-        status: _currentUserProfile!.status,
-        userName: _currentUserProfile!.userName,
-        id: _currentUserProfile!.id,
-        gender: _selectedGender,
-        lookingFor: _selectedLookingFor,
-        joined: _currentUserProfile!.joined);
-    try {
-    await ApiService.updateExistingUserProfile(updatedProfile);
-  // ... (your existing validation and API call to save the profile)
-  
-
-  if (!mounted) return; // Always check mounted after async operations
-
-  setState(() {
-    _isLoading = false;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated successfully!')),
+      bodyType: _selectedBuild,
+      imageUrls: _imageUrls,
+      acceptsNsfwPics: true,
+      aboutMe: _bioController.text,
+      age: _currentUserProfile!.age,
+      meetAt: _selectedMeetAt,
+      height: _heightController.text,
+      weight: _weightController.text,
+      pronouns: _selectedPronouns,
+      race: _selectedRace,
+      relationshipStatus: _selectedRelationshipStatus,
+      isFresh: _currentUserProfile!.isFresh,
+      status: _currentUserProfile!.status,
+      userName: _currentUserProfile!.userName,
+      id: _currentUserProfile!.id,
+      gender: _selectedGender,
+      lookingFor: _selectedLookingFor,
+      joined: _currentUserProfile!.joined,
+      position: _selectedPositions,
     );
-  });
+    try {
+      await ApiService.updateExistingUserProfile(updatedProfile);
+      // ... (your existing validation and API call to save the profile)
 
-  // Pop the current page and pass 'true' to indicate a successful update
-  Navigator.pop(context, true);
+      if (!mounted) return; // Always check mounted after async operations
 
-} catch (e) {
-  if (!mounted) return;
-  setState(() {
-    _isLoading = false;
-  });
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text('Failed to update profile: $e')),
-  );
-}
+      setState(() {
+        _isLoading = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully!')),
+        );
+      });
+
+      // Pop the current page and pass 'true' to indicate a successful update
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile: $e')),
+      );
+    }
   }
 
   /// Allows the user to pick an image from the gallery and uploads it.
@@ -527,72 +535,221 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                          _buildSectionTitle('Build'),
-                          _buildDropdown(_buildOptions, _selectedBuild,
-                              (newValue) {
-                            setState(() {
-                              _selectedBuild = newValue;
-                            });
-                          }),
+                          Row(
+                            // Wrap "Build" and "Looking For" in a Row
+                            crossAxisAlignment: CrossAxisAlignment
+                                .start, // Align titles at the top
+                            children: [
+                              Expanded(
+                                // "Build" section
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Build'),
+                                    _buildDropdown(
+                                        _buildOptions, _selectedBuild,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedBuild = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                  width: 16), // Space between the two dropdowns
+                              Expanded(
+                                // "Looking For" section
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Looking For'),
+                                    _buildDropdown(
+                                        _lookingForOptions, _selectedLookingFor,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedLookingFor = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),// Meet At & NSFW Pics Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Meet At'),
+                                    _buildDropdown(
+                                        _meetAtOptions, _selectedMeetAt,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedMeetAt = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                  width: 16), // Space between dropdowns
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('NSFW Pics'),
+                                    _buildDropdown(
+                                        _nsfwPicsOptions, _selectedNsfwPics,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedNsfwPics = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20), // Spacing after this row
+
+                          // Gender & Pronouns Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Gender'),
+                                    _buildDropdown(
+                                        _genderOptions, _selectedGender,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedGender = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                  width: 16), // Space between dropdowns
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Pronouns'),
+                                    _buildDropdown(
+                                        _pronounsOptions, _selectedPronouns,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedPronouns = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20), // Spacing after this row
+
+                          // Race & Relationship Status Row
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Race'),
+                                    _buildDropdown(_raceOptions, _selectedRace,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedRace = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                  width: 16), // Space between dropdowns
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildSectionTitle('Relationship Status'),
+                                    _buildDropdown(_relationshipStatusOptions,
+                                        _selectedRelationshipStatus,
+                                        (newValue) {
+                                      setState(() {
+                                        _selectedRelationshipStatus = newValue;
+                                      });
+                                    }),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 20),
-                          _buildSectionTitle('Looking For'),
-                          _buildDropdown(
-                              _lookingForOptions, _selectedLookingFor,
-                              (newValue) {
-                            setState(() {
-                              _selectedLookingFor = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Meet At'),
-                          _buildDropdown(_meetAtOptions, _selectedMeetAt,
-                              (newValue) {
-                            setState(() {
-                              _selectedMeetAt = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('NSFW Pics'),
-                          _buildDropdown(
-                              _nsfwPicsOptions, // Corrected to use String list
-                              _selectedNsfwPics, (newValue) {
-                            setState(() {
-                              _selectedNsfwPics = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Gender'),
-                          _buildDropdown(_genderOptions, _selectedGender,
-                              (newValue) {
-                            setState(() {
-                              _selectedGender = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Pronouns'),
-                          _buildDropdown(_pronounsOptions, _selectedPronouns,
-                              (newValue) {
-                            setState(() {
-                              _selectedPronouns = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Race'),
-                          _buildDropdown(_raceOptions, _selectedRace,
-                              (newValue) {
-                            setState(() {
-                              _selectedRace = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
-                          _buildSectionTitle('Relationship Status'),
-                          _buildDropdown(_relationshipStatusOptions,
-                              _selectedRelationshipStatus, (newValue) {
-                            setState(() {
-                              _selectedRelationshipStatus = newValue;
-                            });
-                          }),
-                          const SizedBox(height: 20),
+
+                          _buildSectionTitle(
+                              'Positions'), // Section title for multiple positions
+                          Wrap(
+                            // Use Wrap for flowing layout
+                            spacing: 8.0, // Horizontal space between buttons
+                            runSpacing:
+                                8.0, // Vertical space between rows of buttons
+                            children: _positionOptions.map((position) {
+                              final isSelected =
+                                  _selectedPositions.contains(position);
+                              return InkWell(
+                                // Use InkWell for custom tap effects
+                                onTap: () {
+                                  setState(() {
+                                    if (isSelected) {
+                                      _selectedPositions.remove(position);
+                                    } else {
+                                      _selectedPositions.add(position);
+                                    }
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0, vertical: 8.0),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Colors.yellow
+                                        : Colors
+                                            .grey[800], // Highlight if selected
+                                    borderRadius: BorderRadius.circular(
+                                        20.0), // Rounded corners for button look
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.yellow
+                                          : Colors.grey[700]!, // Border color
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    position,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.black
+                                          : Colors
+                                              .white, // Text color changes with selection
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(
+                              height:
+                                  20), // Spacing after positions// Spacing after positions
                           _buildSectionTitle('Other Images'),
                           const SizedBox(height: 10),
                           SizedBox(
@@ -797,53 +954,34 @@ Widget _buildTextField(TextEditingController controller, String hintText,
 }
 
 /// Helper widget for consistent dropdown form fields.
-Widget _buildDropdown(List<String> items, String? selectedValue,
-    ValueChanged<String?> onChanged) {
-  return DropdownButtonFormField<String>(
+Widget _buildDropdown<T>(
+    List<T> options, T? selectedValue, ValueChanged<T?> onChanged) {
+  return DropdownButtonFormField<T>(
     value: selectedValue,
-    // 1. Background color for the dropdown *menu* itself (when it's open)
-    dropdownColor: Colors.blueGrey, // <--- CHANGE THIS (Example: dark purple)
-
-    // 2. Text color for the *selected item* displayed in the closed dropdown field
-    style: const TextStyle(
-        color: Colors.yellow), // <--- CHANGE THIS (Example: light blue)
-
-    decoration: InputDecoration(
-      filled: true,
-      // 3. Background color for the dropdown *field* itself (the visible box)
-      fillColor: Colors.blueGrey.shade800.withOpacity(
-          0.5), // <--- CHANGE THIS (Example: semi-transparent dark blue-grey)
-
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10.0),
-        borderSide:
-            BorderSide.none, // You currently have no border here, keeping it
-      ),
-      // Optionally, define borders for enabled and focused states for more control
-      enabledBorder: OutlineInputBorder(
-        // <<< FIXED SYNTAX HERE
-        borderRadius: BorderRadius.circular(10.0),
-        borderSide: BorderSide.none, // Corrected missing parenthesis/completion
-      ),
-      // Add focusedBorder if needed for consistency with TextField
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10.0),
-        borderSide:
-            const BorderSide(color: Colors.yellow), // Example focused border
-      ),
-    ),
-    items: items.map<DropdownMenuItem<String>>((String value) {
-      return DropdownMenuItem<String>(
+    items: options.map((T value) {
+      return DropdownMenuItem<T>(
         value: value,
-        child: Text(value),
+        child: Text(
+          value.toString(),
+          style: const TextStyle(color: Colors.yellow),
+          overflow: TextOverflow
+              .ellipsis, // Add this line to prevent text overflow in items
+        ),
       );
     }).toList(),
     onChanged: onChanged,
-    validator: (value) {
-      if (value == null || value.isEmpty) {
-        return 'Please select an option';
-      }
-      return null;
-    },
+    isExpanded: true, // <--- ADD THIS LINE
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.05),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10.0),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    ),
+    dropdownColor: Colors.grey[850], // Background for dropdown menu
+    iconEnabledColor: Colors.white,
+    style: const TextStyle(color: Colors.yellow, fontSize: 16),
   );
 }

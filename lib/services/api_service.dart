@@ -50,7 +50,6 @@ class Message {
   }
 }
 
-
 // This is a TOP-LEVEL function, outside of the ApiService class
 // It's designed to be run in a separate isolate using compute
 // This function should be a top-level or static function
@@ -542,7 +541,8 @@ class ApiService {
       String? userName,
       String? joined,
       bool? isFresh,
-      List<String>? position}) async {
+      List<String>? position,
+      bool? viewMe}) async {
     final url = Uri.parse('$_baseUrl/get_people');
 
     try {
@@ -568,7 +568,8 @@ class ApiService {
         'userName': userName,
         'joined': joined,
         'isFresh': isFresh,
-        'position': position
+        'position': position,
+        'viewMe': viewMe
       });
 
       final response = await http.post(
@@ -593,6 +594,110 @@ class ApiService {
     } catch (e) {
       print('Error fetching people: $e');
       rethrow;
+    }
+  }
+
+  static Future<List<UserModel>> getWhoViewMe(
+      {required int pageNumber, required int pageSize}) async {
+    final url = Uri.parse('$_baseUrl/get_viewedme');
+
+    try {
+      final headers = await _getHeaders();
+      final body = jsonEncode({
+        'PageNumber': pageNumber,
+        'PageSize': pageSize,
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      print(body);
+      if (response.statusCode == 200) {
+        // --- Using compute for off-main-isolate JSON parsing ---
+        // Pass the response.body to the top-level _parseUserModels function
+        // which will run in a separate isolate.
+        final List<UserModel> userList =
+            await compute(_parseUserModels, response.body);
+        return userList;
+      } else {
+        print(
+            'Failed to load people: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to load people: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching people: $e');
+      rethrow;
+    }
+  }
+
+  static Future<List<UserModel>> getWhoTappedMe(
+      {required int pageNumber, required int pageSize}) async {
+    final url = Uri.parse('$_baseUrl/get_tappedme');
+
+    try {
+      final headers = await _getHeaders();
+      final body = jsonEncode({
+        'PageNumber': pageNumber,
+        'PageSize': pageSize,
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      print(body);
+      if (response.statusCode == 200) {
+        // --- Using compute for off-main-isolate JSON parsing ---
+        // Pass the response.body to the top-level _parseUserModels function
+        // which will run in a separate isolate.
+        final List<UserModel> userList =
+            await compute(_parseUserModels, response.body);
+        return userList;
+      } else {
+        print(
+            'Failed to load people: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to load people: ${response.body}');
+      }
+    } catch (e) {
+      print('Error fetching people: $e');
+      rethrow;
+    }
+  }
+
+  static Future<bool> sendTap(String? id) async {
+    final String? apiToken = await SecureStorageService.getApiKey();
+    if (apiToken == null) {
+      throw Exception(
+          "Authentication required: Email or Security Stamp not found.");
+    }
+    final url = Uri.parse('$_baseUrl/get_tapped/');
+    try {
+      final headers = await _getHeaders();
+      final body = jsonEncode({
+        'Id': id,
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        // Use compute for single user profile parsing as well, especially if the profile can be complex
+        return true;
+      } else {
+        print(
+            'Failed to load user profile: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error fetching user profile: $e');
+      return false;
     }
   }
 

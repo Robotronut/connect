@@ -1,4 +1,5 @@
 import 'package:connect/screens/chat_Inbox_Screen.dart';
+import 'package:connect/screens/interests_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // Keep this import even if not directly used in MainBrowseScreen
 import 'package:connect/services/secure_storage_service.dart';
@@ -382,6 +383,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   Future<void> _onItemTapped(int index) async {
     setState(() {
       _selectedIndex = index;
+      _pageController.jumpToPage(index);
     });
     final String url = 'https://peek.thegwd.ca/chathub';
     // Check if the tapped item is 'Inbox' (index 2)
@@ -1105,15 +1107,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           ),
           // 1: Interest Screen (Placeholder) - Wrapped with SafeArea
           SafeArea(
-            child: Container(
-              color: Colors.black,
-              child: const Center(
-                child: Text(
-                  'Interest Screen Placeholder',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
-                ),
-              ),
-            ),
+            child: const InterestScreen(),
           ),
           // 2: Inbox Screen (MessageScreen) - Wrapped with SafeArea
           SafeArea(

@@ -27,7 +27,7 @@ dependencies:
   image_picker: ^1.1.2
   http: ^1.2.1
   flutter_secure_storage: ^9.0.0
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.0
   photo_view: ^0.15.0
   google_fonts: ^6.1.0 # Use the latest version
   signalr_core: ^1.1.2
@@ -45,7 +45,7 @@ dependencies:
   cached_network_image: ^3.4.0
   flutter_story_presenter: ^1.0.0
   story: ^1.1.0
-  bottom_picker: ^3.2.1
+  bottom_picker: ^4.0.0
   bottom_sheet: ^4.0.4
   get: ^4.6.6
   animated_custom_dropdown: ^3.1.1
