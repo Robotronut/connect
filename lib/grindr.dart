@@ -1,7 +1,6 @@
 import 'package:connect/screens/chat_Inbox_Screen.dart';
 import 'package:connect/screens/interests_screens.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart'; // Keep this import even if not directly used in MainBrowseScreen
 import 'package:connect/services/secure_storage_service.dart';
 import 'package:connect/services/api_service.dart'; // Import your API service
@@ -10,6 +9,7 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 import 'package:connect/screens/edit_profile_screen.dart'
     hide UserModel; // Ensure this path is correct
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
+import 'package:connect/screens/store_screen.dart'; // Import the new store screen (SubscriptionPage)
 // Import the new filter dialogs/screens
 import 'package:connect/filters/position_filter_dialog.dart';
 import 'package:connect/filters/age_filter_dialog.dart';
@@ -405,8 +405,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           builder: (context) => InterestScreen(),
         ),
       );
+    } else if (index == 3) { // Handle 'Store' tab (index 3)
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SubscriptionPage(), // Navigate to SubscriptionPage
+        ),
+      );
     }
-
     // You would add navigation logic for other tabs here if they are full screens
     // For example:
     // else if (index == 0) {
@@ -431,6 +437,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       }
     });
     try {
+
       // Logic for combining filters from individual dialogs and MoreFiltersScreen
       // Priority: MoreFiltersScreen if its global toggle is enabled.
       // Otherwise, individual dialog filters take effect.
@@ -459,13 +466,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         finalHasPhotos = _selectedPhotos.contains('Has photos');
         finalHasFacePics = _selectedPhotos.contains('Has face pics');
         finalHasAlbums = _selectedPhotos.contains('Has album(s)');
-        finalBodyType = _selectedBodyType!;
-        finalHeight = _selectedHeight!;
-        finalWeight = _selectedWeight!;
-        finalRelationshipStatus = _selectedRelationshipStatus!;
+        finalBodyType = finalBodyType;
+        finalHeight = finalHeight;
+        finalWeight = finalWeight;
+        finalRelationshipStatus = finalRelationshipStatus;
         finalAcceptsNsfwPics = _acceptsNsfwPics;
-        finalLookingFor = _selectedLookingFor!;
-        finalMeetAt = _selectedMeetAt!;
+        finalLookingFor = finalLookingFor;
+        finalMeetAt = finalMeetAt;
         finalHaventChattedToday = _haventChattedToday;
         finalIsFresh =
             _selectedRightNow; // Assuming "Right Now" covers "Fresh" in MoreFiltersScreen
@@ -843,14 +850,18 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
 
     // If profileUpdated is true, it means the profile was saved successfully
     if (profileUpdated == true) {
-      // Trigger a refresh of the current page's data from the backend
-      await _fetchLoggedInUser(); // <--- ADDED THIS LINE
-      await _fetchUsers();
+      // Reset pagination state to ensure a full refresh from the first page
       setState(() {
-        // Update any local state that depends on the profile, if necessary
-        // For example, if _loggedInUser is a state variable, update it here:
-        // _loggedInUser = fetchedNewProfileData;
+        _users.clear(); // Clear existing users
+        _currentPage = 1; // Reset to the first page
+        _hasMore = true; // Assume there are more users to load
+        _errorMessage = ''; // Clear any previous error messages
       });
+
+      // Trigger a refresh of the logged-in user's data and then all users
+      await _fetchLoggedInUser();
+      await _fetchUsers(); // This will now fetch from page 1 with cleared users.
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile data refreshed!')),
       );
@@ -1166,5 +1177,3 @@ Widget _buildPillButton(IconData icon, String label, {VoidCallback? onTap}) {
     ),
   );
 }
-
-
