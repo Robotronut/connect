@@ -367,7 +367,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       }
       final user = await ApiService.getUserProfileById(null);
       setState(() {
-        _loggedInUser = user as UserModel;
+        _loggedInUser = user;
         _isLoggedInUserLoading = false;
       });
     } catch (e) {
