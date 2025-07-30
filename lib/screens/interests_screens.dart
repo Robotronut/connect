@@ -17,7 +17,7 @@ class _InterestScreenState extends State<InterestScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<UserModel> _tappedMeUsers =
-      []; // For 'Taps' tab (formerly 'Interested In Me')
+  []; // For 'Taps' tab (formerly 'Interested In Me')
   List<UserModel> _viewedMeUsers = []; // For 'Views' tab
   bool _isLoadingTapped = true; // Loading state for 'Taps'
   bool _isLoadingViewedMe = true;
@@ -122,7 +122,7 @@ class _InterestScreenState extends State<InterestScreen>
 
   void _onTappedScroll() {
     if (_tappedScrollController.position.pixels ==
-            _tappedScrollController.position.maxScrollExtent &&
+        _tappedScrollController.position.maxScrollExtent &&
         _hasMoreTapped &&
         !_isLoadingTapped) {
       _fetchUsersWhoTappedMe(isLoadMore: true);
@@ -153,11 +153,11 @@ class _InterestScreenState extends State<InterestScreen>
       // or create a new method like ApiService.getUsersWhoViewedMe.
       final List<UserModel> fetchedUsers = await ApiService.getWhoViewMe(
           pageNumber: _currentPageViews, pageSize: _pageSizeViews
-          // Assuming your API can filter by a viewer's ID or a specific 'viewed_me' endpoint
-          // You might need to pass _currentLoggedInUserId here if your API supports it:
-          // id: _currentLoggedInUserId, // This is a conceptual parameter for your backend
-          // Example filter, adjust as needed
-          );
+        // Assuming your API can filter by a viewer's ID or a specific 'viewed_me' endpoint
+        // You might need to pass _currentLoggedInUserId here if your API supports it:
+        // id: _currentLoggedInUserId, // This is a conceptual parameter for your backend
+        // Example filter, adjust as needed
+      );
 
       setState(() {
         if (isLoadMore) {
@@ -182,7 +182,7 @@ class _InterestScreenState extends State<InterestScreen>
 
   void _onViewsScroll() {
     if (_viewsScrollController.position.pixels ==
-            _viewsScrollController.position.maxScrollExtent &&
+        _viewsScrollController.position.maxScrollExtent &&
         _hasMoreViews &&
         !_isLoadingViewedMe) {
       _fetchUsersWhoViewedMe(isLoadMore: true);
@@ -227,6 +227,13 @@ class _InterestScreenState extends State<InterestScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        // Added leading back arrow button
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         title: const Text(
           'Interest',
           style: TextStyle(
@@ -250,92 +257,92 @@ class _InterestScreenState extends State<InterestScreen>
           // Tab 1: Views (Loads users who viewed the logged-in user) - now first tab
           _isLoadingViewedMe && _viewedMeUsers.isEmpty
               ? const Center(
-                  child: CircularProgressIndicator(color: Colors.white))
+              child: CircularProgressIndicator(color: Colors.white))
               : _errorMessageViewedMe != null
-                  ? Center(
-                      child: Text(_errorMessageViewedMe!,
-                          style: const TextStyle(color: Colors.red)))
-                  : _viewedMeUsers.isEmpty
+              ? Center(
+              child: Text(_errorMessageViewedMe!,
+                  style: const TextStyle(color: Colors.red)))
+              : _viewedMeUsers.isEmpty
+              ? const Center(
+            child: Text(
+              'No one has viewed your profile yet.',
+              style:
+              TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          )
+              : RefreshIndicator(
+            onRefresh: () =>
+                _fetchUsersWhoViewedMe(isLoadMore: false),
+            color: Colors.white,
+            backgroundColor: Colors.grey[900],
+            child: GridView.builder(
+              controller: _viewsScrollController,
+              padding: const EdgeInsets.all(8.0),
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // Two users per row
+                crossAxisSpacing: 8.0,
+                mainAxisSpacing: 8.0,
+                childAspectRatio: 0.75, // Adjust as needed
+              ),
+              itemCount:
+              _viewedMeUsers.length + (_hasMoreViews ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _viewedMeUsers.length) {
+                  return _isLoadingViewedMe
                       ? const Center(
-                          child: Text(
-                            'No one has viewed your profile yet.',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 16),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () =>
-                              _fetchUsersWhoViewedMe(isLoadMore: false),
-                          color: Colors.white,
-                          backgroundColor: Colors.grey[900],
-                          child: GridView.builder(
-                            controller: _viewsScrollController,
-                            padding: const EdgeInsets.all(8.0),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2, // Two users per row
-                              crossAxisSpacing: 8.0,
-                              mainAxisSpacing: 8.0,
-                              childAspectRatio: 0.75, // Adjust as needed
-                            ),
-                            itemCount:
-                                _viewedMeUsers.length + (_hasMoreViews ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _viewedMeUsers.length) {
-                                return _isLoadingViewedMe
-                                    ? const Center(
-                                        child: CircularProgressIndicator(
-                                            color: Colors.white))
-                                    : const SizedBox.shrink();
-                              }
-                              final user = _viewedMeUsers[index];
-                              return _buildUserGridItem(context, user);
-                            },
-                          ),
-                        ),
+                      child: CircularProgressIndicator(
+                          color: Colors.white))
+                      : const SizedBox.shrink();
+                }
+                final user = _viewedMeUsers[index];
+                return _buildUserGridItem(context, user);
+              },
+            ),
+          ),
           // Tab 2: Taps (Loads users who 'tapped' the logged-in user) - now second tab
           _isLoadingTapped && _tappedMeUsers.isEmpty
               ? const Center(
-                  child: CircularProgressIndicator(color: Colors.white))
+              child: CircularProgressIndicator(color: Colors.white))
               : _errorMessageTapped != null
-                  ? Center(
-                      child: Text(_errorMessageTapped!,
-                          style: const TextStyle(color: Colors.red)))
-                  : _tappedMeUsers.isEmpty
+              ? Center(
+              child: Text(_errorMessageTapped!,
+                  style: const TextStyle(color: Colors.red)))
+              : _tappedMeUsers.isEmpty
+              ? const Center(
+            child: Text(
+              'No one has tapped your profile yet.',
+              style:
+              TextStyle(color: Colors.white70, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          )
+              : RefreshIndicator(
+            onRefresh: () =>
+                _fetchUsersWhoTappedMe(isLoadMore: false),
+            color: Colors.white,
+            backgroundColor: Colors.grey[900],
+            child: ListView.builder(
+              // Changed to ListView.builder
+              controller: _tappedScrollController,
+              padding: const EdgeInsets.all(8.0),
+              itemCount: _tappedMeUsers.length +
+                  (_hasMoreTapped ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _tappedMeUsers.length) {
+                  return _isLoadingTapped
                       ? const Center(
-                          child: Text(
-                            'No one has tapped your profile yet.',
-                            style:
-                                TextStyle(color: Colors.white70, fontSize: 16),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: () =>
-                              _fetchUsersWhoTappedMe(isLoadMore: false),
-                          color: Colors.white,
-                          backgroundColor: Colors.grey[900],
-                          child: ListView.builder(
-                            // Changed to ListView.builder
-                            controller: _tappedScrollController,
-                            padding: const EdgeInsets.all(8.0),
-                            itemCount: _tappedMeUsers.length +
-                                (_hasMoreTapped ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == _tappedMeUsers.length) {
-                                return _isLoadingTapped
-                                    ? const Center(
-                                        child: CircularProgressIndicator(
-                                            color: Colors.white))
-                                    : const SizedBox.shrink();
-                              }
-                              final user = _tappedMeUsers[index];
-                              return _buildUserListItem(
-                                  context, user); // Using new list item builder
-                            },
-                          ),
-                        ),
+                      child: CircularProgressIndicator(
+                          color: Colors.white))
+                      : const SizedBox.shrink();
+                }
+                final user = _tappedMeUsers[index];
+                return _buildUserListItem(
+                    context, user); // Using new list item builder
+              },
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: Padding(
@@ -415,7 +422,7 @@ class _InterestScreenState extends State<InterestScreen>
                   child: CircularProgressIndicator(
                     value: loadingProgress.expectedTotalBytes != null
                         ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
+                        loadingProgress.expectedTotalBytes!
                         : null,
                     color: Colors.white,
                   ),
@@ -502,7 +509,7 @@ class _InterestScreenState extends State<InterestScreen>
                     color: Colors.grey[800],
                     child: const Center(
                       child:
-                          Icon(Icons.person, color: Colors.white54, size: 40),
+                      Icon(Icons.person, color: Colors.white54, size: 40),
                     ),
                   );
                 },
@@ -516,7 +523,7 @@ class _InterestScreenState extends State<InterestScreen>
                       child: CircularProgressIndicator(
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                loadingProgress.expectedTotalBytes!
+                            loadingProgress.expectedTotalBytes!
                             : null,
                         color: Colors.white,
                       ),
