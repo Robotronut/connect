@@ -1,3 +1,4 @@
+import 'package:connect/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart'; // For CupertinoIcons
 // Assuming these imports are still relevant for your project structure
@@ -37,7 +38,8 @@ class _ReportScreenState extends State<ReportScreen> {
   ];
 
   String? _selectedReason; // Holds the currently selected reason
-  final TextEditingController _otherReasonController = TextEditingController(); // For 'Other' option
+  final TextEditingController _otherReasonController =
+      TextEditingController(); // For 'Other' option
   bool _isSubmitting = false;
   String? _submissionMessage; // To show success or error messages
 
@@ -47,13 +49,14 @@ class _ReportScreenState extends State<ReportScreen> {
     super.dispose();
   }
 
+  String? finalReportReason;
+
   Future<void> _submitReport() async {
     setState(() {
       _isSubmitting = true;
       _submissionMessage = null;
     });
 
-    String finalReportReason = '';
     if (_selectedReason == null) {
       setState(() {
         _submissionMessage = 'Please select a reason for the report.';
@@ -62,7 +65,7 @@ class _ReportScreenState extends State<ReportScreen> {
       return;
     } else if (_selectedReason == 'Other (Please describe in detail)') {
       finalReportReason = _otherReasonController.text.trim();
-      if (finalReportReason.isEmpty) {
+      if (finalReportReason != null) {
         setState(() {
           _submissionMessage = 'Please describe the "Other" reason.';
           _isSubmitting = false;
@@ -76,7 +79,9 @@ class _ReportScreenState extends State<ReportScreen> {
     try {
       // In a real application, you would send this report to your backend
       // using an ApiService call. For this example, we'll simulate it.
-      print('Reporting user: ${widget.reportedUsername} (ID: ${widget.reportedUserId})');
+      await ApiService.reportUser(widget.reportedUserId, finalReportReason);
+      print(
+          'Reporting user: ${widget.reportedUsername} (ID: ${widget.reportedUserId})');
       print('Reason: $finalReportReason');
 
       // Simulate API call delay
@@ -120,7 +125,8 @@ class _ReportScreenState extends State<ReportScreen> {
           },
         ),
       ),
-      body: SingleChildScrollView( // Added SingleChildScrollView here
+      body: SingleChildScrollView(
+        // Added SingleChildScrollView here
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -137,19 +143,27 @@ class _ReportScreenState extends State<ReportScreen> {
                   value: _selectedReason,
                   hint: Text(
                     'Select a reason',
-                    style: TextStyle(color: Colors.grey[400]), // Adjusted hint text color for better contrast
+                    style: TextStyle(
+                        color: Colors.grey[
+                            400]), // Adjusted hint text color for better contrast
                   ),
-                  dropdownColor: Colors.grey[800], // Color of the dropdown list when opened
+                  dropdownColor: Colors
+                      .grey[800], // Color of the dropdown list when opened
                   style: const TextStyle(color: Colors.white, fontSize: 16),
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
-                  decoration: InputDecoration( // Moved BoxDecoration properties here
+                  icon:
+                      const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  decoration: InputDecoration(
+                    // Moved BoxDecoration properties here
                     filled: true,
-                    fillColor: Colors.grey[850], // This controls the background color of the input field
+                    fillColor: Colors.grey[
+                        850], // This controls the background color of the input field
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), // Increased vertical padding
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12), // Increased vertical padding
                   ),
                   onChanged: (String? newValue) {
                     setState(() {
@@ -160,21 +174,26 @@ class _ReportScreenState extends State<ReportScreen> {
                   // The `selectedItemBuilder` is crucial for customizing the display of the selected item
                   selectedItemBuilder: (BuildContext context) {
                     return _reportReasons.map<Widget>((String item) {
-                      return Row( // Wrap the Text in a Row
+                      return Row(
+                        // Wrap the Text in a Row
                         children: [
-                          Expanded( // Use Expanded to ensure text takes available width
+                          Expanded(
+                            // Use Expanded to ensure text takes available width
                             child: Text(
                               item,
-                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14),
                               maxLines: null, // Allow multiple lines
-                              overflow: TextOverflow.visible, // Ensure full text is visible
+                              overflow: TextOverflow
+                                  .visible, // Ensure full text is visible
                             ),
                           ),
                         ],
                       );
                     }).toList();
                   },
-                  items: _reportReasons.map<DropdownMenuItem<String>>((String value) {
+                  items: _reportReasons
+                      .map<DropdownMenuItem<String>>((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(
@@ -219,17 +238,20 @@ class _ReportScreenState extends State<ReportScreen> {
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                  'Submit Report',
-                  style: TextStyle(fontSize: 18, color: Colors.white),
-                ),
+                        'Submit Report',
+                        style: TextStyle(fontSize: 18, color: Colors.white),
+                      ),
               ),
               if (_submissionMessage != null)
+
                 Padding(
                   padding: const EdgeInsets.only(top: 20),
                   child: Text(
                     _submissionMessage!,
                     style: TextStyle(
-                      color: _submissionMessage!.contains('successfully') ? Colors.green : Colors.red,
+                      color: _submissionMessage!.contains('successfully')
+                          ? Colors.green
+                          : Colors.red,
                       fontSize: 16,
                     ),
                   ),

@@ -454,57 +454,6 @@ class ApiService {
     }
   }
 
-  /// Fetches the user profile using a JWT token for verification.
-  /// Returns a map of user profile data if successful.
-  /* static Future<UserModel?> getUserProfile(String? userId) async {
-    // if the userId is passed then this will return that userprofile
-    // if the userId is not pass then it is assumed the current User is getting there own profile
-    String? jwtToken = await SecureStorageService.getApiKey();
-    String? currentUserId = await SecureStorageService.getUserId();
-
-    if (jwtToken == null || jwtToken.isEmpty) {
-      print('JWT Token is null or empty. Cannot fetch user profile.');
-      return null; // Or throw an exception if a token is strictly required
-    }
-    // check if userId is empty and if so assign the logged in user to userId
-    // and ask api for return
-    if (userId == null || userId.isEmpty) {
-      userId = currentUserId;
-    }
-    final url =
-        Uri.parse('$_baseUrl/get_user_profile'); // Adjust URL as per your API
-
-    try {
-      final body = jsonEncode({'UserId': userId});
-      final response = await http.post(url,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $jwtToken', // Attach the JWT here
-          },
-          body: body);
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> userData =
-            json.decode(response.body) as Map<String, dynamic>;
-        // Convert the Map to a UserModel using the fromJson factory constructor
-        return UserModel.fromJson(userData);
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        // Handle unauthorized/forbidden specifically
-        print(
-            'Authentication error fetching user profile: ${response.statusCode} ${response.body}');
-        return null; // Or throw a specific authentication exception
-      } else {
-        print(
-            'Failed to load user profile: ${response.statusCode} ${response.body}');
-        throw Exception(
-            'Failed to load user profile: ${response.statusCode} ${response.body}');
-      }
-    } catch (e) {
-      print('Error fetching user profile for JWT verification: $e');
-      rethrow; // Re-throw the exception for the calling code to handle
-    }
-  } */
-
   static Future<Map<String, String>> _getHeaders(
       {bool isMultipart = false}) async {
     String? jwtToken = await SecureStorageService.getApiKey();
@@ -514,6 +463,7 @@ class ApiService {
     }
     final headers = {
       if (!isMultipart) 'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'Authorization': 'Bearer $jwtToken', // Attach the JWT here
     };
     return headers;
@@ -848,6 +798,43 @@ class ApiService {
       }
     } catch (e) {
       print('Error deleting image: $e');
+      rethrow;
+    }
+  }
+
+  // report user section
+  // --- NEW: Update User Profile ---
+  static Future<void> reportUser(String? userId, String? complaint) async {
+    final url =
+        Uri.parse('$_baseUrl/report_user'); // Your API's update endpoint
+
+    try {
+      final headers = await _getHeaders();
+
+      final body = json.encode({"userId": userId, "complaint": complaint});
+      //final body = jsonEncode({"userId": userId, "complaint": complaint});
+      print(body);
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        // Successfully updated
+      print(response.body);
+      print(response.statusCode);
+        print('Complaint Filed');
+        return;
+      } else {
+        print(response.body);
+      print(response.statusCode);
+        print(
+            'Failed to file complaint: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to complain: ${response.body}');
+      }
+    } catch (e) {
+      
+      print('Error complaining: $e');
       rethrow;
     }
   }
