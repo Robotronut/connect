@@ -9,7 +9,6 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 import 'package:connect/screens/edit_profile_screen.dart'
     hide UserModel; // Ensure this path is correct
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
-import 'package:connect/screens/messaging_screen.dart'; // Import the MessageScreen
 // Import the new filter dialogs/screens
 import 'package:connect/filters/position_filter_dialog.dart';
 import 'package:connect/filters/age_filter_dialog.dart';
@@ -268,7 +267,6 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       'cub',
       'cuddling',
       'daddy',
-      'dating',
       'drag',
       'drugfree',
       'femme',
@@ -833,29 +831,35 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   // Function to handle bottom navigation bar taps
 
   Future<void> _navigateToEditProfile() async {
-    // Await the result from EditProfileScreen
-    final bool? profileUpdated = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfileScreen(user: _loggedInUser),
-      ),
-    );
+  // Await the result from EditProfileScreen
+  final bool? profileUpdated = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => EditProfileScreen(user: _loggedInUser),
+    ),
+  );
 
-    // If profileUpdated is true, it means the profile was saved successfully
-    if (profileUpdated == true) {
-      // Trigger a refresh of the current page's data from the backend
-      await _fetchUsers();
-      //await _fetchLoggedInUser();
-      setState(() {
-        // Update any local state that depends on the profile, if necessary
-        // For example, if _loggedInUser is a state variable, update it here:
-        // _loggedInUser = fetchedNewProfileData;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile data refreshed!')),
-      );
-    }
+  // If profileUpdated is true, it means the profile was saved successfully
+  if (profileUpdated == true) {
+    // Reset pagination state to ensure a full refresh from the first page
+    setState(() {
+      _users.clear(); // Clear existing users
+      _currentPage = 1; // Reset to the first page
+      _hasMore = true; // Assume there are more users to load
+      _errorMessage = ''; // Clear any previous error messages
+    });
+
+    // Trigger a refresh of the logged-in user's data and then all users
+    await _fetchLoggedInUser();
+    await _fetchUsers(); // This will now fetch from page 1 with cleared users.
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Profile data refreshed!')),
+    );
   }
+}
+
+  // New method to navigate to LocationPickerScreen
 
   @override
   Widget build(BuildContext context) {
@@ -907,23 +911,29 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                         ),
                         const SizedBox(width: 8.0),
                         Expanded(
-                          child: Container(
-                            constraints: const BoxConstraints(maxHeight: 30.0),
-                            child: TextField(
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                hintText: 'Explore more profiles',
-                                hintStyle: TextStyle(
-                                    color: Colors.white.withAlpha(178)),
-                                prefixIcon: Icon(Icons.search,
-                                    color: Colors.white.withAlpha(229)),
-                                filled: true,
-                                fillColor: Colors.white.withAlpha(25),
-                                contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 1.0, horizontal: 5.0),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(25.0),
-                                  borderSide: BorderSide.none,
+                          child: GestureDetector(
+                            // Wrap TextField with GestureDetector
+                            child: Container(
+                              constraints:
+                                  const BoxConstraints(maxHeight: 30.0),
+                              child: TextField(
+                                enabled:
+                                    false, // Disable TextField interaction directly
+                                style: const TextStyle(color: Colors.white),
+                                decoration: InputDecoration(
+                                  hintText: 'Explore more profiles',
+                                  hintStyle: TextStyle(
+                                      color: Colors.white.withAlpha(178)),
+                                  prefixIcon: Icon(Icons.search,
+                                      color: Colors.white.withAlpha(229)),
+                                  filled: true,
+                                  fillColor: Colors.white.withAlpha(25),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      vertical: 1.0, horizontal: 5.0),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(25.0),
+                                    borderSide: BorderSide.none,
+                                  ),
                                 ),
                               ),
                             ),
