@@ -9,6 +9,7 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 import 'package:connect/screens/edit_profile_screen.dart'
     hide UserModel; // Ensure this path is correct
 import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
+import 'package:connect/screens/store_screen.dart'; // Import the new store screen (SubscriptionPage)
 // Import the new filter dialogs/screens
 import 'package:connect/filters/position_filter_dialog.dart';
 import 'package:connect/filters/age_filter_dialog.dart';
@@ -403,8 +404,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           builder: (context) => InterestScreen(),
         ),
       );
+    } else if (index == 3) { // Handle 'Store' tab (index 3)
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SubscriptionPage(), // Navigate to SubscriptionPage
+        ),
+      );
     }
-
     // You would add navigation logic for other tabs here if they are full screens
     // For example:
     // else if (index == 0) {
@@ -429,6 +436,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       }
     });
     try {
+
       // Logic for combining filters from individual dialogs and MoreFiltersScreen
       // Priority: MoreFiltersScreen if its global toggle is enabled.
       // Otherwise, individual dialog filters take effect.
@@ -457,13 +465,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         finalHasPhotos = _selectedPhotos.contains('Has photos');
         finalHasFacePics = _selectedPhotos.contains('Has face pics');
         finalHasAlbums = _selectedPhotos.contains('Has album(s)');
-        finalBodyType = _selectedBodyType!;
-        finalHeight = _selectedHeight!;
-        finalWeight = _selectedWeight!;
-        finalRelationshipStatus = _selectedRelationshipStatus!;
+        finalBodyType = finalBodyType;
+        finalHeight = finalHeight;
+        finalWeight = finalWeight;
+        finalRelationshipStatus = finalRelationshipStatus;
         finalAcceptsNsfwPics = _acceptsNsfwPics;
-        finalLookingFor = _selectedLookingFor!;
-        finalMeetAt = _selectedMeetAt!;
+        finalLookingFor = finalLookingFor;
+        finalMeetAt = finalMeetAt;
         finalHaventChattedToday = _haventChattedToday;
         finalIsFresh =
             _selectedRightNow; // Assuming "Right Now" covers "Fresh" in MoreFiltersScreen

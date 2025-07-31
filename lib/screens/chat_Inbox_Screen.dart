@@ -6,8 +6,9 @@ import 'package:signalr_core/signalr_core.dart';
 import 'dart:io';
 import 'package:http/io_client.dart';
 import 'package:connect/screens/chat_screen.dart'; // Assuming your ChatScreen is in chat_screen.dart
+import 'package:connect/screens/report_screen.dart'; // Import your ReportScreen
 
-// --- New Data Model for Conversation Preview ---
+// --- Data Model for Conversation Preview ---
 class ConversationPreview {
   final String otherUserId;
   final String otherUsername;
@@ -29,10 +30,10 @@ class ConversationPreview {
       otherUserId: json['otherUserId'].toString(),
       otherUsername: json['otherUsername'].toString(),
       otherUserAvatarUrl:
-          json['otherUserAvatarUrl']?.toString(), // Handle nullable
+      json['otherUserAvatarUrl']?.toString(), // Handle nullable
       lastMessageContent: json['lastMessageContent'].toString(),
       lastMessageTimestamp:
-          DateTime.parse(json['lastMessageTimestamp'].toString()),
+      DateTime.parse(json['lastMessageTimestamp'].toString()),
     );
   }
 }
@@ -94,15 +95,15 @@ class _InboxScreenState extends State<InboxScreen> {
 
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-          widget.chatHubUrl,
-          HttpConnectionOptions(
-            transport: HttpTransportType.webSockets,
-            client: ioClient,
-            accessTokenFactory: () async => rawToken,
-            logging: (level, message) =>
-                print('SignalR Log [$level]: $message'),
-          ),
-        )
+      widget.chatHubUrl,
+      HttpConnectionOptions(
+        transport: HttpTransportType.webSockets,
+        client: ioClient,
+        accessTokenFactory: () async => rawToken,
+        logging: (level, message) =>
+            print('SignalR Log [$level]: $message'),
+      ),
+    )
         .withAutomaticReconnect()
         .build();
 
@@ -110,7 +111,7 @@ class _InboxScreenState extends State<InboxScreen> {
       setState(() {
         _isLoading = false;
         _errorMessage =
-            'Connection closed: ${error?.toString() ?? "Unknown error"}';
+        'Connection closed: ${error?.toString() ?? "Unknown error"}';
       });
       print('Connection closed: $error');
     });
@@ -145,7 +146,7 @@ class _InboxScreenState extends State<InboxScreen> {
     try {
       // Invoke the new backend method to get conversation previews
       final List<dynamic>? result =
-          await _hubConnection.invoke('GetInboxPreviews');
+      await _hubConnection.invoke('GetInboxPreviews');
 
       if (result != null) {
         final List<ConversationPreview> loadedConversations = result
@@ -183,7 +184,7 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade900, // Overall dark background
+      backgroundColor: Colors.black, // Overall dark background
       appBar: AppBar(
         title: const Text(
           'Inbox',
@@ -204,130 +205,180 @@ class _InboxScreenState extends State<InboxScreen> {
             ),
           ),
         ),
+        // Add a leading back arrow button
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            // Navigate back to the previous screen
+            Navigator.pop(context);
+          },
+        ),
+        // Removed 'automaticallyImplyLeading: false' to allow the leading widget to show
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.orange), // Orange loading indicator
-              ),
-            )
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(
+              Colors.orange), // Orange loading indicator
+        ),
+      )
           : _errorMessage != null
-              ? Center(
-                  child: Text(
-                    _errorMessage!,
-                    style:
-                        const TextStyle(color: Colors.redAccent, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                )
-              : _conversations.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No conversations yet.',
-                        style: TextStyle(
-                            color: Colors.grey.shade500, fontSize: 18),
+          ? Center(
+        child: Text(
+          _errorMessage!,
+          style:
+          const TextStyle(color: Colors.redAccent, fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+      )
+          : _conversations.isEmpty
+          ? Center(
+        child: Text(
+          'No conversations yet.',
+          style: TextStyle(
+              color: Colors.grey.shade500, fontSize: 18),
+        ),
+      )
+          : ListView.builder(
+        itemCount: _conversations.length,
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        itemBuilder: (context, index) {
+          final conversation = _conversations[index];
+          return Column( // Wrap the Card with a Column
+            children: [
+              Card(
+                margin: const EdgeInsets.symmetric(
+                    horizontal: 10.0, vertical: 4.0),
+                color: Colors.black, // Dark card background
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: InkWell(
+                  onTap: () {
+                    // Navigate to the ChatScreen for this conversation
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          username: conversation.otherUsername,
+                          chatHubUrl: widget.chatHubUrl,
+                          currentUserId: widget.currentUserId,
+                          otherUserId: conversation.otherUserId,
+                          otherUserName: conversation.otherUsername,
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: _conversations.length,
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      itemBuilder: (context, index) {
-                        final conversation = _conversations[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 10.0, vertical: 4.0),
-                          color: Colors.grey.shade800, // Dark card background
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: InkWell(
-                            onTap: () {
-                              // Navigate to the ChatScreen for this conversation
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    username: conversation.otherUsername,
-                                    chatHubUrl: widget.chatHubUrl,
-                                    currentUserId: widget.currentUserId,
-                                    otherUserId: conversation.otherUserId,
-                                    otherUserName: conversation.otherUsername,
-                                  ),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Row(
-                                children: [
-                                  // User Profile Image (Left)
-                                  CircleAvatar(
-                                    radius: 28,
-                                    backgroundColor: Colors.grey.shade700,
-                                    backgroundImage: conversation
-                                                .otherUserAvatarUrl !=
-                                            null
-                                        ? NetworkImage(
-                                            conversation.otherUserAvatarUrl!)
-                                        : null,
-                                    child:
-                                        conversation.otherUserAvatarUrl == null
-                                            ? Icon(Icons.person,
-                                                color: Colors.grey.shade400,
-                                                size: 30)
-                                            : null,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Username
-                                        Text(
-                                          conversation.otherUsername,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        // Last Message Content
-                                        Text(
-                                          conversation.lastMessageContent,
-                                          style: TextStyle(
-                                            color: Colors.grey.shade400,
-                                            fontSize: 14,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                    );
+                  },
+                  onLongPress: () { // Added onLongPress for reporting
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (BuildContext bc) {
+                        return SafeArea(
+                          child: Wrap(
+                            children: <Widget>[
+                              ListTile(
+                                leading: const Icon(Icons.flag, color: Colors.redAccent),
+                                title: const Text('Report User'),
+                                onTap: () {
+                                  Navigator.pop(bc); // Close the bottom sheet
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ReportScreen(
+                                        reportedUserId: conversation.otherUserId,
+                                        reportedUsername: conversation.otherUsername,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  // Date/Time of Last Message (Far Right)
-                                  Text(
-                                    _formatDateTime(
-                                        conversation.lastMessageTimestamp),
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
-                            ),
+                            ],
                           ),
                         );
                       },
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      children: [
+                        // User Profile Image (Left)
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.grey.shade700,
+                          backgroundImage: conversation
+                              .otherUserAvatarUrl !=
+                              null
+                              ? NetworkImage(
+                              conversation.otherUserAvatarUrl!)
+                              : null,
+                          child:
+                          conversation.otherUserAvatarUrl == null
+                              ? Icon(Icons.person,
+                              color: Colors.grey.shade400,
+                              size: 30)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              // Username
+                              Text(
+                                conversation.otherUsername,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              // Last Message Content
+                              Text(
+                                conversation.lastMessageContent,
+                                style: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Date/Time of Last Message (Far Right)
+                        Text(
+                          _formatDateTime(
+                              conversation.lastMessageTimestamp),
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                ),
+              ),
+              // Add a Divider after each Card, except the last one
+              if (index < _conversations.length - 1)
+                Divider(
+                  color: Colors.grey.shade700, // Grey color for the divider
+                  thickness: 1, // Thickness of the line
+                  indent: 20, // Indent from the left
+                  endIndent: 20, // Indent from the right
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

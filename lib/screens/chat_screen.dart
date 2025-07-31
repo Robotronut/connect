@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:signalr_core/signalr_core.dart';
@@ -5,6 +6,7 @@ import 'package:http/io_client.dart'; // Required for IOClient
 import 'package:intl/intl.dart'; // Import for date formatting
 
 import 'package:connect/services/secure_storage_service.dart';
+import 'package:connect/screens/report_screen.dart'; // Import your ReportScreen
 
 // Define a simple ChatMessage model to match your backend
 class ChatMessage {
@@ -13,7 +15,7 @@ class ChatMessage {
   final String content;
   final DateTime timestamp;
   final bool
-      isMe; // Helper to determine if the message was sent by the current user
+  isMe; // Helper to determine if the message was sent by the current user
 
   ChatMessage({
     required this.senderId,
@@ -33,7 +35,7 @@ class ChatMessage {
     final String recipientId = arguments[1].toString();
     final String content = arguments[2].toString();
     final DateTime timestamp =
-        DateTime.parse(arguments[3].toString()); // Assuming ISO 8601 string
+    DateTime.parse(arguments[3].toString()); // Assuming ISO 8601 string
 
     return ChatMessage(
       senderId: senderId,
@@ -53,11 +55,11 @@ class ChatScreen extends StatefulWidget {
   final String otherUserName;
   const ChatScreen(
       {Key? key,
-      required this.username,
-      required this.chatHubUrl,
-      required this.currentUserId,
-      required this.otherUserId,
-      required this.otherUserName})
+        required this.username,
+        required this.chatHubUrl,
+        required this.currentUserId,
+        required this.otherUserId,
+        required this.otherUserName})
       : super(key: key);
 
   @override
@@ -67,7 +69,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   late HubConnection _hubConnection;
   final List<ChatMessage> _messages =
-      []; // To store chat messages (using the new model)
+  []; // To store chat messages (using the new model)
   final TextEditingController _messageController = TextEditingController();
   bool _isConnected = false;
   bool _isLoadingHistory = false;
@@ -87,28 +89,28 @@ class _ChatScreenState extends State<ChatScreen> {
     // Use accessTokenFactory for authentication and include the custom IOClient
     _hubConnection = HubConnectionBuilder()
         .withUrl(
-          widget.chatHubUrl, // e.g., 'https://peek.thegwd.ca/chatHub'
-          HttpConnectionOptions(
-            // IMPORTANT: If you want the client to perform the negotiation,
-            // remove 'skipNegotiation: true' or set it to 'false'.
-            // The client library will handle the GET/POST negotiation based on server response.
-            // If your server specifically requires POST for negotiation, the client library
-            // will typically adapt, but directly forcing POST is not an exposed option.
-            // Forcing 'skipNegotiation: true' bypasses the negotiation entirely.
-            // skipNegotiation: true, // <--- Consider removing or setting to false
-            transport: HttpTransportType.webSockets,
-            // Pass the custom IOClient here for SSL bypass
-            client: ioClient, // <--- Use IOClient here
-            // Use accessTokenFactory to provide the token dynamically
-            accessTokenFactory: () async {
-              final String? apiKey = await SecureStorageService.getApiKey();
-              return apiKey; // Return the raw token string
-            },
-            // Add logging for detailed SignalR client messages (very useful for debugging!)
-            logging: (level, message) =>
-                print('SignalR Log [$level]: $message'),
-          ),
-        )
+      widget.chatHubUrl, // e.g., 'https://peek.thegwd.ca/chatHub'
+      HttpConnectionOptions(
+        // IMPORTANT: If you want the client to perform the negotiation,
+        // remove 'skipNegotiation: true' or set it to 'false'.
+        // The client library will handle the GET/POST negotiation based on server response.
+        // If your server specifically requires POST for negotiation, the client library
+        // will typically adapt, but directly forcing POST is not an exposed option.
+        // Forcing 'skipNegotiation: true' bypasses the negotiation entirely.
+        // skipNegotiation: true, // <--- Consider removing or setting to false
+        transport: HttpTransportType.webSockets,
+        // Pass the custom IOClient here for SSL bypass
+        client: ioClient, // <--- Use IOClient here
+        // Use accessTokenFactory to provide the token dynamically
+        accessTokenFactory: () async {
+          final String? apiKey = await SecureStorageService.getApiKey();
+          return apiKey; // Return the raw token string
+        },
+        // Add logging for detailed SignalR client messages (very useful for debugging!)
+        logging: (level, message) =>
+            print('SignalR Log [$level]: $message'),
+      ),
+    )
         .withAutomaticReconnect() // Add automatic reconnection for robustness
         .build();
 
@@ -140,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (arguments != null && arguments.length >= 4) {
         try {
           final ChatMessage receivedMessage =
-              ChatMessage.fromSignalR(arguments, widget.currentUserId);
+          ChatMessage.fromSignalR(arguments, widget.currentUserId);
           setState(() {
             _messages.insert(
                 0, receivedMessage); // Add to the top for reverse list
@@ -363,7 +365,7 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         // Changed title to be dynamic based on the other user
         title: Text(
-          'Chat with ${widget.username}',
+          'Chat with ${widget.otherUserName}', // Use otherUserName here
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14, // <-- You can change the font size here
@@ -385,18 +387,35 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+        actions: [ // Added actions for the AppBar
+          IconButton(
+            icon: Icon(CupertinoIcons.flag, color: Colors.white),
+            onPressed: () {
+              // Navigate to ReportScreen, passing the other user's details
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReportScreen(
+                    reportedUserId: widget.otherUserId,
+                    reportedUsername: widget.otherUserName,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
           // Display loading indicator for chat history
           _isLoadingHistory
               ? const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.orange), // Orange loading indicator
-                  ),
-                )
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                  Colors.orange), // Orange loading indicator
+            ),
+          )
               : const SizedBox.shrink(),
           Expanded(
             child: Container(
@@ -442,11 +461,11 @@ class _ChatScreenState extends State<ChatScreen> {
                               border: Border.all(
                                 color: chatMessage.isMe
                                     ? Colors
-                                        .red // Orange outline for sent messages
+                                    .red // Orange outline for sent messages
                                     : Colors.lightBlue
-                                        .shade400, // Light Blue outline for received messages
+                                    .shade400, // Light Blue outline for received messages
                                 width:
-                                    1.0, // Adjust the width of the outline as desired
+                                1.0, // Adjust the width of the outline as desired
                               ),
                               boxShadow: [
                                 // Subtle shadow for depth (keep as is)
@@ -469,7 +488,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           const SizedBox(
                               height:
-                                  4), // Small space between bubble and timestamp
+                              4), // Small space between bubble and timestamp
                           Text(
                             DateFormat('MMM dd hh:mm a').format(chatMessage.timestamp),
                             style: TextStyle(
@@ -514,10 +533,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       hintText: 'Type a message...',
                       hintStyle: TextStyle(
                           color:
-                              Colors.grey.shade500), // Lighter grey hint text
+                          Colors.grey.shade500), // Lighter grey hint text
                       filled: true,
                       fillColor:
-                          Colors.grey.shade800, // Darker fill for text field
+                      Colors.grey.shade800, // Darker fill for text field
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25), // More rounded
                         borderSide: BorderSide.none, // No border line
@@ -559,7 +578,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         : null, // Disable button if not connected
                     mini: false, // Make it a standard size button
                     backgroundColor:
-                        Colors.transparent, // Transparent to show gradient
+                    Colors.transparent, // Transparent to show gradient
                     elevation: 0, // No default elevation
                     child: const Icon(Icons.send, color: Colors.white),
                   ),
