@@ -1,3 +1,4 @@
+import 'package:connect/models/user_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
@@ -365,6 +366,7 @@ class _ChatScreenState extends State<ChatScreen> {
       appBar: AppBar(
         // Changed title to be dynamic based on the other user
         title: Text(
+
           'Chat with ${widget.otherUserName}', // Use otherUserName here
           style: const TextStyle(
             color: Colors.white,
@@ -419,7 +421,7 @@ class _ChatScreenState extends State<ChatScreen> {
               : const SizedBox.shrink(),
           Expanded(
             child: Container(
-              color: Colors.grey.shade900, // Dark background for chat area
+              color: Colors.black, // Dark background for chat area
               child: ListView.builder(
                 reverse: true, // Show latest messages at the bottom
                 itemCount: _messages.length,
@@ -509,7 +511,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Container(
             padding: const EdgeInsets.only(bottom: 60, left: 12.0, right: 12.0),
             decoration: BoxDecoration(
-              color: Colors.grey.shade900, // Dark background for input area
+              color: Colors.black, // Dark background for input area
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.3), // Darker shadow
@@ -536,7 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           Colors.grey.shade500), // Lighter grey hint text
                       filled: true,
                       fillColor:
-                      Colors.grey.shade800, // Darker fill for text field
+                      Colors.black, // Darker fill for text field
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25), // More rounded
                         borderSide: BorderSide.none, // No border line

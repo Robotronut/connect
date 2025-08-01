@@ -1,10 +1,13 @@
 // lib/screens/interests_screen.dart
 
+import 'package:connect/screens/store_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:connect/screens/profile_screen.dart'; // Import the ProfileScreen
 import 'package:connect/models/user_model.dart'; // Import UserModel
 import 'package:connect/services/api_service.dart'; // Import your API service
 import 'package:connect/services/secure_storage_service.dart'; // For fetching logged-in user ID
+import 'package:connect/screens/store_screen.dart'; // Import the new subscription store screen
+import 'dart:ui'; // For the BackdropFilter blur effect
 
 class InterestScreen extends StatefulWidget {
   const InterestScreen({super.key});
@@ -38,6 +41,9 @@ class _InterestScreenState extends State<InterestScreen>
   bool _hasMoreTapped = true;
   final ScrollController _tappedScrollController = ScrollController();
 
+  // New state variable to check for subscription status
+  bool _hasSubscription = false;
+
   @override
   void initState() {
     super.initState();
@@ -59,14 +65,25 @@ class _InterestScreenState extends State<InterestScreen>
       return;
     }
 
-    // --- Fetch 'Taps' Users ---
-    // This part assumes you have an API endpoint or logic to fetch users
-    // who have 'tapped' (liked/fired) the currently logged-in user.
-    // For now, it will remain as a placeholder or use a similar API call if available.
+    // Simulate checking subscription status
+    await _checkSubscriptionStatus();
+
+    // Fetch 'Taps' Users
     _fetchUsersWhoTappedMe();
 
-    // --- Fetch 'Views' Users ---
+    // Fetch 'Views' Users
     _fetchUsersWhoViewedMe();
+  }
+
+  // Placeholder method to simulate checking subscription status
+  Future<void> _checkSubscriptionStatus() async {
+    // In a real app, you would make an API call here to check the user's
+    // subscription status from your backend.
+    // For now, we'll just set it to false to demonstrate the blur effect.
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
+      _hasSubscription = false; // Set to true to see the un-blurred view
+    });
   }
 
   Future<void> _fetchUsersWhoTappedMe({bool isLoadMore = false}) async {
@@ -87,16 +104,9 @@ class _InterestScreenState extends State<InterestScreen>
     }
 
     try {
-      // IMPORTANT: This is a placeholder. Your backend needs an API that
-      // returns users who have 'tapped' the logged-in user's profile.
-      // You might need to extend ApiService.getPeople to include a 'tappedBy' filter
-      // or create a new method like ApiService.getUsersWhoTappedMe.
       final List<UserModel> fetchedUsers = await ApiService.getWhoTappedMe(
         pageNumber: _currentPageTapped,
         pageSize: _pageSizeTapped,
-        // Assuming your API can filter by a 'tapper's' ID or a specific 'tapped_me' endpoint
-        // You might need to pass _currentLoggedInUserId here if your API supports it:
-        // id: _currentLoggedInUserId, // This is a conceptual parameter for your backend
       );
 
       setState(() {
@@ -147,17 +157,8 @@ class _InterestScreenState extends State<InterestScreen>
     }
 
     try {
-      // IMPORTANT: This is a placeholder. Your backend needs an API that
-      // returns users who have viewed the logged-in user's profile.
-      // You might need to extend ApiService.getPeople to include a 'viewedBy' filter
-      // or create a new method like ApiService.getUsersWhoViewedMe.
       final List<UserModel> fetchedUsers = await ApiService.getWhoViewMe(
-          pageNumber: _currentPageViews, pageSize: _pageSizeViews
-        // Assuming your API can filter by a viewer's ID or a specific 'viewed_me' endpoint
-        // You might need to pass _currentLoggedInUserId here if your API supports it:
-        // id: _currentLoggedInUserId, // This is a conceptual parameter for your backend
-        // Example filter, adjust as needed
-      );
+          pageNumber: _currentPageViews, pageSize: _pageSizeViews);
 
       setState(() {
         if (isLoadMore) {
@@ -254,110 +255,48 @@ class _InterestScreenState extends State<InterestScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // Tab 1: Views (Loads users who viewed the logged-in user) - now first tab
-          _isLoadingViewedMe && _viewedMeUsers.isEmpty
-              ? const Center(
-              child: CircularProgressIndicator(color: Colors.white))
-              : _errorMessageViewedMe != null
-              ? Center(
-              child: Text(_errorMessageViewedMe!,
-                  style: const TextStyle(color: Colors.red)))
-              : _viewedMeUsers.isEmpty
-              ? const Center(
-            child: Text(
-              'No one has viewed your profile yet.',
-              style:
-              TextStyle(color: Colors.white70, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-          )
-              : RefreshIndicator(
-            onRefresh: () =>
-                _fetchUsersWhoViewedMe(isLoadMore: false),
-            color: Colors.white,
-            backgroundColor: Colors.grey[900],
-            child: GridView.builder(
-              controller: _viewsScrollController,
-              padding: const EdgeInsets.all(8.0),
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2, // Two users per row
-                crossAxisSpacing: 8.0,
-                mainAxisSpacing: 8.0,
-                childAspectRatio: 0.75, // Adjust as needed
-              ),
-              itemCount:
-              _viewedMeUsers.length + (_hasMoreViews ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _viewedMeUsers.length) {
-                  return _isLoadingViewedMe
-                      ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white))
-                      : const SizedBox.shrink();
-                }
-                final user = _viewedMeUsers[index];
-                return _buildUserGridItem(context, user);
-              },
-            ),
+          // Tab 1: Views
+          _buildTabContent(
+            context: context,
+            users: _viewedMeUsers,
+            isLoading: _isLoadingViewedMe,
+            errorMessage: _errorMessageViewedMe,
+            hasMore: _hasMoreViews,
+            scrollController: _viewsScrollController,
+            isGrid: true, // Views tab uses a grid layout
+            onRefresh: () => _fetchUsersWhoViewedMe(isLoadMore: false),
+            hasSubscription: _hasSubscription,
           ),
-          // Tab 2: Taps (Loads users who 'tapped' the logged-in user) - now second tab
-          _isLoadingTapped && _tappedMeUsers.isEmpty
-              ? const Center(
-              child: CircularProgressIndicator(color: Colors.white))
-              : _errorMessageTapped != null
-              ? Center(
-              child: Text(_errorMessageTapped!,
-                  style: const TextStyle(color: Colors.red)))
-              : _tappedMeUsers.isEmpty
-              ? const Center(
-            child: Text(
-              'No one has tapped your profile yet.',
-              style:
-              TextStyle(color: Colors.white70, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-          )
-              : RefreshIndicator(
-            onRefresh: () =>
-                _fetchUsersWhoTappedMe(isLoadMore: false),
-            color: Colors.white,
-            backgroundColor: Colors.grey[900],
-            child: ListView.builder(
-              // Changed to ListView.builder
-              controller: _tappedScrollController,
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _tappedMeUsers.length +
-                  (_hasMoreTapped ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (index == _tappedMeUsers.length) {
-                  return _isLoadingTapped
-                      ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Colors.white))
-                      : const SizedBox.shrink();
-                }
-                final user = _tappedMeUsers[index];
-                return _buildUserListItem(
-                    context, user); // Using new list item builder
-              },
-            ),
+          // Tab 2: Taps
+          _buildTabContent(
+            context: context,
+            users: _tappedMeUsers,
+            isLoading: _isLoadingTapped,
+            errorMessage: _errorMessageTapped,
+            hasMore: _hasMoreTapped,
+            scrollController: _tappedScrollController,
+            isGrid: false, // Taps tab uses a list layout
+            onRefresh: () => _fetchUsersWhoTappedMe(isLoadMore: false),
+            hasSubscription: _hasSubscription,
           ),
         ],
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(bottom: 50),
+      // This bottom navigation bar is only visible when the user does NOT have a subscription
+      bottomNavigationBar: _hasSubscription
+          ? null
+          : Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Unlocking all profiles!'),
-                      backgroundColor: Colors.yellow,
-                      duration: Duration(seconds: 1),
+                  // Navigate to the subscription store page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SubscriptionPage(),
                     ),
                   );
                 },
@@ -383,21 +322,113 @@ class _InterestScreenState extends State<InterestScreen>
     );
   }
 
-  // Unified _buildUserGridItem for UserModel (used by both tabs)
-  Widget _buildUserGridItem(BuildContext context, UserModel user) {
+  // Helper method to build the content for each tab, with a subscription check
+  Widget _buildTabContent({
+    required BuildContext context,
+    required List<UserModel> users,
+    required bool isLoading,
+    required String? errorMessage,
+    required bool hasMore,
+    required ScrollController scrollController,
+    required bool isGrid,
+    required Future<void> Function() onRefresh,
+    required bool hasSubscription,
+  }) {
+    if (isLoading && users.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
+    }
+    if (errorMessage != null) {
+      return Center(
+          child: Text(errorMessage, style: const TextStyle(color: Colors.red)));
+    }
+    if (users.isEmpty) {
+      return const Center(
+        child: Text(
+          'No one has viewed your profile yet.',
+          style: TextStyle(color: Colors.white70, fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    // The actual list or grid view
+    Widget content;
+    if (isGrid) {
+      content = GridView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.all(8.0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, // Two users per row
+          crossAxisSpacing: 8.0,
+          mainAxisSpacing: 8.0,
+          childAspectRatio: 0.75, // Adjust as needed
+        ),
+        itemCount: users.length + (hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == users.length) {
+            return isLoading
+                ? const Center(
+                child: CircularProgressIndicator(color: Colors.white))
+                : const SizedBox.shrink();
+          }
+          final user = users[index];
+          // Use the modified grid item builder that checks for subscription
+          return _buildUserGridItem(context, user, hasSubscription);
+        },
+      );
+    } else {
+      content = ListView.builder(
+        controller: scrollController,
+        padding: const EdgeInsets.all(8.0),
+        itemCount: users.length + (hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == users.length) {
+            return isLoading
+                ? const Center(
+                child: CircularProgressIndicator(color: Colors.white))
+                : const SizedBox.shrink();
+          }
+          final user = users[index];
+          // Use the modified list item builder that checks for subscription
+          return _buildUserListItem(context, user, hasSubscription);
+        },
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      color: Colors.white,
+      backgroundColor: Colors.grey[900],
+      child: content,
+    );
+  }
+
+  // Modified _buildUserGridItem with subscription check
+  Widget _buildUserGridItem(
+      BuildContext context, UserModel user, bool hasSubscription) {
     final imageUrl = user.imageUrls.isNotEmpty
         ? user.imageUrls[0]
-        : '/assets/placeholder_user.jpg'; // Placeholder if no image
+        : 'https://placehold.co/400x600/000000/FFFFFF?text=No+Image';
 
     return GestureDetector(
       onTap: () {
-        // Navigate to the ProfileScreen using the user's ID
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileScreen(userId: user.id.toString()),
-          ),
-        );
+        // Only navigate if the user has a subscription
+        if (hasSubscription) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfileScreen(userId: user.id.toString()),
+            ),
+          );
+        } else {
+          // Take them to the store page if they click on a blurred profile
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SubscriptionPage(),
+            ),
+          );
+        }
       },
       child: Stack(
         children: [
@@ -445,6 +476,17 @@ class _InterestScreenState extends State<InterestScreen>
               ),
             ),
           ),
+          // Blur only if user doesn't have a subscription
+          if (!hasSubscription)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12.0),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+                child: Container(
+                  color: Colors.black.withOpacity(0.4),
+                ),
+              ),
+            ),
           Positioned(
             bottom: 8.0,
             left: 8.0,
@@ -459,7 +501,7 @@ class _InterestScreenState extends State<InterestScreen>
                       fontSize: 18,
                       fontWeight: FontWeight.bold),
                 ),
-                Text(user.distance.toString(),
+                Text(_formatDistance(double.tryParse(user.distance.toString()) ?? 0.0),
                     style: TextStyle(color: Colors.grey[400])),
               ],
             ),
@@ -469,21 +511,32 @@ class _InterestScreenState extends State<InterestScreen>
     );
   }
 
-  // New _buildUserListItem for UserModel (used by Taps tab)
-  Widget _buildUserListItem(BuildContext context, UserModel user) {
+  // Modified _buildUserListItem with subscription check
+  Widget _buildUserListItem(
+      BuildContext context, UserModel user, bool hasSubscription) {
     final imageUrl = user.imageUrls.isNotEmpty
         ? user.imageUrls[0]
-        : 'assets/placeholder_user.jpg'; // Placeholder if no image
+        : 'https://placehold.co/400x400/000000/FFFFFF?text=No+Image';
 
     return GestureDetector(
       onTap: () {
-        // Navigate to the ProfileScreen using the user's ID
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfileScreen(userId: user.id.toString()),
-          ),
-        );
+        // Only navigate if the user has a subscription
+        if (hasSubscription) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfileScreen(userId: user.id.toString()),
+            ),
+          );
+        } else {
+          // Take them to the store page if they click on a blurred profile
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SubscriptionPage(),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -495,42 +548,60 @@ class _InterestScreenState extends State<InterestScreen>
         child: Row(
           children: [
             // User Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                width: 80, // Smaller image for list view
-                height: 80,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 80,
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: 80, // Smaller image for list view
                     height: 80,
-                    color: Colors.grey[800],
-                    child: const Center(
-                      child:
-                      Icon(Icons.person, color: Colors.white54, size: 40),
-                    ),
-                  );
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: 80,
-                    height: 80,
-                    color: Colors.grey[800],
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                            : null,
-                        color: Colors.white,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[800],
+                        child: const Center(
+                          child: Icon(Icons.person,
+                              color: Colors.white54, size: 40),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[800],
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Blur only if user doesn't have a subscription
+                if (!hasSubscription)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8.0),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.black.withOpacity(0.4),
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16.0),
             // User Name, Age, Distance
@@ -546,7 +617,7 @@ class _InterestScreenState extends State<InterestScreen>
                         fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    (user.distance.toString()), // Use formatted distance
+                    _formatDistance(double.tryParse(user.distance.toString()) ?? 0.0), // Use formatted distance
                     style: TextStyle(color: Colors.grey[400], fontSize: 14),
                   ),
                 ],
