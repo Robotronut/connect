@@ -6,6 +6,8 @@ import 'screens/registration_screen.dart';
 import 'screens/otp_verification_screen.dart';
 import 'screens/forgot_password_screen.dart'; // New import
 import '/splashScreen.dart'; // <--- NEW: Import your SplashScreen widget
+const kServerUrl = "https://peek.thegwd.ca/chathub";
+//const kServerUrl = "https://localhost:7197/chathub";
 
 void main() {
   runApp(const MyApp());

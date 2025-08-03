@@ -1,54 +1,14 @@
 // --- services/api_service.dart ---
+import 'package:connect/main.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:connect/models/user_model.dart' show UserModel;
 import 'package:http/http.dart' as http;
 import '../services/secure_storage_service.dart';
 import 'dart:io';
-import 'package:signalr_core/signalr_core.dart'; // Import SignalR Core
 import 'dart:async'; // Import for StreamController
 import 'package:intl/intl.dart'; // For date formatting if needed, as per user's pubspec.yaml
 
-// Define the Message model here as it's used by the API service
-class Message {
-  final String id; // The GUID string from the backend
-  final String senderId;
-  final String recipientId;
-  final String content;
-  final DateTime timestamp;
-
-  Message({
-    required this.id,
-    required this.senderId,
-    required this.recipientId,
-    required this.content,
-    required this.timestamp,
-  });
-
-  factory Message.fromJson(Map<String, dynamic> json) {
-    return Message(
-      // The backend's ChatDto has user1Email and user2Email.
-      // We need to decide which one is sender and which is recipient
-      // based on the context of the chat history.
-      // Assuming 'id' is provided by backend for history, if not, generate.
-      id: json['id'] ?? UniqueKey().toString(),
-      senderId: json['user1Email'], // Assuming user1Email is the sender
-      recipientId: json['user2Email'], // Assuming user2Email is the recipient
-      content: json['content'],
-      timestamp: DateTime.parse(json['timeStamp']), // Backend uses 'TimeStamp'
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'senderId': senderId,
-      'recipientId': recipientId,
-      'content': content,
-      'timestamp': timestamp.toIso8601String(),
-    };
-  }
-}
 
 // This is a TOP-LEVEL function, outside of the ApiService class
 // It's designed to be run in a separate isolate using compute
@@ -70,157 +30,10 @@ UserModel _parseUserModel(String responseBody) {
 }
 
 class ApiService {
-  static const String _baseUrl = 'https://peek.thegwd.ca';
-  // Base URL for chat specific API endpoints
-  static const String _chatBaseUrl = 'https://peek.thegwd.ca';
+  
+  static final String _baseUrl = 'https://peek.thegwd.ca';
 
-  static HubConnection? _hubConnection;
-  static final StreamController<Message> _messageStreamController =
-      StreamController<Message>.broadcast();
-
-  // Stream to listen for new incoming messages
-  static Stream<Message> get onNewMessage => _messageStreamController.stream;
-
-  /// Initializes and starts the SignalR connection.
-  static Future<void> initializeSignalR() async {
-    // Ensure only one connection is active
-    if (_hubConnection != null &&
-        _hubConnection!.state == HubConnectionState.connected) {
-      print('SignalR connection already active.');
-      return;
-    }
-
-    final String? userId = await SecureStorageService.getUserId();
-    final String? userEmail = await SecureStorageService.getEmail();
-
-    if (userId == null || userEmail == null) {
-      print('SignalR: User not authenticated. Cannot establish connection.');
-      return;
-    }
-
-    _hubConnection = HubConnectionBuilder()
-        .withUrl(
-          '$_baseUrl/', // Your SignalR Hub URL
-          HttpConnectionOptions(
-            accessTokenFactory: () => Future.value(
-                userId), // Pass the security stamp as an access token
-            logging: (level, message) => print('SignalR Log: $message'),
-            // SkipNegotiation: true, // Might be needed for some server configurations
-            // Transport: HttpTransportType.WebSockets, // Force WebSockets if needed
-          ),
-        )
-        .build();
-
-    // Register client-side method that the server can call
-    _hubConnection!.on('ReceiveMessage', (arguments) {
-      print('Received raw message from SignalR: $arguments');
-      if (arguments != null && arguments.isNotEmpty) {
-        // Assuming arguments map directly to ChatDto properties:
-        // [Content, user1Email, user2Email, TimeStamp]
-        final String content = arguments[0];
-        final String user1Email = arguments[1]; // Sender
-        final String user2Email = arguments[2]; // Recipient
-        final String timestampString = arguments[3];
-
-        try {
-          final Message receivedMessage = Message(
-            id: UniqueKey()
-                .toString(), // Generate a client-side ID if backend doesn't provide one in ChatDto
-            senderId: user1Email,
-            recipientId: user2Email,
-            content: content,
-            timestamp: DateTime.parse(timestampString),
-          );
-          _messageStreamController.add(receivedMessage);
-          print(
-              'Parsed and added message to stream: ${receivedMessage.content}');
-        } catch (e) {
-          print('Error parsing received message: $e');
-        }
-      }
-    });
-
-    _hubConnection!.onclose((error) {
-      print('SignalR Connection closed: $error');
-      // Implement reconnection logic here if necessary
-    });
-
-    try {
-      await _hubConnection!.start();
-      print('SignalR connection started successfully.');
-    } catch (e) {
-      print('Error starting SignalR connection: $e');
-    }
-  }
-
-  /// Sends a chat message via SignalR.
-  /// Matches the SendMessageDto on the backend.
-  static Future<void> sendChatMessage({
-    required String senderId,
-    required String recipientId,
-    required String content,
-  }) async {
-    if (_hubConnection?.state == HubConnectionState.connected) {
-      try {
-        // Invoke the server-side method 'SendMessageToUser'
-        // Arguments should match your C# SendMessageDto properties:
-        // SecurityStamp, SenderEmail, RecipientEmail, Content
-        await _hubConnection!.invoke(
-          'SendPrivateMessage', // This should be the method name on your SignalR Hub
-          args: [recipientId, content],
-        );
-        print('Message sent via SignalR: $content to $recipientId');
-      } catch (e) {
-        print('Error sending message via SignalR: $e');
-      }
-    } else {
-      print('SignalR not connected. Message not sent.');
-      // Fallback to REST API if SignalR is not connected, or show error
-      // await _sendChatMessageViaRest(senderEmail, recipientEmail, content);
-    }
-  }
-
-  /// Fetches chat history between two users.
-  static Future<List<Message>> fetchChatHistory(String user1Id, String user2Id,
-      {int count = 50, int offset = 0}) async {
-    final String? securityStamp = await SecureStorageService.getApiKey();
-    if (securityStamp == null) {
-      print('Cannot fetch chat history: Security Stamp not found.');
-      return [];
-    }
-
-    // Construct the URL based on the provided format
-    final uri = Uri.parse(_chatBaseUrl);
-    final headers = await _getHeaders();
-    try {
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Message.fromJson(json)).toList();
-      } else {
-        print(
-            "Failed to load chat history: ${response.statusCode} ${response.body}");
-        return [];
-      }
-    } catch (e) {
-      print("Error fetching chat history: $e");
-      return [];
-    }
-  }
-
-  /// Stops the SignalR connection and closes the message stream.
-  static Future<void> stopSignalR() async {
-    if (_hubConnection?.state == HubConnectionState.connected) {
-      await _hubConnection!.stop();
-      print('SignalR connection stopped.');
-    }
-    if (!_messageStreamController.isClosed) {
-      await _messageStreamController.close();
-      print('Message stream closed.');
-    }
-  }
-
+  
   /// Calls the registration API to generate an OTP.
   /// Returns true if successful, false otherwise.
   static Future<bool> generateOtp({
@@ -821,19 +634,18 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         // Successfully updated
-      print(response.body);
-      print(response.statusCode);
+        print(response.body);
+        print(response.statusCode);
         print('Complaint Filed');
         return;
       } else {
         print(response.body);
-      print(response.statusCode);
+        print(response.statusCode);
         print(
             'Failed to file complaint: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to complain: ${response.body}');
       }
     } catch (e) {
-      
       print('Error complaining: $e');
       rethrow;
     }

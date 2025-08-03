@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart'; // For CupertinoIcons
 // import 'package:connect/services/api_service.dart';
 // import 'package:connect/services/secure_storage_service.dart';
 // import 'package:connect/screens/edit_profile_screen.dart';
-// import 'package:connect/screens/photo_detail_screen.dart';
+//import 'package:connect/screens/photo_detail_screen.dart';
 
 // --- New ReportScreen Widget ---
 class ReportScreen extends StatefulWidget {
@@ -243,7 +243,6 @@ class _ReportScreenState extends State<ReportScreen> {
                       ),
               ),
               if (_submissionMessage != null)
-
                 Padding(
                   padding: const EdgeInsets.only(top: 20),
                   child: Text(

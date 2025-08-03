@@ -1,3 +1,4 @@
+import 'package:connect/main.dart';
 import 'package:connect/models/user_model.dart';
 import 'package:connect/screens/chat_screen.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,10 +8,10 @@ import 'package:connect/services/secure_storage_service.dart';
 import 'package:connect/screens/edit_profile_screen.dart';
 import 'package:connect/screens/photo_detail_screen.dart'; // Import the photo detail screen
 import 'package:connect/screens/report_screen.dart';
-
-
-
-
+import 'package:signalr_netcore/http_connection_options.dart';
+import 'package:signalr_netcore/hub_connection.dart';
+import 'package:connect/screens/chat_Inbox_Screen.dart';
+import 'package:signalr_netcore/hub_connection_builder.dart';
 // Assuming UserModel and ImageUrl are defined as they were in the previous example
 // and have the necessary fields (age, status, distance, height, weight, bodytype,
 // aboutMe, gender, pronouns, race, relationshipStatus, lookingFor, meetAt, acceptsNsfwPics)
@@ -29,7 +30,8 @@ class ProfileScreen extends StatefulWidget {
 class ProfileScreenState extends State<ProfileScreen> {
   final PageController _pageController = PageController();
   final DraggableScrollableController _sheetController =
-  DraggableScrollableController();
+      DraggableScrollableController();
+  late HubConnection hubConnection;
 
   UserModel? _userProfile;
   bool _isLoading = true;
@@ -39,16 +41,16 @@ class ProfileScreenState extends State<ProfileScreen> {
   int _currentPageIndex = 0;
   bool _isFlameTapped = false;
   final double _initialChildSize =
-  1; // Starts showing most of the content including photo
+      1; // Starts showing most of the content including photo
   final double _minChildSize =
-  1; // Sheet can shrink to 15% (showing just header)
+      1; // Sheet can shrink to 15% (showing just header)
   final double _maxSheetExtent =
-  1; // Max height the sheet can expand to (almost full screen)
+      1; // Max height the sheet can expand to (almost full screen)
 
   double _sheetScrollOpacity = 0.0;
 
   @override
-  void initState() {
+  Future<void> initState() async {
     super.initState();
     _loadProfileData();
     _pageController.addListener(() {
@@ -56,14 +58,22 @@ class ProfileScreenState extends State<ProfileScreen> {
         _currentPageIndex = _pageController.page?.round() ?? 0;
       });
     });
-
+    final String? APIkey = await SecureStorageService.getApiKey();
+    hubConnection = HubConnectionBuilder()
+        .withUrl(
+          kServerUrl,
+          options: HttpConnectionOptions(
+            accessTokenFactory: () async => Future.value(APIkey),
+          ),
+        )
+        .build();
     _sheetController.addListener(() {
       final double currentExtent = _sheetController.size;
       double normalizedOpacity = 0.0;
 
       if (currentExtent > _minChildSize) {
         normalizedOpacity = ((currentExtent - _minChildSize) /
-            (_maxSheetExtent - _minChildSize))
+                (_maxSheetExtent - _minChildSize))
             .clamp(0.0, 1.0);
       }
 
@@ -81,7 +91,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
       final UserModel? fetchedProfile =
-      await ApiService.getUserProfileById(widget.userId);
+          await ApiService.getUserProfileById(widget.userId);
 
       setState(() {
         _userProfile = fetchedProfile;
@@ -186,17 +196,16 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   void _navigateToChatScreen() {
     if (_userProfile != null) {
-      final String url = 'https://peek.thegwd.ca/chathub';
       Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => ChatScreen(
-              username: _userProfile!.userName.toString(),
-              currentUserId: _currentLoggedInUserId.toString(),
-              chatHubUrl: url,
-              otherUserId: _userProfile!.id.toString(),
-              otherUserName: _userProfile!.userName.toString(),
-            )),
+                  hubConnection: hubConnection,
+                  currentUserId: _currentLoggedInUserId.toString(),
+                  chatHubUrl: kServerUrl,
+                  otherUserId: _userProfile!.id.toString(),
+                  otherUserName: _userProfile!.userName.toString(),
+                )),
       );
     }
   }
@@ -277,7 +286,8 @@ class ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(_sheetScrollOpacity), // Corrected: Use withOpacity
+        backgroundColor: Colors.black
+            .withOpacity(_sheetScrollOpacity), // Corrected: Use withOpacity
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
@@ -345,74 +355,74 @@ class ProfileScreenState extends State<ProfileScreen> {
                   width: double.infinity,
                   child: _userProfile!.imageUrls.isEmpty
                       ? Container(
-                    color: Colors.grey[800],
-                    child: const Center(
-                      child: Icon(Icons.person,
-                          size: 100, color: Colors.grey),
-                    ),
-                  )
+                          color: Colors.grey[800],
+                          child: const Center(
+                            child: Icon(Icons.person,
+                                size: 100, color: Colors.grey),
+                          ),
+                        )
                       : Stack(
-                    children: [
-                      PageView.builder(
-                        controller: _pageController,
-                        itemCount: _userProfile!.imageUrls.length,
-                        itemBuilder: (context, index) {
-                          // CORRECTED: Direct access to the URL string
-                          final String imageUrl =
-                          _userProfile!.imageUrls[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => PhotoDetailScreen(
-                                    // CORRECTED: Pass the URL string directly
-                                    imageUrl:
-                                    _userProfile!.imageUrls[index],
-                                    heroTag: 'profilePhoto$index',
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Hero(
-                              tag: 'profilePhoto$index',
-                              child: Image.network(
-                                imageUrl,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                                errorBuilder: (context, error,
-                                    stackTrace) =>
-                                    Image.asset(
-                                        'assets/placeholder_error.jpg',
-                                        fit: BoxFit.cover),
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) {
-                                    return child;
-                                  }
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress
-                                          .expectedTotalBytes !=
-                                          null
-                                          ? loadingProgress
-                                          .cumulativeBytesLoaded /
-                                          loadingProgress
-                                              .expectedTotalBytes!
-                                          : null,
-                                      color: Colors.white,
+                          children: [
+                            PageView.builder(
+                              controller: _pageController,
+                              itemCount: _userProfile!.imageUrls.length,
+                              itemBuilder: (context, index) {
+                                // CORRECTED: Direct access to the URL string
+                                final String imageUrl =
+                                    _userProfile!.imageUrls[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PhotoDetailScreen(
+                                          // CORRECTED: Pass the URL string directly
+                                          imageUrl:
+                                              _userProfile!.imageUrls[index],
+                                          heroTag: 'profilePhoto$index',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Hero(
+                                    tag: 'profilePhoto$index',
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      errorBuilder: (context, error,
+                                              stackTrace) =>
+                                          Image.asset(
+                                              'assets/placeholder_error.jpg',
+                                              fit: BoxFit.cover),
+                                      loadingBuilder:
+                                          (context, child, loadingProgress) {
+                                        if (loadingProgress == null) {
+                                          return child;
+                                        }
+                                        return Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
+                                            color: Colors.white,
+                                          ),
+                                        );
+                                      },
                                     ),
-                                  );
-                                },
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
-                      _buildPageIndicator(),
-                    ],
-                  ),
+                            _buildPageIndicator(),
+                          ],
+                        ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
