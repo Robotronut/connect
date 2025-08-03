@@ -34,93 +34,127 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _weightController = TextEditingController();
 
   // Dropdown values for selection fields (populate from API if dynamic, or keep static)
-
-// Corrected _buildOptions
   final List<String> _buildOptions = [
     'Slim',
     'Average',
     'Athletic',
     'Muscular',
-    'A few extra pounds' // Corrected from 'Heavy', removed 'Other'
+    'Large',
+    'Stocky',
+    'Rather Not Say'
   ];
   String? _selectedBuild;
 
-// Corrected _lookingForOptions
   final List<String> _lookingForOptions = [
     'Chat',
-    'Friends', // Corrected from 'Friends'
+    'Friends',
     'Hookups',
-    'Long-term Relationship', // Added this option
-    'Dating'
-    // Removed 'Anything' as it's not in backend defaults
+    'Long-term Relationship',
+    'Dating',
+    'Rather Not Say',
   ];
   String? _selectedLookingFor;
 
-// Corrected _meetAtOptions
   final List<String> _meetAtOptions = [
     'My Place',
     'Your Place',
     'Public Place',
-    'Online'
-    // Removed 'Cafe' as it's not in backend defaults
+    'Online',
+    'Rather Not Say',
   ];
   String? _selectedMeetAt;
 
-// Corrected _nsfwPicsOptions
-  final List<String> _nsfwPicsOptions = ['Yes', 'No'];
-
-  // Added 'Maybe'
+  final List<String> _nsfwPicsOptions = [
+    'Yes',
+    'No',
+    'Maybe',
+    'Rather Not Say'
+  ];
   String? _selectedNsfwPics;
 
-// Corrected _genderOptions
   final List<String> _genderOptions = [
     'Man',
     'Woman',
-    'Non-binary' // Corrected from 'Non-Binary', removed 'Transgender', 'Prefer not to say'
+    'Non-binary',
+    'Rather Not Say'
   ];
   String? _selectedGender;
+
   final List<String> _positionOptions = [
     'Top',
     'Versatile',
     'Bottom',
     'Side',
-    'Not Applicable'
+    'Rather Not Say'
   ];
   List<String> _selectedPositions = [];
-// Corrected _pronounsOptions
-// Note: Frontend typically shows all available pronouns, and backend logic handles which are valid for a selected gender.
-// Based on your backend, 'He/Him/His', 'She/Her/Hers', 'They/Them/Theirs' are the main options.
-// 'Ask me' is a common frontend addition for user preference.
-// I will keep 'Ask me' for user flexibility, but ensure the core ones match.
+
   final List<String> _pronounsOptions = [
     'He/Him/His',
     'She/Her/Hers',
     'They/Them/Theirs',
-    'Ask me' // Keeping this for frontend flexibility unless backend strictly disallows it
+    'Ask me',
+    'Not Specified',
   ];
   String? _selectedPronouns;
 
-// Corrected _raceOptions
   final List<String> _raceOptions = [
     'White',
     'Black',
     'Asian',
     'Hispanic',
-    'Indigenous', // Added 'Indigenous'
-    'Mixed'
-    // Removed 'Other'
+    'Indigenous',
+    'Mixed',
+    'Rather Not Say',
   ];
   String? _selectedRace;
 
-// Corrected _relationshipStatusOptions
   final List<String> _relationshipStatusOptions = [
     'Single',
-    'In a Relationship', // Corrected from 'Taken', added 'Married'
+    'Dating',
     'Married',
-    'Complicated'
-    // Removed 'Open'
+    'Commited',
+    'Engaged',
+    'Exclusive',
+    'Open Relationship',
+    'Partnered',
+    'Rather Not Say'
   ];
   String? _selectedRelationshipStatus;
+
+  // New list for "My Tribes" options
+  final List<String> _tribesOptions = [
+    'Bear',
+    'Clean-Cut',
+    'Daddy',
+    'Discreet',
+    'Geek',
+    'Jock',
+    'Leather',
+    'Otter',
+    'Poz',
+    'Rugged',
+    'Twink',
+    'Sober',
+    'Rather Not Say',
+  ];
+  // New list to store the selected tribes
+  List<String> _selectedTribes = [];
+
+  // New list for "Sexual Orientation" options
+  final List<String> _sexualOrientationOptions = [
+    'Straight',
+    'Gay',
+    'Bisexual',
+    'Pansexual',
+    'Asexual',
+    'Queer',
+    'Questioning',
+    'What Ever',
+    'Rather Not Say',
+  ];
+  String? _selectedSexualOrientation;
+
   // Store the UserProfile that we are editing
   UserModel? _currentUserProfile;
 
@@ -138,7 +172,6 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     if (widget.user != null) {
       _currentUserProfile = widget.user;
       _loadUserProfile();
-      // Example: _userNameController.text = widget.user!.userName ?? '';
     } else {
       _loadUserProfile();
     }
@@ -162,7 +195,6 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      //final UserModel? _currentUserProfile;
       if (_currentUserProfile == null) {
         throw Exception(
             "Profile error: No logged-in user ID found. Please log in again.");
@@ -181,17 +213,21 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       _selectedBuild = _currentUserProfile!.bodyType;
       _selectedLookingFor = _currentUserProfile!.lookingFor;
       _selectedMeetAt = _currentUserProfile!.meetAt;
-      _selectedNsfwPics = _currentUserProfile!.acceptsNsfwPics ? 'Yes' : 'No';
+      _selectedNsfwPics =
+          _currentUserProfile!.acceptsNsfwPics != null ? 'Yes' : 'No';
       _selectedGender = _currentUserProfile!.gender;
       _selectedPronouns = _currentUserProfile!.pronouns;
       _selectedRace = _currentUserProfile!.race;
       _selectedRelationshipStatus = _currentUserProfile!.relationshipStatus;
       _selectedPositions = _currentUserProfile!.position ??
           []; // Initialize with an empty list if null
+      _selectedTribes = _currentUserProfile!.tribes ??
+          []; // Initialize with an empty list if null
+      _selectedSexualOrientation = _currentUserProfile!
+          .sexualOrientation!; // Initialize sexual orientation
       _imageUrls.clear();
       _imageUrls.addAll(_currentUserProfile!.imageUrls as Iterable<String>);
     } catch (e) {
-      // More user-friendly error messages
       if (e.toString().contains("401")) {
         _errorMessage = 'Session expired. Please log in again.';
       } else {
@@ -199,11 +235,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
             'Failed to load profile: ${e.toString().split(':').last.trim()}';
       }
 
-      // >>>>>> ADDED THIS MOUNTED CHECK HERE <<<<<<
       if (!mounted) {
-        // If the widget is no longer in the widget tree, we cannot show a SnackBar.
-        // Optionally, log the error here if you need to track it even if no UI feedback is given.
-        return; // Exit the catch block early as we can't proceed with context
+        return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -221,7 +254,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     final updatedProfile = UserModel(
       bodyType: _selectedBuild,
       imageUrls: _imageUrls,
-      acceptsNsfwPics: true,
+      // Map 'Yes' to true, 'No' to false, otherwise null for other options.
+      acceptsNsfwPics: _selectedNsfwPics,
       aboutMe: _bioController.text,
       age: _currentUserProfile!.age,
       meetAt: _selectedMeetAt,
@@ -232,18 +266,20 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       relationshipStatus: _selectedRelationshipStatus,
       isFresh: _currentUserProfile!.isFresh,
       status: _currentUserProfile!.status,
-      userName: _currentUserProfile!.userName,
+      userName: _usernameController.text, // Use the controller value
       id: _currentUserProfile!.id,
       gender: _selectedGender,
       lookingFor: _selectedLookingFor,
       joined: _currentUserProfile!.joined,
       position: _selectedPositions,
+      tribes: _selectedTribes, // Add the new tribes field
+      sexualOrientation:
+          _selectedSexualOrientation, // Add the new sexual orientation field
     );
     try {
       await ApiService.updateExistingUserProfile(updatedProfile);
-      // ... (your existing validation and API call to save the profile)
 
-      if (!mounted) return; // Always check mounted after async operations
+      if (!mounted) return;
 
       setState(() {
         _isLoading = false;
@@ -271,25 +307,21 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
     if (pickedFile != null) {
       setState(() {
-        _isImageProcessing = true; // Show specific loader for image processing
-        _errorMessage = ''; // Clear previous image errors
+        _isImageProcessing = true;
+        _errorMessage = '';
       });
       try {
         File imageFile = File(pickedFile.path);
-        final imageUrl =
-            await ApiService.uploadImage(imageFile); // Upload to API
+        final imageUrl = await ApiService.uploadImage(imageFile);
         setState(() {
-          // If this is the first image, or if we want it to be the main profile image,
-          // insert it at the beginning. Otherwise, add to the end.
           if (_imageUrls.isEmpty) {
             _imageUrls.add(imageUrl);
           } else {
-            _imageUrls.insert(
-                0, imageUrl); // Make new image the main profile image
+            _imageUrls.insert(0, imageUrl);
           }
         });
 
-        if (!mounted) return; // Add mounted check before using context
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Image uploaded successfully!')),
         );
@@ -297,7 +329,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         _errorMessage =
             'Failed to upload image: ${e.toString().split(':').last.trim()}';
 
-        if (!mounted) return; // Add mounted check before using context
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_errorMessage)),
         );
@@ -312,16 +344,16 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   /// Removes an image from the user's profile via API.
   void _removeImage(String imageUrlToRemove) async {
     setState(() {
-      _isImageProcessing = true; // Show specific loader for image processing
-      _errorMessage = ''; // Clear previous image errors
+      _isImageProcessing = true;
+      _errorMessage = '';
     });
     try {
-      await ApiService.deleteImage(imageUrlToRemove); // Delete from API
+      await ApiService.deleteImage(imageUrlToRemove);
       setState(() {
-        _imageUrls.remove(imageUrlToRemove); // Remove from local list
+        _imageUrls.remove(imageUrlToRemove);
       });
 
-      if (!mounted) return; // Add mounted check before using context
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image removed successfully!')),
       );
@@ -329,7 +361,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       _errorMessage =
           'Failed to remove image: ${e.toString().split(':').last.trim()}';
 
-      if (!mounted) return; // Add mounted check before using context
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -355,13 +387,294 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   // Helper method for consistent section titles
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8.0, top: 16.0, left: 16.0),
       child: Text(
         title,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 12.0,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// A helper widget to create a full-width, tappable row for single-select options.
+  /// It uses a modal bottom sheet to display the options, providing a consistent
+  /// and mobile-friendly pop-up experience regardless of the number of options.
+  Widget _buildSelectableRow({
+    required String title,
+    required String? selectedValue,
+    required List<String> options,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          builder: (context) {
+            return Container(
+              color: Colors.grey[900],
+              height: 300,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(
+                    child: Scrollbar(
+                      thickness: 4.0, // Made the scrollbar thinner
+                      thumbVisibility:
+                          true, // Made the scrollbar always visible
+                      child: ListView.builder(
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          final option = options[index];
+                          return ListTile(
+                            title: Text(
+                              option,
+                              style: TextStyle(
+                                color: selectedValue == option
+                                    ? Colors.yellow
+                                    : Colors.white,
+                              ),
+                            ),
+                            trailing: selectedValue == option
+                                ? const Icon(Icons.check, color: Colors.yellow)
+                                : null,
+                            onTap: () {
+                              onChanged(option);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
+          ),
+          color: Colors.white.withOpacity(0.1), // Lighter background
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        margin: const EdgeInsets.only(
+            left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  selectedValue ?? 'Select',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Colors.grey, size: 16),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A helper widget to create a full-width, tappable row for multi-select options.
+  /// It uses a modal bottom sheet with a list of checkboxes for the options.
+  Widget _buildMultiSelectableRow({
+    required String title,
+    required List<String> selectedValues,
+    required List<String> options,
+    required ValueChanged<List<String>> onChanged,
+    int? maxSelections,
+    String? exclusiveOption,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        // Use a temporary list to manage selections within the modal
+        List<String> tempSelected = List.from(selectedValues);
+        showModalBottomSheet(
+          context: context,
+          builder: (context) {
+            // Use StatefulBuilder to update the UI of the modal sheet dynamically
+            return StatefulBuilder(
+              builder: (BuildContext context, StateSetter modalSetState) {
+                int selectionsCount = tempSelected.length;
+                if (exclusiveOption != null &&
+                    tempSelected.contains(exclusiveOption)) {
+                  selectionsCount = 0;
+                } else if (maxSelections != null) {
+                  selectionsCount = tempSelected.length;
+                }
+                return Container(
+                  color: Colors.grey[900],
+                  height: 300,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            if (maxSelections != null &&
+                                    exclusiveOption == null ||
+                                (exclusiveOption != null &&
+                                    !tempSelected.contains(exclusiveOption)))
+                              Text(
+                                '${selectionsCount}/$maxSelections',
+                                style: const TextStyle(
+                                    color: Colors.yellow,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Scrollbar(
+                          thickness: 4.0,
+                          thumbVisibility: true,
+                          child: ListView.builder(
+                            itemCount: options.length,
+                            itemBuilder: (context, index) {
+                              final option = options[index];
+                              final isSelected = tempSelected.contains(option);
+                              bool isEnabled = true;
+                              if (exclusiveOption != null &&
+                                  option == exclusiveOption) {
+                                // If exclusive option is selected, only it can be deselected
+                                isEnabled = isSelected || selectionsCount == 0;
+                              } else if (exclusiveOption != null &&
+                                  tempSelected.contains(exclusiveOption)) {
+                                // If exclusive option is already selected, other options are disabled
+                                isEnabled = false;
+                              } else if (maxSelections != null) {
+                                // Standard multi-select logic with max limit
+                                isEnabled = isSelected ||
+                                    tempSelected.length < maxSelections;
+                              }
+                              return CheckboxListTile(
+                                title: Text(
+                                  option,
+                                  style: TextStyle(
+                                      color: isEnabled
+                                          ? Colors.white
+                                          : Colors.grey),
+                                ),
+                                value: isSelected,
+                                onChanged: isEnabled
+                                    ? (bool? newValue) {
+                                        modalSetState(() {
+                                          if (newValue == true) {
+                                            if (exclusiveOption != null &&
+                                                option == exclusiveOption) {
+                                              // Select exclusive option, clear others
+                                              tempSelected.clear();
+                                              tempSelected.add(option);
+                                            } else {
+                                              // Select a normal option, remove exclusive if present
+                                              tempSelected
+                                                  .remove(exclusiveOption);
+                                              if (maxSelections == null ||
+                                                  tempSelected.length <
+                                                      maxSelections) {
+                                                tempSelected.add(option);
+                                              }
+                                            }
+                                          } else {
+                                            tempSelected.remove(option);
+                                          }
+                                        });
+                                        onChanged(
+                                            tempSelected); // Update the parent state immediately
+                                      }
+                                    : null,
+                                activeColor: Colors.yellow,
+                                checkColor: Colors.black,
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
+          ),
+          color: Colors.white.withOpacity(0.1), // Lighter background
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        margin: const EdgeInsets.only(
+            left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Text(
+                  selectedValues.isEmpty ? 'Select' : selectedValues.join(', '),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+          ],
         ),
       ),
     );
@@ -401,14 +714,15 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                 )
               : Form(
                   key: _formKey,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // --- Profile Photo and Username Row ---
-                          Row(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- Profile Photo and Username Row ---
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 24.0),
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               // Main profile image (Square with radius)
@@ -470,421 +784,328 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                   width:
                                       16), // Space between photo and username
                               Expanded(
-                                child: Text(
-                                  _usernameController
-                                      .text, // Display username from controller
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize:
-                                        12.0, // Increased font size for prominence
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                  overflow: TextOverflow
-                                      .ellipsis, // Handle long usernames
-                                ),
-                              ),
-                            ],
-                          ),
-                          // --- End Profile Photo and Username Row ---
-
-                          const SizedBox(height: 30), //Increasedspacing
-                          _buildSectionTitle('Tell about you'),
-                          _buildTextField(
-                            _bioController,
-                            'Enteryourbio',
-                            maxLines: 3,
-                          ),
-                          const SizedBox(height: 20),
-                          //---StartofRowforHeightandWeight---
-                          Row(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start, //Aligntitlesatthetop
-                            children: [
-                              Expanded(
-                                //AllowsHeightsectiontotakeavailablespace
-                                child: Column(
-                                  //Keeptitleandtextfieldstacked
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Height(cm)'),
-                                    _buildTextField(_heightController, '',
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ]),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                  width: 16), //SpacebetweenHeightandWeight
-                              Expanded(
-                                //AllowsWeightsectiontotakeavailablespace
-                                child: Column(
-                                  //Keeptitleandtextfieldstacked
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Weight(kg)'),
-                                    _buildTextField(_weightController, '',
-                                        keyboardType: TextInputType.number,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter.digitsOnly
-                                        ]),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            // Wrap "Build" and "Looking For" in a Row
-                            crossAxisAlignment: CrossAxisAlignment
-                                .start, // Align titles at the top
-                            children: [
-                              Expanded(
-                                // "Build" section
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildSectionTitle('Build'),
-                                    _buildDropdown(
-                                        _buildOptions, _selectedBuild,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedBuild = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                  width: 16), // Space between the two dropdowns
-                              Expanded(
-                                // "Looking For" section
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Looking For'),
-                                    _buildDropdown(
-                                        _lookingForOptions, _selectedLookingFor,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedLookingFor = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),// Meet At & NSFW Pics Row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Meet At'),
-                                    _buildDropdown(
-                                        _meetAtOptions, _selectedMeetAt,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedMeetAt = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                  width: 16), // Space between dropdowns
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('NSFW Pics'),
-                                    _buildDropdown(
-                                        _nsfwPicsOptions, _selectedNsfwPics,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedNsfwPics = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20), // Spacing after this row
-
-                          // Gender & Pronouns Row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Gender'),
-                                    _buildDropdown(
-                                        _genderOptions, _selectedGender,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedGender = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                  width: 16), // Space between dropdowns
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Pronouns'),
-                                    _buildDropdown(
-                                        _pronounsOptions, _selectedPronouns,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedPronouns = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20), // Spacing after this row
-
-                          // Race & Relationship Status Row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Race'),
-                                    _buildDropdown(_raceOptions, _selectedRace,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedRace = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                  width: 16), // Space between dropdowns
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildSectionTitle('Relationship Status'),
-                                    _buildDropdown(_relationshipStatusOptions,
-                                        _selectedRelationshipStatus,
-                                        (newValue) {
-                                      setState(() {
-                                        _selectedRelationshipStatus = newValue;
-                                      });
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-
-                          _buildSectionTitle(
-                              'Positions'), // Section title for multiple positions
-                          Wrap(
-                            // Use Wrap for flowing layout
-                            spacing: 8.0, // Horizontal space between buttons
-                            runSpacing:
-                                8.0, // Vertical space between rows of buttons
-                            children: _positionOptions.map((position) {
-                              final isSelected =
-                                  _selectedPositions.contains(position);
-                              return InkWell(
-                                // Use InkWell for custom tap effects
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      _selectedPositions.remove(position);
-                                    } else {
-                                      _selectedPositions.add(position);
-                                    }
-                                  });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0, vertical: 8.0),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? Colors.yellow
-                                        : Colors
-                                            .grey[800], // Highlight if selected
-                                    borderRadius: BorderRadius.circular(
-                                        20.0), // Rounded corners for button look
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? Colors.yellow
-                                          : Colors.grey[700]!, // Border color
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    position,
-                                    style: TextStyle(
-                                      color: isSelected
-                                          ? Colors.black
-                                          : Colors
-                                              .white, // Text color changes with selection
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(
-                              height:
-                                  20), // Spacing after positions// Spacing after positions
-                          _buildSectionTitle('Other Images'),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            height: 100,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _imageUrls.length +
-                                  1, // +1 for the "Add Image" button
-                              itemBuilder: (context, index) {
-                                if (index == _imageUrls.length) {
-                                  // This is the "Add Image" button
-                                  return GestureDetector(
-                                    onTap:
-                                        _isImageProcessing ? null : _pickImage,
-                                    child: Container(
-                                      width: 100,
-                                      height: 100,
-                                      margin: const EdgeInsets.only(
-                                          right: 10.0), // Margin for add button
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(
-                                            0.05), // Lighter grey for background
-                                        borderRadius:
-                                            BorderRadius.circular(10.0),
-                                        border: Border.all(
-                                            color: Colors.grey[800]!),
+                                    TextFormField(
+                                      controller: _usernameController,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 24),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'Your Username',
+                                        hintStyle: TextStyle(
+                                            color: Colors.white54,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 24),
                                       ),
-                                      child: _isImageProcessing
-                                          ? const Center(
-                                              child: CircularProgressIndicator(
-                                                  color: Colors.white54))
-                                          : const Icon(Icons.add_a_photo,
-                                              color: Colors.white54, size: 40),
                                     ),
-                                  );
-                                }
-                                final imageUrl = _imageUrls[index];
-                                return Padding(
-                                  padding: const EdgeInsets.only(right: 10.0),
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        width: 100,
-                                        height: 100,
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(10.0),
-                                          color: Colors.grey[
-                                              800], // Background while loading/error
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10.0),
-                                          child: Image.network(
-                                            imageUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error,
-                                                    stackTrace) =>
-                                                Image.asset(
-                                                    'assets/placeholder_error.jpg',
-                                                    fit: BoxFit.cover),
-                                            loadingBuilder: (context, child,
-                                                loadingProgress) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  value: loadingProgress
-                                                              .expectedTotalBytes !=
-                                                          null
-                                                      ? loadingProgress
-                                                              .cumulativeBytesLoaded /
-                                                          loadingProgress
-                                                              .expectedTotalBytes!
-                                                      : null,
-                                                  color: Colors.white54,
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
+                                    TextFormField(
+                                      controller: _emailController,
+                                      style: const TextStyle(
+                                          color: Colors.grey, fontSize: 16),
+                                      enabled: false, // Email is not editable
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: 'Email address',
+                                        hintStyle: TextStyle(
+                                            color: Colors.grey, fontSize: 16),
                                       ),
-                                      Positioned(
-                                        top: 5,
-                                        right: 5,
-                                        child: GestureDetector(
-                                          onTap: _isImageProcessing
-                                              ? null
-                                              : () => _removeImage(imageUrl),
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.red[
-                                                  600], // Slightly darker red for visibility
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: const Icon(
-                                              Icons.close,
-                                              color: Colors.white,
-                                              size: 20,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // --- Image Gallery Section ---
+                        _buildSectionTitle('PHOTOS'),
+                        Container(
+                          height: 120, // Adjust height as needed
+                          margin: const EdgeInsets.only(left: 16.0),
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _imageUrls.length +
+                                1, // +1 for the add photo button
+                            itemBuilder: (context, index) {
+                              if (index == _imageUrls.length) {
+                                return GestureDetector(
+                                  onTap: _isImageProcessing ? null : _pickImage,
+                                  child: Container(
+                                    width: 100,
+                                    height: 100,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[800],
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: _isImageProcessing
+                                        ? const Center(
+                                            child: CircularProgressIndicator(
+                                                color: Colors.white))
+                                        : const Icon(Icons.add_a_photo,
+                                            color: Colors.white, size: 40),
                                   ),
                                 );
-                              },
-                            ),
+                              }
+                              final imageUrl = _imageUrls[index];
+                              return Stack(
+                                children: [
+                                  Container(
+                                    width: 100,
+                                    height: 100,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error,
+                                                stackTrace) =>
+                                            Image.asset(
+                                                'assets/placeholder_error.jpg',
+                                                fit: BoxFit.cover),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: _isImageProcessing
+                                          ? null
+                                          : () => _removeImage(imageUrl),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.7),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close,
+                                            size: 16, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
-                          const SizedBox(height: 40),
-                          Center(
-                            child: ElevatedButton.icon(
-                              onPressed: (_isLoading || _isImageProcessing)
-                                  ? null
-                                  : _performLogout,
-                              icon:
-                                  const Icon(Icons.logout, color: Colors.white),
-                              label: const Text('Log Out',
-                                  style: TextStyle(color: Colors.white)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    Colors.transparent, // Darker red for logout
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 30, vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
+                        ),
+                        // --- About Me Section ---
+                        _buildSectionTitle('ABOUT ME'),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: TextFormField(
+                            controller: _bioController,
+                            style: const TextStyle(color: Colors.white),
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText: 'Tell us a bit about yourself...',
+                              hintStyle: const TextStyle(color: Colors.grey),
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.1),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                                borderSide: BorderSide.none,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                        ),
+
+                        // --- STATS Section ---
+                        _buildSectionTitle('STATS'),
+                        _buildSelectableRow(
+                            title: 'Gender',
+                            selectedValue: _selectedGender,
+                            options: _genderOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedGender = newValue;
+                              });
+                            }),
+                        _buildSelectableRow(
+                            title: 'Pronouns',
+                            selectedValue: _selectedPronouns,
+                            options: _pronounsOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedPronouns = newValue;
+                              });
+                            }),
+                        _buildSelectableRow(
+                            title: 'Relationship Status',
+                            selectedValue: _selectedSexualOrientation,
+                            options: _sexualOrientationOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedRelationshipStatus = newValue;
+                              });
+                            }),
+                        _buildSelectableRow(
+                            title: 'Race',
+                            selectedValue: _selectedRace,
+                            options: _raceOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedRace = newValue;
+                              });
+                            }),
+                        _buildSelectableRow(
+                            title: 'Relationship Status',
+                            selectedValue: _selectedRelationshipStatus,
+                            options: _relationshipStatusOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedRelationshipStatus = newValue;
+                              });
+                            }),
+
+                        // --- PHYSICAL ATTRIBUTES Section ---
+                        _buildSectionTitle('PHYSICAL ATTRIBUTES'),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _heightController,
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    hintText: 'Height (cm)',
+                                    hintStyle:
+                                        const TextStyle(color: Colors.grey),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.1),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10.0),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: TextFormField(
+                                  controller: _weightController,
+                                  keyboardType: TextInputType.number,
+                                  style: const TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    hintText: 'Weight (kg)',
+                                    hintStyle:
+                                        const TextStyle(color: Colors.grey),
+                                    filled: true,
+                                    fillColor: Colors.white.withOpacity(0.1),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10.0),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _buildSelectableRow(
+                            title: 'Body Type',
+                            selectedValue: _selectedBuild,
+                            options: _buildOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedBuild = newValue;
+                              });
+                            }),
+
+                        // --- LOOKING FOR Section ---
+                        _buildSectionTitle('LOOKING FOR'),
+                        _buildSelectableRow(
+                            title: 'Looking For',
+                            selectedValue: _selectedLookingFor,
+                            options: _lookingForOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedLookingFor = newValue;
+                              });
+                            }),
+                        _buildSelectableRow(
+                            title: 'Meet At',
+                            selectedValue: _selectedMeetAt,
+                            options: _meetAtOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedMeetAt = newValue;
+                              });
+                            }),
+                        _buildSelectableRow(
+                            title: 'Accepts NSFW pics?',
+                            selectedValue: _selectedNsfwPics,
+                            options: _nsfwPicsOptions,
+                            onChanged: (newValue) {
+                              setState(() {
+                                _selectedNsfwPics = newValue;
+                              });
+                            }),
+
+                        // --- POSITIONS & TRIBES Section ---
+                        _buildSectionTitle('POSITIONS'),
+                        _buildMultiSelectableRow(
+                          title: 'Positions',
+                          selectedValues: _selectedPositions,
+                          options: _positionOptions,
+                          onChanged: (newValues) {
+                            setState(() {
+                              _selectedPositions = newValues;
+                            });
+                          },
+                          exclusiveOption: 'Not Applicable',
+                        ),
+
+                        _buildSectionTitle('TRIBES'),
+                        _buildMultiSelectableRow(
+                          title: 'Tribes',
+                          selectedValues: _selectedTribes,
+                          options: _tribesOptions,
+                          onChanged: (newValues) {
+                            setState(() {
+                              _selectedTribes = newValues;
+                            });
+                          },
+                          exclusiveOption: 'Not Specified',
+                          maxSelections: 5,
+                        ),
+
+                        const SizedBox(height: 50.0),
+                        // --- Logout Button ---
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: _performLogout,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red[800],
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 40, vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.0),
+                              ),
+                            ),
+                            child: const Text(
+                              'Logout',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 50.0),
+                      ],
                     ),
                   ),
                 ),
@@ -892,45 +1113,32 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   }
 }
 
-/// Helper widget for consistent text form fields.
+// A helper widget to create text form fields with consistent styling.
 Widget _buildTextField(TextEditingController controller, String hintText,
     {int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
     List<TextInputFormatter>? inputFormatters}) {
   return TextFormField(
     controller: controller,
-    // --- START TEXTFORMFIELD COLOR CHANGES ---
-    style: const TextStyle(
-        color: Colors.yellow), // <--- CHANGE THIS for the text the user types
-    // --- END TEXTFORMFIELD COLOR CHANGES ---
+    style: const TextStyle(color: Colors.yellow),
     keyboardType: keyboardType,
-    inputFormatters: inputFormatters, // Apply formatters
+    inputFormatters: inputFormatters,
     decoration: InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(
-          color: Colors.red), // <--- CHANGE THIS for the hint text color
-      // --- START INPUTDECORATION COLOR CHANGES ---
-      filled: true, // MUST be true for fillColor to work
-      fillColor: Colors.white70.withAlpha(
-          10), // <--- CHANGED THIS from withOpacity(0.3) for the background color of the input field
-      // --- END INPUTDECORATION COLOR CHANGES ---
+      hintStyle: const TextStyle(color: Colors.red),
+      filled: true,
+      fillColor: Colors.white70.withAlpha(10),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10.0),
-        borderSide: const BorderSide(
-            color: Colors
-                .blueGrey), // <--- CHANGE THIS for the default border color
+        borderSide: const BorderSide(color: Colors.blueGrey),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10.0),
-        borderSide: const BorderSide(
-            color: Colors
-                .blueGrey), // <--- CHANGE THIS for the border color when enabled
+        borderSide: const BorderSide(color: Colors.blueGrey),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10.0),
-        borderSide: const BorderSide(
-            color: Colors
-                .yellow), // <--- CHANGE THIS for the border color when focused
+        borderSide: const BorderSide(color: Colors.yellow),
       ),
     ),
     maxLines: maxLines,
@@ -938,50 +1146,13 @@ Widget _buildTextField(TextEditingController controller, String hintText,
       if (value == null || value.isEmpty) {
         return 'This field cannot be empty';
       }
-      // Specific validation for height and weight
       if (keyboardType == TextInputType.number) {
         if (int.tryParse(value) == null) {
           return 'Please enter a valid number';
         }
-        // Add range validation if desired (e.g., height > 0, weight > 0)
-        if (int.parse(value) <= 0) {
-          return 'Value must be greater than 0';
-        }
+        return null;
       }
       return null;
     },
-  );
-}
-
-/// Helper widget for consistent dropdown form fields.
-Widget _buildDropdown<T>(
-    List<T> options, T? selectedValue, ValueChanged<T?> onChanged) {
-  return DropdownButtonFormField<T>(
-    value: selectedValue,
-    items: options.map((T value) {
-      return DropdownMenuItem<T>(
-        value: value,
-        child: Text(
-          value.toString(),
-          style: const TextStyle(color: Colors.yellow),
-          overflow: TextOverflow
-              .ellipsis, // Add this line to prevent text overflow in items
-        ),
-      );
-    }).toList(),
-    onChanged: onChanged,
-    isExpanded: true, // <--- ADD THIS LINE
-    decoration: InputDecoration(
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10.0),
-        borderSide: BorderSide.none,
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    ),
-    dropdownColor: Colors.grey[850], // Background for dropdown menu
-    iconEnabledColor: Colors.white,
-    style: const TextStyle(color: Colors.yellow, fontSize: 16),
   );
 }

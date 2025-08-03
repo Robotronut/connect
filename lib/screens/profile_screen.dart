@@ -50,23 +50,17 @@ class ProfileScreenState extends State<ProfileScreen> {
   double _sheetScrollOpacity = 0.0;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
-    _loadProfileData();
     _pageController.addListener(() {
       setState(() {
         _currentPageIndex = _pageController.page?.round() ?? 0;
       });
     });
-    final String? APIkey = await SecureStorageService.getApiKey();
-    hubConnection = HubConnectionBuilder()
-        .withUrl(
-          kServerUrl,
-          options: HttpConnectionOptions(
-            accessTokenFactory: () async => Future.value(APIkey),
-          ),
-        )
-        .build();
+
+    // The fix: Call a synchronous method that contains the async logic
+    _initializeProfileAndHub();
+
     _sheetController.addListener(() {
       final double currentExtent = _sheetController.size;
       double normalizedOpacity = 0.0;
@@ -83,6 +77,13 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  Future<void> _initializeProfileAndHub() async {
+    // This is the new, separate async method.
+    // It is called synchronously from initState but runs asynchronously.
+    await _loadProfileData();
+    await _setupSignalR();
+  }
+
   Future<void> _loadProfileData() async {
     setState(() {
       _isLoading = true;
@@ -93,29 +94,48 @@ class ProfileScreenState extends State<ProfileScreen> {
       final UserModel? fetchedProfile =
           await ApiService.getUserProfileById(widget.userId);
 
-      setState(() {
-        _userProfile = fetchedProfile;
-
-        _displayUsername = fetchedProfile!.userName;
-
-        _currentPageIndex = 0;
-      });
+      if (mounted) { // Check if the widget is still in the tree before calling setState
+        setState(() {
+          _userProfile = fetchedProfile;
+          _displayUsername = fetchedProfile?.userName;
+          _currentPageIndex = 0;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load profile: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load profile: ${e.toString()}';
+        });
+      }
       print('Error loading profile: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
+  Future<void> _setupSignalR() async {
+    final String? APIkey = await SecureStorageService.getApiKey();
+    hubConnection = HubConnectionBuilder()
+        .withUrl(
+          kServerUrl,
+          options: HttpConnectionOptions(
+            accessTokenFactory: () async => Future.value(APIkey),
+          ),
+        )
+        .build();
+    // It's a good practice to start the connection here if needed.
+    await hubConnection.start();
+  }
+  
   @override
   void dispose() {
     _pageController.dispose();
     _sheetController.dispose();
+    hubConnection.stop(); // Stop the hub connection
     super.dispose();
   }
 

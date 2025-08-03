@@ -73,11 +73,17 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   String finalBodyType = '';
   String finalHeight = '';
   String finalWeight = '';
-  String finalRelationshipStatus = '';
-  bool finalAcceptsNsfwPics = false;
+  String finalRelationshipStatus = "";
+  List<String> finalAcceptsNsfwPics = [];
   String finalLookingFor = '';
   String finalMeetAt = '';
   bool finalHaventChattedToday = false;
+  String? _selectedMinAgeFromMoreFilters;
+  String? _selectedMaxAgeFromMoreFilters;
+  String? _selectedMinHeight;
+  String? _selectedMaxHeight;
+  String? _selectedMinWeight;
+  String? _selectedMaxWeight;
 
   // Filter states for MoreFiltersScreen (these will be updated by MoreFiltersScreen)
   bool _isGlobalFilterEnabled =
@@ -85,19 +91,18 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   bool _selectedFavoritesFromMoreFilters = false; // From MoreFiltersScreen
   bool _selectedOnlineFromMoreFilters = false; // From MoreFiltersScreen
   bool _selectedRightNow = false;
-  String?
-      _selectedMinAgeFromMoreFilters; // Age from MoreFiltersScreen, as a single String
+
   List<String> _selectedGenders = [];
   List<String> _selectedPositionsFromMoreFilters =
       []; // Positions from MoreFiltersScreen
   List<String> _selectedPhotos = [];
   List<String> _selectedTribes = []; // Tribes from MoreFiltersScreen
-  String? _selectedBodyType;
+  List<String> _selectedBodyType = [];
   String? _selectedHeight;
   String? _selectedWeight;
-  String? _selectedRelationshipStatus;
-  bool _acceptsNsfwPics = false;
-  String? _selectedLookingFor;
+  List<String> _selectedRelationshipStatus = [];
+  List<String> _acceptsNsfwPics = [];
+  List<String> _selectedLookingFor = [];
   String? _selectedMeetAt;
   bool _haventChattedToday = false; // Filter options for dialogs/screens
   final List<String> _ageOptions = List<int>.generate(82, (i) => i + 18)
@@ -297,9 +302,12 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   final List<String> _bodyTypeOptions = [
     'Slim',
     'Average',
+    'Toned',
+    'Stocky',
     'Athletic',
     'Muscular',
-    'A few extra pounds'
+    'Large',
+    'Not Specified'
   ];
   final List<String> _heightOptions = List<int>.generate(61, (i) => i + 150)
       .map((e) => '${e} cm')
@@ -309,9 +317,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       .toList(); // 50kg to 150kg
   final List<String> _relationshipStatusOptions = [
     'Single',
-    'In a Relationship',
+    'Dating',
     'Married',
-    'Complicated'
+    'Commited',
+    'Engaged',
+    'Exclusive',
+    'Open Relationship',
+    'Partnered',
+    'Not Specified'
   ];
   final List<String> _lookingForOptions = [
     'Chat',
@@ -404,11 +417,13 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           builder: (context) => InterestScreen(),
         ),
       );
-    } else if (index == 3) { // Handle 'Store' tab (index 3)
+    } else if (index == 3) {
+      // Handle 'Store' tab (index 3)
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const SubscriptionPage(), // Navigate to SubscriptionPage
+          builder: (context) =>
+              const SubscriptionPage(), // Navigate to SubscriptionPage
         ),
       );
     }
@@ -436,7 +451,6 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       }
     });
     try {
-
       // Logic for combining filters from individual dialogs and MoreFiltersScreen
       // Priority: MoreFiltersScreen if its global toggle is enabled.
       // Otherwise, individual dialog filters take effect.
@@ -539,8 +553,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           weight: _isGlobalFilterEnabled ? finalWeight : null,
           relationshipStatus:
               _isGlobalFilterEnabled ? finalRelationshipStatus : null,
-          acceptsNsfwPics:
-              _isGlobalFilterEnabled ? finalAcceptsNsfwPics : false,
+          acceptsNsfwPics: _isGlobalFilterEnabled ? finalAcceptsNsfwPics : null,
           lookingFor: _isGlobalFilterEnabled ? finalLookingFor : null,
           meetAt: _isGlobalFilterEnabled ? finalMeetAt : null,
           isFresh: finalIsFresh,
@@ -779,14 +792,20 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           initialSelectedFavorites: _selectedFavoritesFromMoreFilters,
           initialSelectedOnline: _selectedOnlineFromMoreFilters,
           initialSelectedRightNow: _selectedRightNow,
+          // Passing the range values to the screen
           initialSelectedMinAge: _selectedMinAgeFromMoreFilters,
+          initialSelectedMaxAge: _selectedMaxAgeFromMoreFilters,
           initialSelectedGenders: _selectedGenders,
           initialSelectedPositions: _selectedPositionsFromMoreFilters,
           initialSelectedPhotos: _selectedPhotos,
           initialSelectedTribes: _selectedTribes,
-          initialSelectedBodyType: _selectedBodyType,
-          initialSelectedHeight: _selectedHeight,
-          initialSelectedWeight: _selectedWeight,
+          initialSelectedBodyTypes: _selectedBodyType,
+          // Passing the height range values
+          initialSelectedMinHeight: _selectedMinHeight,
+          initialSelectedMaxHeight: _selectedMaxHeight,
+          // Passing the weight range values
+          initialSelectedMinWeight: _selectedMinWeight,
+          initialSelectedMaxWeight: _selectedMaxWeight,
           initialSelectedRelationshipStatus: _selectedRelationshipStatus,
           initialAcceptsNsfwPics: _acceptsNsfwPics,
           initialSelectedLookingFor: _selectedLookingFor,
@@ -823,7 +842,8 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         _selectedHeight = result['selectedHeight'];
         _selectedWeight = result['selectedWeight'];
         _selectedRelationshipStatus = result['selectedRelationshipStatus'];
-        _acceptsNsfwPics = result['acceptsNsfwPics'] ?? false;
+
+        _acceptsNsfwPics = List<String>.from(result['acceptsNsfwPics'] ?? []);
         _selectedLookingFor = result['selectedLookingFor'];
         _selectedMeetAt = result['selectedMeetAt'];
         _haventChattedToday = result['haventChattedToday'] ?? false;
@@ -839,33 +859,33 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   // Function to handle bottom navigation bar taps
 
   Future<void> _navigateToEditProfile() async {
-  // Await the result from EditProfileScreen
-  final bool? profileUpdated = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => EditProfileScreen(user: _loggedInUser),
-    ),
-  );
-
-  // If profileUpdated is true, it means the profile was saved successfully
-  if (profileUpdated == true) {
-    // Reset pagination state to ensure a full refresh from the first page
-    setState(() {
-      _users.clear(); // Clear existing users
-      _currentPage = 1; // Reset to the first page
-      _hasMore = true; // Assume there are more users to load
-      _errorMessage = ''; // Clear any previous error messages
-    });
-
-    // Trigger a refresh of the logged-in user's data and then all users
-    await _fetchLoggedInUser();
-    await _fetchUsers(); // This will now fetch from page 1 with cleared users.
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile data refreshed!')),
+    // Await the result from EditProfileScreen
+    final bool? profileUpdated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(user: _loggedInUser),
+      ),
     );
+
+    // If profileUpdated is true, it means the profile was saved successfully
+    if (profileUpdated == true) {
+      // Reset pagination state to ensure a full refresh from the first page
+      setState(() {
+        _users.clear(); // Clear existing users
+        _currentPage = 1; // Reset to the first page
+        _hasMore = true; // Assume there are more users to load
+        _errorMessage = ''; // Clear any previous error messages
+      });
+
+      // Trigger a refresh of the logged-in user's data and then all users
+      await _fetchLoggedInUser();
+      await _fetchUsers(); // This will now fetch from page 1 with cleared users.
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile data refreshed!')),
+      );
+    }
   }
-}
 
   // New method to navigate to LocationPickerScreen
 

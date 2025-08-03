@@ -9,7 +9,6 @@ import 'dart:io';
 import 'dart:async'; // Import for StreamController
 import 'package:intl/intl.dart'; // For date formatting if needed, as per user's pubspec.yaml
 
-
 // This is a TOP-LEVEL function, outside of the ApiService class
 // It's designed to be run in a separate isolate using compute
 // This function should be a top-level or static function
@@ -30,10 +29,8 @@ UserModel _parseUserModel(String responseBody) {
 }
 
 class ApiService {
-  
   static final String _baseUrl = 'https://peek.thegwd.ca';
 
-  
   /// Calls the registration API to generate an OTP.
   /// Returns true if successful, false otherwise.
   static Future<bool> generateOtp({
@@ -282,30 +279,32 @@ class ApiService {
     return headers;
   }
 
-  static Future<List<UserModel>> getPeople(
-      {required int pageNumber,
-      required int pageSize,
-      String? id,
-      String? status,
-      int? minAge,
-      int? maxAge,
-      String? weight,
-      String? height,
-      String? bodyType,
-      String? aboutMe,
-      String? lookingFor,
-      String? meetAt,
-      bool? acceptsNsfwPics,
-      int? distance,
-      List<String>? genders,
-      String? pronouns,
-      String? race,
-      String? relationshipStatus,
-      String? userName,
-      String? joined,
-      bool? isFresh,
-      List<String>? position,
-      bool? viewMe}) async {
+  static Future<List<UserModel>> getPeople({
+    required int pageNumber,
+    required int pageSize,
+    String? id,
+    String? status,
+    int? minAge,
+    int? maxAge,
+    String? weight,
+    String? height,
+    String? bodyType,
+    String? aboutMe,
+    String? lookingFor,
+    String? meetAt,
+    List<String>? acceptsNsfwPics,
+    int? distance,
+    List<String>? genders,
+    String? pronouns,
+    String? race,
+    String? relationshipStatus,
+    String? userName,
+    String? joined,
+    bool? isFresh,
+    List<String>? position,
+    bool? viewMe,
+    List<String>? tribes,
+  }) async {
     final url = Uri.parse('$_baseUrl/get_people');
 
     try {
@@ -332,7 +331,8 @@ class ApiService {
         'joined': joined,
         'isFresh': isFresh,
         'position': position,
-        'viewMe': viewMe
+        'viewMe': viewMe,
+        'tribes': tribes
       });
 
       final response = await http.post(
@@ -341,8 +341,8 @@ class ApiService {
         body: body,
       );
 
-      print(body);
       if (response.statusCode == 200) {
+        print(response.body);
         // --- Using compute for off-main-isolate JSON parsing ---
         // Pass the response.body to the top-level _parseUserModels function
         // which will run in a separate isolate.
@@ -478,7 +478,6 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final body = jsonEncode({
-        'SecurityStamp': securityStamp,
         'UserId': userId,
       });
 
@@ -487,8 +486,11 @@ class ApiService {
         headers: headers,
         body: body,
       );
-
+      print(body);
+      print(headers);
+      print(url);
       if (response.statusCode == 200) {
+        print(response.body);
         // Use compute for single user profile parsing as well, especially if the profile can be complex
         final UserModel userProfile =
             await compute(_parseUserModel, response.body);
