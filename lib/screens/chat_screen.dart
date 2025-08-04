@@ -1,5 +1,6 @@
 import 'package:connect/screens/profile_screen.dart';
 import 'package:connect/screens/report_screen.dart';
+import 'package:connect/screens/video_chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:intl/intl.dart';
@@ -37,6 +38,7 @@ class Message {
 
 // --- ChatScreen Widget ---
 class ChatScreen extends StatefulWidget {
+  // ... (your existing constructor) ...
   final String chatHubUrl;
   final String currentUserId;
   final String currentUserName;
@@ -78,13 +80,93 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Add a listener to handle incoming messages from the hub.
-    // This listener will be a new instance and will be specific to this chat.
+    // Register the video call listeners here, as they are crucial for the ChatScreen's logic.
+    widget.hubConnection.on('ReceiveVideoCallInvitation', _handleVideoCallInvitation);
+    widget.hubConnection.on('VideoCallAccepted', _handleVideoCallAccepted);
+    widget.hubConnection.on('VideoCallRejected', _handleVideoCallRejected);
+    
+    // Add the message listener back in, as you removed it.
     widget.hubConnection.on('ReceiveMessage', _handleReceiveMessage);
 
-    // Fetch the initial chat history for this specific conversation.
     _fetchChatHistory();
     WidgetsBinding.instance.addPostFrameCallback((_) {});
+  }
+
+  void _handleVideoCallAccepted(List<Object?>? args) {
+    // This is called on the caller's device when the callee accepts.
+    Navigator.pop(context); // Close the "Calling..." dialog
+
+    // Now that the call is accepted, navigate to the video screen.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoChatScreen(
+            hubConnection: widget.hubConnection,
+            currentUserId: widget.currentUserId,
+            otherUserId: widget.otherUserId,
+            isCallInitiated: true),
+      ),
+    );
+  }
+
+  void _handleVideoCallRejected(List<Object?>? args) {
+    // This is called on the caller's device when the callee rejects.
+    Navigator.pop(context); // Close the "Calling..." dialog
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Video call rejected.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _handleVideoCallInvitation(List<Object?>? args) {
+    if (args == null || args.isEmpty) return;
+    final String callerId = args[0] as String;
+
+    // Only handle the invitation if it's from the person we're currently chatting with.
+    if (callerId != widget.otherUserId) {
+      // You might want to handle this case differently, e.g., show a toast.
+      return;
+    }
+    
+    // This is the correct location for the dialog logic.
+    // The previous code had a nested method definition here.
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Incoming Video Call'),
+        content: Text('Call from user: ${widget.otherUserName}'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close the dialog
+              await widget.hubConnection.invoke('RejectVideoCall', args: [callerId]);
+            },
+            child: const Text('Reject'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close the dialog
+              await widget.hubConnection.invoke('AcceptVideoCall', args: [callerId]);
+              // Callee navigates here, after accepting.
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VideoChatScreen(
+                      hubConnection: widget.hubConnection,
+                      currentUserId: widget.currentUserId,
+                      otherUserId: callerId,
+                      isCallInitiated: false),
+                ),
+              );
+            },
+            child: const Text('Accept'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -102,6 +184,11 @@ class _ChatScreenState extends State<ChatScreen> {
     // Stop listening for messages when the widget is disposed.
     // This is crucial to prevent memory leaks and unexpected behavior.
     widget.hubConnection.off('ReceiveMessage');
+    // Also stop listening to the video call events.
+    widget.hubConnection.off('ReceiveVideoCallInvitation');
+    widget.hubConnection.off('VideoCallAccepted');
+    widget.hubConnection.off('VideoCallRejected');
+    
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -255,6 +342,41 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _startVideoCall() async {
+    try {
+      // 1. Send the invitation.
+      await widget.hubConnection.invoke('InviteToVideoCall', args: [widget.otherUserId]);
+
+      // 2. Show a dialog indicating the call is in progress.
+      // Do NOT navigate yet.
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('Calling...'),
+          content: Text('Waiting for ${widget.otherUserName} to answer.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+                // TODO: You may want to send a 'CancelCall' message to the hub here.
+              },
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+      
+      // The `_handleVideoCallAccepted` listener will handle navigation to `VideoChatScreen`
+      // if the callee accepts the call.
+    } catch (e) {
+      print('Tylar: Failed to send video call invitation: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start call. Error: $e')),
+      );
+    }
+  }
+
   String _formatDateTime(DateTime dateTime) {
     // Formats the timestamp for display in the chat bubble.
     return DateFormat('h:mm a').format(dateTime);
@@ -330,9 +452,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => ReportScreen(
-                                    reportedUserId: widget
-                                        .otherUserId,
-                                      reportedUsername: widget.otherUserName, // Pass the other user's ID
+                                    reportedUserId: widget.otherUserId,
+                                    reportedUsername: widget
+                                        .otherUserName, // Pass the other user's ID
                                   ),
                                 ),
                               );
@@ -350,6 +472,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 },
               );
+            },
+          ),
+          // New video call button
+          IconButton(
+            icon: const Icon(Icons.videocam, color: Colors.white),
+            onPressed: () {
+              // TODO: Implement the call invitation logic
+              // For now, let's just navigate to the video screen
+              _startVideoCall();
             },
           ),
         ],

@@ -47,5 +47,9 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Allow access to the camera for video calls</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Allow access to the microphone for video calls</string>
 	</dict>
 </plist>

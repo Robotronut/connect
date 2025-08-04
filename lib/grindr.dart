@@ -407,9 +407,10 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           builder: (context) => InboxScreen(
             currentUserId:
                 _loggedInUser!.id.toString(), // Pass your current user ID
-            chatHubUrl: kServerUrl, 
+            chatHubUrl: kServerUrl,
             currentUserImgUrl: _loggedInUser!.imageUrls.first,
-            currentUserUserName: _loggedInUser!.userName,// Pass your SignalR hub URL
+            currentUserUserName:
+                _loggedInUser!.userName, // Pass your SignalR hub URL
           ),
         ),
       );

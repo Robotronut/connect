@@ -94,17 +94,17 @@ class _InboxScreenState extends State<InboxScreen> {
 
     hubConnection.onclose(({error}) {
       if (error != null) {
-        print("Connection closed with error: $error");
+        print("Tylar: Connection closed with error: $error");
         // Implement a reconnection logic here if needed
       } else {
-        print("Connection closed without error.");
+        print("Tylar: Connection closed without error.");
       }
     });
 
     // 3. Start the connection.
     try {
       await hubConnection.start();
-      print("SignalR connection started successfully.");
+      print("Tylar: SignalR connection started successfully.");
       setState(() {
         _isLoading = false;
         _errorMessage = null;
@@ -112,7 +112,7 @@ class _InboxScreenState extends State<InboxScreen> {
 
       _fetchInitialConversations();
     } catch (e) {
-      print("Error starting SignalR connection: $e");
+      print("Tylar: Error starting SignalR connection: $e");
       setState(() {
         _isLoading = false;
         _errorMessage =

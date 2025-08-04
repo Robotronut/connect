@@ -132,7 +132,12 @@ class ProfileScreenState extends State<ProfileScreen> {
         )
         .build();
     // It's a good practice to start the connection here if needed.
-    await hubConnection.start();
+    await hubConnection.start()?.then((_) {
+      print('SignalR: Connection started successfully!');
+      // Now you can safely navigate to the VideoChatScreen or perform other actions.
+    }).catchError((error) {
+      print('SignalR: Failed to start connection: $error');
+    });
   }
 
   @override
