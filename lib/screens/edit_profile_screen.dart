@@ -7,6 +7,7 @@ import 'package:connect/services/api_service.dart'; // Import your API service
 import 'package:connect/models/user_model.dart'; // Import your user model
 import 'dart:io'; // Required for File
 import 'package:flutter/services.dart'; // Required for TextInputFormatter
+import 'package:connect/screens/settings_screen.dart'; // Import the new SettingsScreen
 
 /// A screen for editing the user's profile information.
 ///
@@ -85,6 +86,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     'Versatile',
     'Bottom',
     'Side',
+    'Ver Bottom',
+    'Vers Top',
     'Rather Not Say'
   ];
   List<String> _selectedPositions = [];
@@ -214,7 +217,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       _selectedLookingFor = _currentUserProfile!.lookingFor;
       _selectedMeetAt = _currentUserProfile!.meetAt;
       _selectedNsfwPics =
-          _currentUserProfile!.acceptsNsfwPics != null ? 'Yes' : 'No';
+      _currentUserProfile!.acceptsNsfwPics != null ? 'Yes' : 'No';
       _selectedGender = _currentUserProfile!.gender;
       _selectedPronouns = _currentUserProfile!.pronouns;
       _selectedRace = _currentUserProfile!.race;
@@ -232,7 +235,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         _errorMessage = 'Session expired. Please log in again.';
       } else {
         _errorMessage =
-            'Failed to load profile: ${e.toString().split(':').last.trim()}';
+        'Failed to load profile: ${e.toString().split(':').last.trim()}';
       }
 
       if (!mounted) {
@@ -274,7 +277,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       position: _selectedPositions,
       tribes: _selectedTribes, // Add the new tribes field
       sexualOrientation:
-          _selectedSexualOrientation, // Add the new sexual orientation field
+      _selectedSexualOrientation, // Add the new sexual orientation field
     );
     try {
       await ApiService.updateExistingUserProfile(updatedProfile);
@@ -327,7 +330,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         );
       } catch (e) {
         _errorMessage =
-            'Failed to upload image: ${e.toString().split(':').last.trim()}';
+        'Failed to upload image: ${e.toString().split(':').last.trim()}';
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -359,7 +362,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       );
     } catch (e) {
       _errorMessage =
-          'Failed to remove image: ${e.toString().split(':').last.trim()}';
+      'Failed to remove image: ${e.toString().split(':').last.trim()}';
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -379,7 +382,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     if (mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/login',
-        (Route<dynamic> route) => false,
+            (Route<dynamic> route) => false,
       );
     }
   }
@@ -432,7 +435,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                     child: Scrollbar(
                       thickness: 4.0, // Made the scrollbar thinner
                       thumbVisibility:
-                          true, // Made the scrollbar always visible
+                      true, // Made the scrollbar always visible
                       child: ListView.builder(
                         itemCount: options.length,
                         itemBuilder: (context, index) {
@@ -550,7 +553,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                   fontWeight: FontWeight.bold),
                             ),
                             if (maxSelections != null &&
-                                    exclusiveOption == null ||
+                                exclusiveOption == null ||
                                 (exclusiveOption != null &&
                                     !tempSelected.contains(exclusiveOption)))
                               Text(
@@ -597,30 +600,30 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                 value: isSelected,
                                 onChanged: isEnabled
                                     ? (bool? newValue) {
-                                        modalSetState(() {
-                                          if (newValue == true) {
-                                            if (exclusiveOption != null &&
-                                                option == exclusiveOption) {
-                                              // Select exclusive option, clear others
-                                              tempSelected.clear();
-                                              tempSelected.add(option);
-                                            } else {
-                                              // Select a normal option, remove exclusive if present
-                                              tempSelected
-                                                  .remove(exclusiveOption);
-                                              if (maxSelections == null ||
-                                                  tempSelected.length <
-                                                      maxSelections) {
-                                                tempSelected.add(option);
-                                              }
-                                            }
-                                          } else {
-                                            tempSelected.remove(option);
-                                          }
-                                        });
-                                        onChanged(
-                                            tempSelected); // Update the parent state immediately
+                                  modalSetState(() {
+                                    if (newValue == true) {
+                                      if (exclusiveOption != null &&
+                                          option == exclusiveOption) {
+                                        // Select exclusive option, clear others
+                                        tempSelected.clear();
+                                        tempSelected.add(option);
+                                      } else {
+                                        // Select a normal option, remove exclusive if present
+                                        tempSelected
+                                            .remove(exclusiveOption);
+                                        if (maxSelections == null ||
+                                            tempSelected.length <
+                                                maxSelections) {
+                                          tempSelected.add(option);
+                                        }
                                       }
+                                    } else {
+                                      tempSelected.remove(option);
+                                    }
+                                  });
+                                  onChanged(
+                                      tempSelected); // Update the parent state immediately
+                                }
                                     : null,
                                 activeColor: Colors.yellow,
                                 checkColor: Colors.black,
@@ -694,6 +697,17 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          // Settings Icon Button
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+          ),
+          // Save Icon Button
           IconButton(
             icon: const Icon(Icons.save, color: Colors.white),
             onPressed: (_isLoading || _isImageProcessing)
@@ -705,410 +719,411 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       body: _isLoading && _currentUserProfile == null
           ? const Center(child: CircularProgressIndicator(color: Colors.yellow))
           : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Text(
-                    _errorMessage,
-                    style: const TextStyle(
-                        color: Colors.red), // Red for error messages
-                  ),
-                )
-              : Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // --- Profile Photo and Username Row ---
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 24.0),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Main profile image (Square with radius)
-                              GestureDetector(
-                                onTap: _isImageProcessing ? null : _pickImage,
-                                child: Container(
-                                  width: 100.0,
-                                  height: 100.0,
-                                  decoration: BoxDecoration(
-                                    color: Colors
-                                        .grey[800], // Background for avatar
-                                    borderRadius: BorderRadius.circular(
-                                        5.0), // Apply radius
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12.0),
-                                    child: _imageUrls.isNotEmpty
-                                        ? Image.network(
-                                            _imageUrls[
-                                                0], // First image in the list
-                                            fit: BoxFit.cover,
-                                            width: 100,
-                                            height: 100,
-                                            errorBuilder: (context, error,
-                                                    stackTrace) =>
-                                                Image.asset(
-                                                    'assets/placeholder_error.jpg',
-                                                    fit: BoxFit.cover),
-                                            loadingBuilder: (context, child,
-                                                loadingProgress) {
-                                              if (loadingProgress == null)
-                                                return child;
-                                              return Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                  value: loadingProgress
-                                                              .expectedTotalBytes !=
-                                                          null
-                                                      ? loadingProgress
-                                                              .cumulativeBytesLoaded /
-                                                          loadingProgress
-                                                              .expectedTotalBytes!
-                                                      : null,
-                                                  color: Colors.white54,
-                                                ),
-                                              );
-                                            },
-                                          )
-                                        : Image.asset(
-                                            'assets/placeholder_error.jpg', // Use asset for placeholder
-                                            fit: BoxFit.cover,
-                                            width: 100,
-                                            height: 100,
-                                          ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                  width:
-                                      16), // Space between photo and username
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    TextFormField(
-                                      controller: _usernameController,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 24),
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        hintText: 'Your Username',
-                                        hintStyle: TextStyle(
-                                            color: Colors.white54,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 24),
-                                      ),
-                                    ),
-                                    TextFormField(
-                                      controller: _emailController,
-                                      style: const TextStyle(
-                                          color: Colors.grey, fontSize: 16),
-                                      enabled: false, // Email is not editable
-                                      decoration: const InputDecoration(
-                                        border: InputBorder.none,
-                                        hintText: 'Email address',
-                                        hintStyle: TextStyle(
-                                            color: Colors.grey, fontSize: 16),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+          ? Center(
+        child: Text(
+          _errorMessage,
+          style: const TextStyle(
+              color: Colors.red), // Red for error messages
+        ),
+      )
+          : Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- Profile Photo and Username Row ---
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 24.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Main profile image (Square with radius)
+                    GestureDetector(
+                      onTap: _isImageProcessing ? null : _pickImage,
+                      child: Container(
+                        width: 100.0,
+                        height: 100.0,
+                        decoration: BoxDecoration(
+                          color: Colors
+                              .grey[800], // Background for avatar
+                          borderRadius: BorderRadius.circular(
+                              5.0), // Apply radius
                         ),
-                        // --- Image Gallery Section ---
-                        _buildSectionTitle('PHOTOS'),
-                        Container(
-                          height: 120, // Adjust height as needed
-                          margin: const EdgeInsets.only(left: 16.0),
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _imageUrls.length +
-                                1, // +1 for the add photo button
-                            itemBuilder: (context, index) {
-                              if (index == _imageUrls.length) {
-                                return GestureDetector(
-                                  onTap: _isImageProcessing ? null : _pickImage,
-                                  child: Container(
-                                    width: 100,
-                                    height: 100,
-                                    margin: const EdgeInsets.only(right: 8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[800],
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: _isImageProcessing
-                                        ? const Center(
-                                            child: CircularProgressIndicator(
-                                                color: Colors.white))
-                                        : const Icon(Icons.add_a_photo,
-                                            color: Colors.white, size: 40),
-                                  ),
-                                );
-                              }
-                              final imageUrl = _imageUrls[index];
-                              return Stack(
-                                children: [
-                                  Container(
-                                    width: 100,
-                                    height: 100,
-                                    margin: const EdgeInsets.only(right: 8),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.network(
-                                        imageUrl,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error,
-                                                stackTrace) =>
-                                            Image.asset(
-                                                'assets/placeholder_error.jpg',
-                                                fit: BoxFit.cover),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: _isImageProcessing
-                                          ? null
-                                          : () => _removeImage(imageUrl),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.withOpacity(0.7),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.close,
-                                            size: 16, color: Colors.white),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12.0),
+                          child: _imageUrls.isNotEmpty
+                              ? Image.network(
+                            _imageUrls[
+                            0], // First image in the list
+                            fit: BoxFit.cover,
+                            width: 100,
+                            height: 100,
+                            errorBuilder: (context, error,
+                                stackTrace) =>
+                                Image.asset(
+                                    'assets/placeholder_error.jpg',
+                                    fit: BoxFit.cover),
+                            loadingBuilder: (context, child,
+                                loadingProgress) {
+                              if (loadingProgress == null)
+                                return child;
+                              return Center(
+                                child:
+                                CircularProgressIndicator(
+                                  value: loadingProgress
+                                      .expectedTotalBytes !=
+                                      null
+                                      ? loadingProgress
+                                      .cumulativeBytesLoaded /
+                                      loadingProgress
+                                          .expectedTotalBytes!
+                                      : null,
+                                  color: Colors.white54,
+                                ),
                               );
                             },
+                          )
+                              : Image.asset(
+                            'assets/placeholder_error.jpg', // Use asset for placeholder
+                            fit: BoxFit.cover,
+                            width: 100,
+                            height: 100,
                           ),
                         ),
-                        // --- About Me Section ---
-                        _buildSectionTitle('ABOUT ME'),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: TextFormField(
-                            controller: _bioController,
-                            style: const TextStyle(color: Colors.white),
-                            maxLines: 4,
-                            decoration: InputDecoration(
-                              hintText: 'Tell us a bit about yourself...',
-                              hintStyle: const TextStyle(color: Colors.grey),
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.1),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10.0),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // --- STATS Section ---
-                        _buildSectionTitle('STATS'),
-                        _buildSelectableRow(
-                            title: 'Gender',
-                            selectedValue: _selectedGender,
-                            options: _genderOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedGender = newValue;
-                              });
-                            }),
-                        _buildSelectableRow(
-                            title: 'Pronouns',
-                            selectedValue: _selectedPronouns,
-                            options: _pronounsOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedPronouns = newValue;
-                              });
-                            }),
-                        _buildSelectableRow(
-                            title: 'Relationship Status',
-                            selectedValue: _selectedSexualOrientation,
-                            options: _sexualOrientationOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedRelationshipStatus = newValue;
-                              });
-                            }),
-                        _buildSelectableRow(
-                            title: 'Race',
-                            selectedValue: _selectedRace,
-                            options: _raceOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedRace = newValue;
-                              });
-                            }),
-                        _buildSelectableRow(
-                            title: 'Relationship Status',
-                            selectedValue: _selectedRelationshipStatus,
-                            options: _relationshipStatusOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedRelationshipStatus = newValue;
-                              });
-                            }),
-
-                        // --- PHYSICAL ATTRIBUTES Section ---
-                        _buildSectionTitle('PHYSICAL ATTRIBUTES'),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _heightController,
-                                  keyboardType: TextInputType.number,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    hintText: 'Height (cm)',
-                                    hintStyle:
-                                        const TextStyle(color: Colors.grey),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.1),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10.0),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _weightController,
-                                  keyboardType: TextInputType.number,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    hintText: 'Weight (kg)',
-                                    hintStyle:
-                                        const TextStyle(color: Colors.grey),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.1),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10.0),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                  ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _buildSelectableRow(
-                            title: 'Body Type',
-                            selectedValue: _selectedBuild,
-                            options: _buildOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedBuild = newValue;
-                              });
-                            }),
-
-                        // --- LOOKING FOR Section ---
-                        _buildSectionTitle('LOOKING FOR'),
-                        _buildSelectableRow(
-                            title: 'Looking For',
-                            selectedValue: _selectedLookingFor,
-                            options: _lookingForOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedLookingFor = newValue;
-                              });
-                            }),
-                        _buildSelectableRow(
-                            title: 'Meet At',
-                            selectedValue: _selectedMeetAt,
-                            options: _meetAtOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedMeetAt = newValue;
-                              });
-                            }),
-                        _buildSelectableRow(
-                            title: 'Accepts NSFW pics?',
-                            selectedValue: _selectedNsfwPics,
-                            options: _nsfwPicsOptions,
-                            onChanged: (newValue) {
-                              setState(() {
-                                _selectedNsfwPics = newValue;
-                              });
-                            }),
-
-                        // --- POSITIONS & TRIBES Section ---
-                        _buildSectionTitle('POSITIONS'),
-                        _buildMultiSelectableRow(
-                          title: 'Positions',
-                          selectedValues: _selectedPositions,
-                          options: _positionOptions,
-                          onChanged: (newValues) {
-                            setState(() {
-                              _selectedPositions = newValues;
-                            });
-                          },
-                          exclusiveOption: 'Not Applicable',
-                        ),
-
-                        _buildSectionTitle('TRIBES'),
-                        _buildMultiSelectableRow(
-                          title: 'Tribes',
-                          selectedValues: _selectedTribes,
-                          options: _tribesOptions,
-                          onChanged: (newValues) {
-                            setState(() {
-                              _selectedTribes = newValues;
-                            });
-                          },
-                          exclusiveOption: 'Not Specified',
-                          maxSelections: 5,
-                        ),
-
-                        const SizedBox(height: 50.0),
-                        // --- Logout Button ---
-                        Center(
-                          child: ElevatedButton(
-                            onPressed: _performLogout,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red[800],
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30.0),
-                              ),
-                            ),
-                            child: const Text(
-                              'Logout',
-                              style: TextStyle(
-                                  fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(
+                        width:
+                        16), // Space between photo and username
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            controller: _usernameController,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 24),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'Your Username',
+                              hintStyle: TextStyle(
+                                  color: Colors.white54,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.white),
+                                  fontSize: 24),
+                            ),
+                          ),
+                          TextFormField(
+                            controller: _emailController,
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 16),
+                            enabled: false, // Email is not editable
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'Email address',
+                              hintStyle: TextStyle(
+                                  color: Colors.grey, fontSize: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // --- Image Gallery Section ---
+              _buildSectionTitle('PHOTOS'),
+              Container(
+                height: 120, // Adjust height as needed
+                margin: const EdgeInsets.only(left: 16.0),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _imageUrls.length +
+                      1, // +1 for the add photo button
+                  itemBuilder: (context, index) {
+                    if (index == _imageUrls.length) {
+                      return GestureDetector(
+                        onTap: _isImageProcessing ? null : _pickImage,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: _isImageProcessing
+                              ? const Center(
+                              child: CircularProgressIndicator(
+                                  color: Colors.white))
+                              : const Icon(Icons.add_a_photo,
+                              color: Colors.white, size: 40),
+                        ),
+                      );
+                    }
+                    final imageUrl = _imageUrls[index];
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error,
+                                  stackTrace) =>
+                                  Image.asset(
+                                      'assets/placeholder_error.jpg',
+                                      fit: BoxFit.cover),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 50.0),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: _isImageProcessing
+                                ? null
+                                : () => _removeImage(imageUrl),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withOpacity(0.7),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close,
+                                  size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
                       ],
+                    );
+                  },
+                ),
+              ),
+              // --- About Me Section ---
+              _buildSectionTitle('ABOUT ME'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextFormField(
+                  controller: _bioController,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Tell us a bit about yourself...',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      borderSide: BorderSide.none,
                     ),
                   ),
                 ),
+              ),
+
+              // --- STATS Section ---
+              _buildSectionTitle('STATS'),
+              _buildSelectableRow(
+                  title: 'Gender',
+                  selectedValue: _selectedGender,
+                  options: _genderOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedGender = newValue;
+                    });
+                  }),
+              _buildSelectableRow(
+                  title: 'Pronouns',
+                  selectedValue: _selectedPronouns,
+                  options: _pronounsOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedPronouns = newValue;
+                    });
+                  }),
+              _buildSelectableRow(
+                  title: 'Relationship Status',
+                  selectedValue: _selectedSexualOrientation,
+                  options: _sexualOrientationOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedRelationshipStatus = newValue;
+                    });
+                  }),
+              _buildSelectableRow(
+                  title: 'Race',
+                  selectedValue: _selectedRace,
+                  options: _raceOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedRace = newValue;
+                    });
+                  }),
+              _buildSelectableRow(
+                  title: 'Relationship Status',
+                  selectedValue: _selectedRelationshipStatus,
+                  options: _relationshipStatusOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedRelationshipStatus = newValue;
+                    });
+                  }),
+
+              // --- PHYSICAL ATTRIBUTES Section ---
+              _buildSectionTitle('PHYSICAL ATTRIBUTES'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _heightController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Height (cm)',
+                          hintStyle:
+                          const TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _weightController,
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Weight (kg)',
+                          hintStyle:
+                          const TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.1),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildSelectableRow(
+                  title: 'Body Type',
+                  selectedValue: _selectedBuild,
+                  options: _buildOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedBuild = newValue;
+                    });
+                  }),
+
+              // --- LOOKING FOR Section ---
+              _buildSectionTitle('LOOKING FOR'),
+              _buildSelectableRow(
+                  title: 'Looking For',
+                  selectedValue: _selectedLookingFor,
+                  options: _lookingForOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedLookingFor = newValue;
+                    });
+                  }),
+              _buildSelectableRow(
+                  title: 'Meet At',
+                  selectedValue: _selectedMeetAt,
+                  options: _meetAtOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedMeetAt = newValue;
+                    });
+                  }),
+              _buildSelectableRow(
+                  title: 'Accepts NSFW pics?',
+                  selectedValue: _selectedNsfwPics,
+                  options: _nsfwPicsOptions,
+                  onChanged: (newValue) {
+                    setState(() {
+                      _selectedNsfwPics = newValue;
+                    });
+                  }),
+
+              // --- POSITIONS & TRIBES Section ---
+              _buildSectionTitle('POSITIONS'),
+              _buildMultiSelectableRow(
+                  title: 'Positions',
+                  selectedValues: _selectedPositions,
+                  options: _positionOptions,
+                  onChanged: (newValues) {
+                    setState(() {
+                      _selectedPositions = newValues;
+                    });
+                  },
+                  exclusiveOption: 'Not Applicable',
+                  maxSelections: 1
+              ),
+
+              _buildSectionTitle('TRIBES'),
+              _buildMultiSelectableRow(
+                title: 'Tribes',
+                selectedValues: _selectedTribes,
+                options: _tribesOptions,
+                onChanged: (newValues) {
+                  setState(() {
+                    _selectedTribes = newValues;
+                  });
+                },
+                exclusiveOption: 'Not Specified',
+                maxSelections: 5,
+              ),
+
+              const SizedBox(height: 50.0),
+              // --- Logout Button ---
+              Center(
+                child: ElevatedButton(
+                  onPressed: _performLogout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[800],
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.0),
+                    ),
+                  ),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 50.0),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1116,8 +1131,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 // A helper widget to create text form fields with consistent styling.
 Widget _buildTextField(TextEditingController controller, String hintText,
     {int maxLines = 1,
-    TextInputType keyboardType = TextInputType.text,
-    List<TextInputFormatter>? inputFormatters}) {
+      TextInputType keyboardType = TextInputType.text,
+      List<TextInputFormatter>? inputFormatters}) {
   return TextFormField(
     controller: controller,
     style: const TextStyle(color: Colors.yellow),

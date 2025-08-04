@@ -26,14 +26,14 @@ class Message {
 
   Message(
       {required this.senderId,
-      required this.senderAvatarUrl,
-      required this.senderUserName,
-      required this.recipientId,
-      required this.recipientUserName,
-      required this.recipientAvatarUrl,
-      required this.content,
-      required this.timestamp,
-      required this.isSender});
+        required this.senderAvatarUrl,
+        required this.senderUserName,
+        required this.recipientId,
+        required this.recipientUserName,
+        required this.recipientAvatarUrl,
+        required this.content,
+        required this.timestamp,
+        required this.isSender});
 }
 
 // --- ChatScreen Widget ---
@@ -84,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
     widget.hubConnection.on('ReceiveVideoCallInvitation', _handleVideoCallInvitation);
     widget.hubConnection.on('VideoCallAccepted', _handleVideoCallAccepted);
     widget.hubConnection.on('VideoCallRejected', _handleVideoCallRejected);
-    
+
     // Add the message listener back in, as you removed it.
     widget.hubConnection.on('ReceiveMessage', _handleReceiveMessage);
 
@@ -130,7 +130,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // You might want to handle this case differently, e.g., show a toast.
       return;
     }
-    
+
     // This is the correct location for the dialog logic.
     // The previous code had a nested method definition here.
     showDialog(
@@ -188,7 +188,7 @@ class _ChatScreenState extends State<ChatScreen> {
     widget.hubConnection.off('ReceiveVideoCallInvitation');
     widget.hubConnection.off('VideoCallAccepted');
     widget.hubConnection.off('VideoCallRejected');
-    
+
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -209,15 +209,15 @@ class _ChatScreenState extends State<ChatScreen> {
         print(history);
         final List<Message> parsedMessages = (history as List)
             .map((e) => Message(
-                senderId: e['senderId'],
-                senderAvatarUrl: e['senderAvatarUrl'],
-                senderUserName: e['senderUserName'],
-                recipientId: e['recipientId'],
-                recipientAvatarUrl: e['recipientAvatarUrl'],
-                recipientUserName: e['recipientUserName'],
-                content: e['content'],
-                timestamp: DateTime.parse(e['timestamp'] as String),
-                isSender: e['isSender']))
+            senderId: e['senderId'],
+            senderAvatarUrl: e['senderAvatarUrl'],
+            senderUserName: e['senderUserName'],
+            recipientId: e['recipientId'],
+            recipientAvatarUrl: e['recipientAvatarUrl'],
+            recipientUserName: e['recipientUserName'],
+            content: e['content'],
+            timestamp: DateTime.parse(e['timestamp'] as String),
+            isSender: e['isSender']))
             .toList();
 
         setState(() {
@@ -249,51 +249,39 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Check if the message is part of the current conversation.
     if ((senderId == widget.currentUserId &&
-            receiverId == widget.otherUserId) ||
+        receiverId == widget.otherUserId) ||
         (senderId == widget.otherUserId &&
             receiverId == widget.currentUserId)) {
       // Safely parse the incoming message data.
       final String content = messageData['content'] as String;
       final DateTime timestamp =
-          DateTime.parse(messageData['timestamp'] as String);
+      DateTime.parse(messageData['timestamp'] as String);
 
       // Determine who the sender is for THIS specific chat screen.
       final bool isSender = senderId == widget.currentUserId;
 
-      // For now, let's just add the message if it's new.
       final newMessage = Message(
         senderId: senderId,
         senderAvatarUrl: (messageData['SenderAvatarUrl'] as String?) ?? '',
         senderUserName:
-            (messageData['senderUsername'] as String?) ?? 'Unknown User',
+        (messageData['senderUsername'] as String?) ?? 'Unknown User',
         recipientId:
-            receiverId, // NOTE: this is different from the JSON key `recipientId`
+        receiverId, // NOTE: this is different from the JSON key `recipientId`
         recipientAvatarUrl:
-            (messageData['OtherUserAvatarUrl'] as String?) ?? '',
+        (messageData['OtherUserAvatarUrl'] as String?) ?? '',
         recipientUserName:
-            (messageData['otherUsername'] as String?) ?? 'Unknown User',
+        (messageData['otherUsername'] as String?) ?? 'Unknown User',
         content: content,
         timestamp: timestamp,
         isSender: isSender,
       );
 
-      // This is the crucial part that was missing or buggy.
-      // The previous implementation had a flaw with the `indexWhere` on `timestamp`.
-      // The simplest fix is to just add the message and let it show up.
-      // Your `_sendMessage` function is already adding an optimistic one, so we need to be careful not to add duplicates.
-      // A better approach is to use a message ID from the server.
-      // Since you don't have one, let's just check if a message from the same sender with the same content exists nearby in time.
-      final exists = _messages.any((m) =>
-          m.senderId == newMessage.senderId &&
-          m.content == newMessage.content &&
-          m.timestamp.difference(newMessage.timestamp).abs().inSeconds < 2);
-
-      if (!exists) {
-        setState(() {
-          _messages.add(newMessage);
-        });
-        _scrollToBottom();
-      }
+      // Add the message to the list.
+      // The previous duplicate check is removed as we are no longer optimistically adding.
+      setState(() {
+        _messages.add(newMessage);
+      });
+      _scrollToBottom();
     } else {
       print('something is amist here ');
     }
@@ -302,42 +290,20 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendMessage() async {
     final messageContent = _messageController.text.trim();
     if (messageContent.isNotEmpty) {
-      // 1. Create a message object for optimistic display.
-      final optimisticMessage = Message(
-        senderId: widget.currentUserId,
-        senderAvatarUrl:
-            widget.currentUserImgUrl, // Provide the current user's avatar URL
-        senderUserName: widget
-            .currentUserName, // Provide the current user's username // It's from the current user
-        content: messageContent,
-        // Use a temporary timestamp; it will be replaced by the server's.
-        timestamp: DateTime.now(),
-        recipientId: widget.otherUserId,
-        recipientAvatarUrl:
-            widget.otherUserImgUrl, // Provide the current user's avatar URL
-        recipientUserName:
-            widget.otherUserName, // Provide the current user's username
-        isSender: true,
-      );
-
-      // 2. Clear the text field and update the UI immediately.
+      // Clear the text field immediately.
       _messageController.clear();
-      setState(() {
-        _messages.add(optimisticMessage);
-      });
-
-      // Scroll to the bottom to show the new message
-      _scrollToBottom();
 
       try {
-        // 3. Send the message to the hub.
+        // Send the message to the hub.
+        // The message will be added to the _messages list when the server broadcasts it back
+        // via the _handleReceiveMessage callback.
         await widget.hubConnection.invoke(
           'SendPrivateMessage',
           args: [widget.otherUserId, messageContent],
         );
       } catch (e) {
         print("Error sending message: $e");
-        // TODO: Handle the error gracefully (e.g., remove the message from the list or show an error indicator).
+        // TODO: Handle the error gracefully (e.g., show an error message to the user).
       }
     }
   }
@@ -366,13 +332,65 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       );
-      
+
       // The `_handleVideoCallAccepted` listener will handle navigation to `VideoChatScreen`
       // if the callee accepts the call.
     } catch (e) {
       print('Tylar: Failed to send video call invitation: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to start call. Error: $e')),
+      );
+    }
+  }
+
+  // New method to handle blocking a user
+  Future<void> _blockUser() async {
+    Navigator.pop(context); // Close the modal bottom sheet first
+
+    try {
+      // Show a confirmation dialog before blocking
+      final bool? confirmBlock = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Block User?'),
+          content: Text('Are you sure you want to block ${widget.otherUserName}? You will no longer receive messages from them.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), // User cancels
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true), // User confirms
+              child: const Text('Block'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmBlock == true) {
+        // Invoke the SignalR hub method to block the user
+        await widget.hubConnection.invoke(
+          'BlockUser',
+          args: [widget.otherUserId],
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${widget.otherUserName} has been blocked.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+
+        // Optionally, navigate back or clear chat history after blocking
+        Navigator.pop(context); // Go back from the chat screen
+      }
+    } catch (e) {
+      print("Error blocking user: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to block user. Error: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -400,7 +418,7 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Text(
           widget.otherUserName,
           style:
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -412,7 +430,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 builder: (BuildContext context) {
                   return SafeArea(
                     child: SizedBox(
-                      height: 150, // Adjust height as needed
+                      height: 200, // Adjust height as needed to fit new option
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
@@ -466,6 +484,15 @@ class _ChatScreenState extends State<ChatScreen> {
                               );
                             },
                           ),
+                          ListTile(
+                            leading: const Icon(Icons.block,
+                                color: Colors.white), // Block icon
+                            title: const Text(
+                              'Block User',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onTap: _blockUser, // Call the new block user method
+                          ),
                         ],
                       ),
                     ),
@@ -490,74 +517,74 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(
-                    child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red)))
+                child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red)))
                 : _errorMessage != null
-                    ? Center(
-                        child: Text(_errorMessage!,
-                            style: const TextStyle(color: Colors.redAccent)))
-                    : _messages.isEmpty
-                        ? Center(
-                            child: Text(
-                                'Start a conversation with ${widget.otherUserName}',
-                                style: TextStyle(color: Colors.grey.shade500)))
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(10.0),
-                            itemCount: _messages.length,
-                            itemBuilder: (context, index) {
-                              final message = _messages[index];
+                ? Center(
+                child: Text(_errorMessage!,
+                    style: const TextStyle(color: Colors.redAccent)))
+                : _messages.isEmpty
+                ? Center(
+                child: Text(
+                    'Start a conversation with ${widget.otherUserName}',
+                    style: TextStyle(color: Colors.grey.shade500)))
+                : ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(10.0),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
 
-                              // Use the isSender property for all conditional styling
-                              final bool isSender = message.isSender;
+                // Use the isSender property for all conditional styling
+                final bool isSender = message.isSender;
 
-                              return Align(
-                                alignment: isSender
-                                    ? Alignment.centerRight
-                                    : Alignment.centerLeft,
-                                child: Container(
-                                  margin: const EdgeInsets.symmetric(
-                                      vertical: 5.0, horizontal: 4.0),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8.0, vertical: 5.0),
-                                  decoration: BoxDecoration(
-                                    color: isSender ? Colors.red : Colors.blue,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: const Radius.circular(10),
-                                      topRight: const Radius.circular(10),
-                                      bottomLeft: isSender
-                                          ? const Radius.circular(10)
-                                          : const Radius.circular(2),
-                                      bottomRight: isSender
-                                          ? const Radius.circular(2)
-                                          : const Radius.circular(10),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: isSender
-                                        ? CrossAxisAlignment.end
-                                        : CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        message.content,
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14.0),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        _formatDateTime(message.timestamp),
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.6),
-                                          fontSize: 8.0,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                return Align(
+                  alignment: isSender
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(
+                        vertical: 5.0, horizontal: 4.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: 5.0),
+                    decoration: BoxDecoration(
+                      color: isSender ? Colors.red : Colors.blue,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(10),
+                        topRight: const Radius.circular(10),
+                        bottomLeft: isSender
+                            ? const Radius.circular(10)
+                            : const Radius.circular(2),
+                        bottomRight: isSender
+                            ? const Radius.circular(2)
+                            : const Radius.circular(10),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: isSender
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.content,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.0),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatDateTime(message.timestamp),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 8.0,
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           // Message input area
           // Use a padding that accounts for the safe area at the bottom
