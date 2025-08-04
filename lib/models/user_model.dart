@@ -1,5 +1,5 @@
 class UserModel {
-  final String? id; // Made nullable
+  final String id; // Made nullable
   final List<String> imageUrls;
   final String? status;
   final int? age;
@@ -15,7 +15,7 @@ class UserModel {
   final String? pronouns;
   final String? race;
   final String? relationshipStatus;
-  final String? userName;
+  final String userName;
   final String? joined;
   final bool isFresh;
   final List<String>? position;
@@ -23,7 +23,7 @@ class UserModel {
   final String? sexualOrientation; // Added sexualOrientation
 
   UserModel(
-      {this.id, // No longer required
+      {required this.id, // No longer required
       required this.imageUrls,
       this.status,
       this.age,
@@ -38,7 +38,7 @@ class UserModel {
       this.pronouns,
       this.race,
       this.relationshipStatus,
-      this.userName,
+      required this.userName,
       this.joined,
       required this.isFresh,
       this.weight,
@@ -50,7 +50,7 @@ class UserModel {
   // Factory constructor for creating a UserModel from a JSON map
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-        id: json['id'] as String?, // Safely parse nullable String
+        id: json['id'] as String, // Safely parse nullable String
         imageUrls: List<String>.from(json['imageUrls'] ?? []),
         status: json['status'] as String?,
         age: json['age'] as int?,
@@ -66,7 +66,7 @@ class UserModel {
         pronouns: json['pronouns'] as String?,
         race: json['race'] as String?,
         relationshipStatus: json['relationshipStatus'] as String?,
-        userName: json['userName'] as String?,
+        userName: json['userName'] as String,
         joined: json['joined'] as String?,
         isFresh: json['isFresh'] is bool ? json['isFresh'] as bool : false,
         position: json['position'] != null

@@ -34,6 +34,7 @@ class ProfileScreenState extends State<ProfileScreen> {
   late HubConnection hubConnection;
 
   UserModel? _userProfile;
+  UserModel? _currentUser;
   bool _isLoading = true;
   String? _errorMessage;
   String? _currentLoggedInUserId;
@@ -91,13 +92,16 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
-      final UserModel? fetchedProfile =
+      final UserModel fetchedProfile =
           await ApiService.getUserProfileById(widget.userId);
-
-      if (mounted) { // Check if the widget is still in the tree before calling setState
+      final UserModel myProfile =
+          await ApiService.getUserProfileById(_currentLoggedInUserId);
+      if (mounted) {
+        // Check if the widget is still in the tree before calling setState
         setState(() {
+          _currentUser = myProfile;
           _userProfile = fetchedProfile;
-          _displayUsername = fetchedProfile?.userName;
+          _displayUsername = fetchedProfile.userName;
           _currentPageIndex = 0;
         });
       }
@@ -130,7 +134,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     // It's a good practice to start the connection here if needed.
     await hubConnection.start();
   }
-  
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -214,17 +218,21 @@ class ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void _navigateToChatScreen() {
+  void _navigateToChatScreen() async {
     if (_userProfile != null) {
+      UserModel _currentUser = await ApiService.getUserProfileById("");
       Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => ChatScreen(
                   hubConnection: hubConnection,
-                  currentUserId: _currentLoggedInUserId.toString(),
+                  currentUserId: _currentUser.id,
+                  currentUserImgUrl: _currentUser!.imageUrls.first,
+                  currentUserName: _currentUser.userName,
                   chatHubUrl: kServerUrl,
                   otherUserId: _userProfile!.id.toString(),
                   otherUserName: _userProfile!.userName.toString(),
+                  otherUserImgUrl: _userProfile!.imageUrls.first,
                 )),
       );
     }

@@ -1,3 +1,4 @@
+import 'package:connect/main.dart';
 import 'package:connect/screens/chat_Inbox_Screen.dart';
 import 'package:connect/screens/interests_screens.dart';
 import 'package:flutter/material.dart';
@@ -406,7 +407,9 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           builder: (context) => InboxScreen(
             currentUserId:
                 _loggedInUser!.id.toString(), // Pass your current user ID
-            chatHubUrl: url, // Pass your SignalR hub URL
+            chatHubUrl: kServerUrl, 
+            currentUserImgUrl: _loggedInUser!.imageUrls.first,
+            currentUserUserName: _loggedInUser!.userName,// Pass your SignalR hub URL
           ),
         ),
       );

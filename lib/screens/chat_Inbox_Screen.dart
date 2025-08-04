@@ -20,31 +20,33 @@ import 'package:signalr_netcore/hub_connection_builder.dart';
 class Conversation {
   final String otherUsername;
   final String otherUserId;
-  final String? otherUserAvatarUrl;
+  final String otherUserAvatarUrl;
   String lastMessageContent;
   DateTime lastMessageTimestamp;
 
   Conversation({
     required this.otherUsername,
     required this.otherUserId,
-    this.otherUserAvatarUrl,
+    required this.otherUserAvatarUrl,
     required this.lastMessageContent,
     required this.lastMessageTimestamp,
   });
 }
 
-
-
 // Your existing InboxScreen widget
 class InboxScreen extends StatefulWidget {
   final String currentUserId;
+  final String currentUserImgUrl;
+  final String currentUserUserName;
   final String chatHubUrl;
 
-  const InboxScreen({
-    Key? key,
-    required this.currentUserId,
-    required this.chatHubUrl,
-  }) : super(key: key);
+  const InboxScreen(
+      {Key? key,
+      required this.currentUserId,
+      required this.chatHubUrl,
+      required this.currentUserImgUrl,
+      required this.currentUserUserName})
+      : super(key: key);
 
   @override
   State<InboxScreen> createState() => _InboxScreenState();
@@ -129,7 +131,7 @@ class _InboxScreenState extends State<InboxScreen> {
             .map((e) => Conversation(
                   otherUsername: e['otherUsername'] as String,
                   otherUserId: e['otherUserId'] as String,
-                  otherUserAvatarUrl: e['otherUserAvatarUrl'] as String?,
+                  otherUserAvatarUrl: e['otherUserAvatarUrl'] as String,
                   lastMessageContent: e['lastMessageContent'] as String,
                   lastMessageTimestamp:
                       DateTime.parse(e['lastMessageTimestamp'] as String),
@@ -158,8 +160,10 @@ class _InboxScreenState extends State<InboxScreen> {
       final senderId = message['senderId'] as String;
       final receiverId = message['receiverId'] as String;
       final content = message['content'] as String;
+      final senderImgUrl = message['senderAvatarUrl'] as String;
+      final receiverImgUrl = message['otherUserAvatarUrl'] as String;
       final timestamp = DateTime.parse(message['timestamp'] as String);
-
+      final receiverUserName = message['otherUsername'] as String;
       setState(() {
         final existingIndex = _conversations.indexWhere((conv) =>
             conv.otherUserId == senderId || conv.otherUserId == receiverId);
@@ -176,7 +180,8 @@ class _InboxScreenState extends State<InboxScreen> {
               0,
               Conversation(
                 otherUsername: message['senderUsername'] as String,
-                otherUserId: senderId,
+                otherUserId: receiverId,
+                otherUserAvatarUrl: receiverImgUrl,
                 lastMessageContent: content,
                 lastMessageTimestamp: timestamp,
               ));
@@ -192,7 +197,7 @@ class _InboxScreenState extends State<InboxScreen> {
           .map((e) => Conversation(
                 otherUsername: e['otherUsername'] as String,
                 otherUserId: e['otherUserId'] as String,
-                otherUserAvatarUrl: e['otherUserAvatarUrl'] as String?,
+                otherUserAvatarUrl: e['otherUserAvatarUrl'] as String,
                 lastMessageContent: e['lastMessageContent'] as String,
                 lastMessageTimestamp:
                     DateTime.parse(e['lastMessageTimestamp'] as String),
@@ -292,12 +297,18 @@ class _InboxScreenState extends State<InboxScreen> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ChatScreen(
-                                       hubConnection: hubConnection,
+                                        hubConnection: hubConnection,
                                         chatHubUrl: widget.chatHubUrl,
                                         currentUserId: widget.currentUserId,
+                                        currentUserImgUrl:
+                                            widget.currentUserImgUrl,
+                                        currentUserName:
+                                            widget.currentUserUserName,
                                         otherUserId: conversation.otherUserId,
                                         otherUserName:
                                             conversation.otherUsername,
+                                        otherUserImgUrl:
+                                            conversation.otherUserAvatarUrl,
                                       ),
                                     ),
                                   );
@@ -348,12 +359,14 @@ class _InboxScreenState extends State<InboxScreen> {
                                         radius: 28,
                                         backgroundColor: Colors.grey.shade700,
                                         backgroundImage:
+                                            // ignore: unnecessary_null_comparison
                                             conversation.otherUserAvatarUrl !=
                                                     null
                                                 ? NetworkImage(conversation
-                                                    .otherUserAvatarUrl!)
+                                                    .otherUserAvatarUrl)
                                                 : null,
                                         child:
+                                            // ignore: unnecessary_null_comparison
                                             conversation.otherUserAvatarUrl ==
                                                     null
                                                 ? Icon(Icons.person,
@@ -371,7 +384,7 @@ class _InboxScreenState extends State<InboxScreen> {
                                             Text(
                                               conversation.otherUsername,
                                               style: const TextStyle(
-                                                color: Colors.white,
+                                                color: Colors.red,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 17,
                                               ),
@@ -383,7 +396,7 @@ class _InboxScreenState extends State<InboxScreen> {
                                             Text(
                                               conversation.lastMessageContent,
                                               style: TextStyle(
-                                                color: Colors.grey.shade400,
+                                                color: Colors.cyan,
                                                 fontSize: 14,
                                               ),
                                               maxLines: 1,

@@ -1,5 +1,6 @@
 // --- main.dart ---
 import 'package:connect/grindr.dart';
+import 'package:connect/screens/chat_Inbox_Screen.dart';
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart'; // New import
 import 'screens/registration_screen.dart';
@@ -89,7 +90,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
         '/otp_verification': (context) => const OtpVerificationScreen(),
-        '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),       
         '/grindr': (context) =>
         const MainBrowseScreen(), // Make sure 'grindr()' returns a Widget
       },
