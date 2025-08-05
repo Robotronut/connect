@@ -551,7 +551,10 @@ class ProfileScreenState extends State<ProfileScreen> {
                               size: 16, color: Colors.grey[400]),
                           const SizedBox(width: 5),
                           Text(
-                              '${_userProfile!.height} | ${_userProfile!.weight} | ${_userProfile!.bodyType}',
+                              '${_userProfile!.height} | ${_userProfile!.weight}' +
+                                  (_userProfile!.bodyType != 'Rather Not Say' && _userProfile!.bodyType!.isNotEmpty
+                                      ? ' | ${_userProfile!.bodyType}'
+                                      : ''),
                               style: const TextStyle(color: Colors.white)),
                         ],
                       ),
@@ -616,8 +619,6 @@ class ProfileScreenState extends State<ProfileScreen> {
                               : _userProfile!.pronouns!,
                           showInfo: true,
                         ),
-                      if (_userProfile!.bodyType != 'Rather Not Say' && _userProfile!.bodyType!.isNotEmpty)
-                        _buildStatRow(Icons.accessibility_new, _userProfile!.bodyType!),
                       // Display Race
                       if (_userProfile!.race != 'Rather Not Say')
                         _buildStatRow(
@@ -704,16 +705,16 @@ class ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(width: 15),
                         GestureDetector(
-                          onTap: _navigateToChatScreen,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[850],
-                              shape: BoxShape.circle,
+                            onTap: _navigateToChatScreen,
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[850],
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(CupertinoIcons.chat_bubble_2,
+                                  color: Colors.yellow, size: 28),
                             ),
-                            child: const Icon(CupertinoIcons.chat_bubble_2,
-                                color: Colors.yellow, size: 28),
-                          ),
                         ),
                       ],
                     ),
