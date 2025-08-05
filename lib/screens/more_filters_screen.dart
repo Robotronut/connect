@@ -38,6 +38,7 @@ class MoreFiltersScreen extends StatefulWidget {
   final List<String> heightOptions;
   final List<String> weightOptions;
   final List<String> relationshipStatusOptions;
+  final List<String> acceptsNsfwPicsOptions; // Added acceptsNsfwPicsOptions
 
   const MoreFiltersScreen({
     super.key,
@@ -64,6 +65,7 @@ class MoreFiltersScreen extends StatefulWidget {
     required this.heightOptions,
     required this.weightOptions,
     required this.relationshipStatusOptions,
+    required this.acceptsNsfwPicsOptions, // Added to constructor
     this.initialSelectedMeetAt,
     required this.initialHaventChattedToday,
     required this.lookingForOptions,
@@ -126,7 +128,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
     _tempSelectedMaxWeight = widget.initialSelectedMaxWeight;
     _tempSelectedRelationshipStatus =
         List.from(widget.initialSelectedRelationshipStatus);
-    _tempAcceptsNsfwPics = widget.initialAcceptsNsfwPics;
+    _tempAcceptsNsfwPics = List.from(widget.initialAcceptsNsfwPics); // Ensure it's a mutable list
     _tempSelectedLookingFor =
         List.from(widget.initialSelectedLookingFor); // Updated
     _tempSelectedMeetAt = widget.initialSelectedMeetAt;
@@ -208,7 +210,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
     final minOptions = ['No Minimum', ...allOptions];
     final maxOptions = ['No Maximum', ...allOptions];
     int minIndex =
-        minValue == 'No Minimum' ? 0 : allOptions.indexOf(minValue ?? '');
+    minValue == 'No Minimum' ? 0 : allOptions.indexOf(minValue ?? '');
     int maxIndex = maxValue == 'No Maximum'
         ? allOptions.length - 1
         : allOptions.indexOf(maxValue ?? '');
@@ -255,7 +257,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                         style: const TextStyle(color: Colors.white),
                         icon: const Icon(Icons.arrow_drop_down,
                             color: Colors.white),
-                        onChanged: onMinChanged,
+                        onChanged: onMinChanged, // Corrected from onChanged to onMinChanged
                         items: filteredMinOptions
                             .map<DropdownMenuItem<String>>((String item) {
                           return DropdownMenuItem<String>(
@@ -578,7 +580,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
   }) async {
     String? tempSelectedValue = selectedValue;
     int initialItemIndex =
-        tempSelectedValue != null ? options.indexOf(tempSelectedValue) : 0;
+    tempSelectedValue != null ? options.indexOf(tempSelectedValue) : 0;
 
     await showCupertinoModalPopup<void>(
       context: context,
@@ -626,7 +628,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                       child: Text(
                         item,
                         style:
-                            const TextStyle(color: Colors.white, fontSize: 18),
+                        const TextStyle(color: Colors.white, fontSize: 18),
                       ),
                     );
                   }).toList(),
@@ -654,7 +656,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setStateModal) {
             return Container(
-              height: 400,
+              height: 250, // Reduced height for less blank space
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
@@ -692,11 +694,11 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                   Expanded(
                     child: GridView.builder(
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2, // Changed to 2 options per row
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
-                        childAspectRatio: 2.0, // Reduced aspect ratio
+                        childAspectRatio: 3.0, // Adjusted aspect ratio for 2 options per row
                       ),
                       itemCount: options.length,
                       itemBuilder: (context, index) {
@@ -714,12 +716,12 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
-                                isSelected ? Colors.yellow : Colors.grey[800],
+                            isSelected ? Colors.yellow : Colors.grey[800],
                             foregroundColor:
-                                isSelected ? Colors.black : Colors.white,
+                            isSelected ? Colors.black : Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8.0,
-                                vertical: 6.0), // Reduced padding
+                                vertical: 10.0), // Adjusted vertical padding
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
                                   8), // Reduced border radius
@@ -787,7 +789,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                         : Colors.transparent,
                     border: Border.all(
                       color:
-                          selectedValue != null ? Colors.yellow : Colors.white,
+                      selectedValue != null ? Colors.yellow : Colors.white,
                       width: 2.0,
                     ),
                   ),
@@ -929,7 +931,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                         : Colors.transparent,
                     border: Border.all(
                       color:
-                          _isHeightFilterEnabled ? Colors.yellow : Colors.white,
+                      _isHeightFilterEnabled ? Colors.yellow : Colors.white,
                       width: 2.0,
                     ),
                   ),
@@ -988,7 +990,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                         : Colors.transparent,
                     border: Border.all(
                       color:
-                          _isWeightFilterEnabled ? Colors.yellow : Colors.white,
+                      _isWeightFilterEnabled ? Colors.yellow : Colors.white,
                       width: 2.0,
                     ),
                   ),
@@ -1054,7 +1056,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.yellow : Colors.grey[800],
                       borderRadius:
-                          BorderRadius.circular(10.0), // Reduced border radius
+                      BorderRadius.circular(10.0), // Reduced border radius
                       border: Border.all(
                         color: isSelected
                             ? Colors.yellow.shade700
@@ -1121,7 +1123,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
           children: [
             Padding(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1277,10 +1279,11 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                         });
                       },
                     ),
+                    // Updated Accepts NSFW Pics filter
                     _buildMultiSelectDotFilter(
                       title: 'Accepts NSFW Pics',
                       selectedValues: _tempAcceptsNsfwPics,
-                      allOptions: widget.initialAcceptsNsfwPics,
+                      allOptions: widget.acceptsNsfwPicsOptions, // Use the new options list
                       isEnabled: filtersInteractable,
                       onSave: (newValues) {
                         setState(() {

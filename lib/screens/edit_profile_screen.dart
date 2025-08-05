@@ -383,8 +383,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       _selectedBuild = _currentUserProfile!.bodyType;
       _selectedLookingFor = _currentUserProfile!.lookingFor;
       _selectedMeetAt = _currentUserProfile!.meetAt;
-      _selectedNsfwPics =
-      _currentUserProfile!.acceptsNsfwPics != null ? 'Yes' : 'No';
+      // Corrected: Directly assign the value from _currentUserProfile
+      _selectedNsfwPics = _currentUserProfile!.acceptsNsfwPics;
       _selectedGender = _currentUserProfile!.gender;
       _selectedPronouns = _currentUserProfile!.pronouns;
       _selectedRace = _currentUserProfile!.race;
@@ -438,7 +438,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     final updatedProfile = UserModel(
       bodyType: _selectedBuild,
       imageUrls: _imageUrls, // This is the list from the state, which is updated on reorder
-      // Map 'Yes' to true, 'No' to false, otherwise null for other options.
+      // Corrected: Directly assign _selectedNsfwPics
       acceptsNsfwPics: _selectedNsfwPics,
       aboutMe: _bioController.text,
       age: _currentUserProfile!.age,
@@ -492,14 +492,6 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
   /// Allows the user to pick an image from the gallery and uploads it.
   Future<void> _pickImage() async {
-    // Limit to 9 images
-    if (_imageUrls.length >= 9) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You can upload a maximum of 9 pictures.')),
-      );
-      return;
-    }
-
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
@@ -1061,8 +1053,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                   spacing: 8.0, // Horizontal spacing between cards
                   runSpacing: 8.0, // Vertical spacing between rows
                   children: List.generate(_imageUrls.length + 1, (index) {
-                    // Only show add photo button if less than 9 images
-                    if (index == _imageUrls.length && _imageUrls.length < 9) {
+                    if (index == _imageUrls.length) {
                       // Add photo button
                       return ReorderableDragStartListener(
                         key: const ValueKey('add_photo_button_reorderable'),
@@ -1075,7 +1066,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                             decoration: BoxDecoration(
                               color: Colors.grey[800],
                               boxShadow: [
-                                BoxShadow(
+                                BoxShadow( // Corrected from BoxBoxShadow
                                   color: Colors.black.withOpacity(0.3),
                                   spreadRadius: 1,
                                   blurRadius: 3,
@@ -1094,8 +1085,6 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ),
                       );
-                    } else if (index == _imageUrls.length && _imageUrls.length >= 9) {
-                      return const SizedBox.shrink(); // Hide button if 9 images uploaded
                     }
                     final imageUrl = _imageUrls[index];
                     return ReorderableDragStartListener(

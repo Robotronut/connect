@@ -9,7 +9,7 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 
 import 'package:connect/screens/edit_profile_screen.dart'
     hide UserModel; // Ensure this path is correct
-import 'package:connect/screens/profile_screen.dart'; // Ensure this path is correct
+import 'package:connect/screens/profile_screen.dart' hide EditProfileScreen; // Ensure this path is correct
 import 'package:connect/screens/store_screen.dart'; // Import the new store screen (SubscriptionPage)
 // Import the new filter dialogs/screens
 import 'package:connect/filters/position_filter_dialog.dart';
@@ -35,7 +35,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   final int _pageSize = 15; // Number of users to fetch per page
   bool _hasMore = true; // To know if there are more users to load
   final ScrollController _scrollController =
-      ScrollController(); // For infinite scrolling
+  ScrollController(); // For infinite scrolling
 
   // Add a variable to store the logged-in user's data
   UserModel? _loggedInUser;
@@ -48,21 +48,21 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
   bool _isPositionFilterEnabled = false; // Controls the position filter toggle
 
   RangeValues _selectedAgeRange =
-      const RangeValues(18, 99); // Default age range
+  const RangeValues(18, 99); // Default age range
   bool _isAgeFilterEnabled = false; // Controls the age filter toggle
 
   bool _showOnlyOnline =
-      false; // True to filter for online users, false for all users
+  false; // True to filter for online users, false for all users
   bool _isOnlineFilterEnabled = false; // Controls the online filter toggle
 
   bool _isFreshEnabled = false; // Controls the Fresh filter toggle
 
   bool _showOnlyFavorites =
-      false; // True to filter for favorites, false for all users
+  false; // True to filter for favorites, false for all users
   bool _isFavoriteFilterEnabled = false; // Controls the favorite filter toggle
 
   List<String> _selectedTags =
-      []; // Stores selected tags/tribes for individual filter
+  []; // Stores selected tags/tribes for individual filter
   bool _isTagsFilterEnabled = false; // Controls the tags filter toggle
 
   List<String> finalPositionsFromMoreFilters = [];
@@ -88,14 +88,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
 
   // Filter states for MoreFiltersScreen (these will be updated by MoreFiltersScreen)
   bool _isGlobalFilterEnabled =
-      false; // Global toggle for all filters within MoreFiltersScreen
+  false; // Global toggle for all filters within MoreFiltersScreen
   bool _selectedFavoritesFromMoreFilters = false; // From MoreFiltersScreen
   bool _selectedOnlineFromMoreFilters = false; // From MoreFiltersScreen
   bool _selectedRightNow = false;
 
   List<String> _selectedGenders = [];
   List<String> _selectedPositionsFromMoreFilters =
-      []; // Positions from MoreFiltersScreen
+  []; // Positions from MoreFiltersScreen
   List<String> _selectedPhotos = [];
   List<String> _selectedTribes = []; // Tribes from MoreFiltersScreen
   List<String> _selectedBodyType = [];
@@ -341,6 +341,14 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
     'Online'
   ];
 
+  // New options list for Accepts NSFW Pics
+  final List<String> _acceptsNsfwPicsOptions = [
+    'Yes',
+    'No',
+    'Maybe',
+    'Rather not say'
+  ];
+
   // Added _selectedIndex to manage the active tab in the bottom navigation bar
   int _selectedIndex = 0;
   // PageController to manage the different views in the body
@@ -387,7 +395,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
       setState(() {
         _isLoggedInUserLoading = false;
         _loggedInUserErrorMessage =
-            'Failed to load logged-in user: ${e.toString()}';
+        'Failed to load logged-in user: ${e.toString()}';
         print(_loggedInUserErrorMessage);
       });
     }
@@ -406,11 +414,11 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         MaterialPageRoute(
           builder: (context) => InboxScreen(
             currentUserId:
-                _loggedInUser!.id.toString(), // Pass your current user ID
+            _loggedInUser!.id.toString(), // Pass your current user ID
             chatHubUrl: kServerUrl,
             currentUserImgUrl: _loggedInUser!.imageUrls.first,
             currentUserUserName:
-                _loggedInUser!.userName, // Pass your SignalR hub URL
+            _loggedInUser!.userName, // Pass your SignalR hub URL
           ),
         ),
       );
@@ -427,7 +435,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         context,
         MaterialPageRoute(
           builder: (context) =>
-              const SubscriptionPage(), // Navigate to SubscriptionPage
+          const SubscriptionPage(), // Navigate to SubscriptionPage
         ),
       );
     }
@@ -477,9 +485,9 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         finalMaxAge = _selectedMinAgeFromMoreFilters != null ? 99 : null;
         finalGenders = (_selectedGenders.isNotEmpty ? _selectedGenders : null)!;
         finalPositionsFromMoreFilters =
-            (_selectedPositionsFromMoreFilters.isNotEmpty
-                ? _selectedPositionsFromMoreFilters
-                : null)!;
+        (_selectedPositionsFromMoreFilters.isNotEmpty
+            ? _selectedPositionsFromMoreFilters
+            : null)!;
         finalHasPhotos = _selectedPhotos.contains('Has photos');
         finalHasFacePics = _selectedPhotos.contains('Has face pics');
         finalHasAlbums = _selectedPhotos.contains('Has album(s)');
@@ -505,7 +513,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         _isFavoriteFilterEnabled = false;
 
         _isTagsFilterEnabled =
-            false; // Important: turn off individual tags filter
+        false; // Important: turn off individual tags filter
         _selectedTags
             .clear(); // Clear individual tags selection to avoid stale data
       } else {
@@ -556,7 +564,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           height: _isGlobalFilterEnabled ? finalHeight : null,
           weight: _isGlobalFilterEnabled ? finalWeight : null,
           relationshipStatus:
-              _isGlobalFilterEnabled ? finalRelationshipStatus : null,
+          _isGlobalFilterEnabled ? finalRelationshipStatus : null,
           acceptsNsfwPics: _isGlobalFilterEnabled ? finalAcceptsNsfwPics : null,
           lookingFor: _isGlobalFilterEnabled ? finalLookingFor : null,
           meetAt: _isGlobalFilterEnabled ? finalMeetAt : null,
@@ -624,7 +632,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           child: PositionFilterDialog(
             // CORRECTED: Pass to initialSelectedPositions
             initialSelectedPositions:
-                _selectedPosition ?? [], // Pass the current state
+            _selectedPosition ?? [], // Pass the current state
             initialFilterEnabled: _isPositionFilterEnabled,
             positionOptions: _positionFilterOptions,
             // REMOVED: initialSelectedPosition: _selectedPosition,
@@ -826,6 +834,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           heightOptions: _heightOptions,
           weightOptions: _weightOptions,
           relationshipStatusOptions: _relationshipStatusOptions,
+          acceptsNsfwPicsOptions: _acceptsNsfwPicsOptions, // Pass the new options list
         ),
       ),
     );
@@ -839,16 +848,16 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
         _selectedMinAgeFromMoreFilters = result['selectedMinAge'];
         _selectedGenders = List<String>.from(result['selectedGenders'] ?? []);
         _selectedPositionsFromMoreFilters =
-            List<String>.from(result['selectedPosition'] ?? []);
+        List<String>.from(result['selectedPosition'] ?? []);
         _selectedPhotos = List<String>.from(result['selectedPhotos'] ?? []);
         _selectedTribes = List<String>.from(result['selectedTribes'] ?? []);
-        _selectedBodyType = result['selectedBodyType'];
+        _selectedBodyType = List<String>.from(result['selectedBodyType'] ?? []); // Ensure it's a List<String>
         _selectedHeight = result['selectedHeight'];
         _selectedWeight = result['selectedWeight'];
-        _selectedRelationshipStatus = result['selectedRelationshipStatus'];
+        _selectedRelationshipStatus = List<String>.from(result['selectedRelationshipStatus'] ?? []); // Ensure it's a List<String>
 
         _acceptsNsfwPics = List<String>.from(result['acceptsNsfwPics'] ?? []);
-        _selectedLookingFor = result['selectedLookingFor'];
+        _selectedLookingFor = List<String>.from(result['selectedLookingFor'] ?? []); // Ensure it's a List<String>
         _selectedMeetAt = result['selectedMeetAt'];
         _haventChattedToday = result['haventChattedToday'] ?? false;
 
@@ -916,7 +925,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
           });
         },
         physics:
-            const NeverScrollableScrollPhysics(), // Disable swiping between pages
+        const NeverScrollableScrollPhysics(), // Disable swiping between pages
         children: [
           // 0: Browse Screen
           // This screen already has SafeArea applied to its Column child.
@@ -947,10 +956,10 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                             // Wrap TextField with GestureDetector
                             child: Container(
                               constraints:
-                                  const BoxConstraints(maxHeight: 30.0),
+                              const BoxConstraints(maxHeight: 30.0),
                               child: TextField(
                                 enabled:
-                                    false, // Disable TextField interaction directly
+                                false, // Disable TextField interaction directly
                                 style: const TextStyle(color: Colors.white),
                                 decoration: InputDecoration(
                                   hintText: 'Explore more profiles',
@@ -982,7 +991,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                         const SizedBox(width: 8.0),
                         _buildPillButton(Icons.star_outline, "Favorite",
                             onTap:
-                                _showFavoriteFilterDialog), // Favorite filter
+                            _showFavoriteFilterDialog), // Favorite filter
                         _buildPillButton(Icons.cake, "Age",
                             onTap: _showAgeFilterDialog), // Age filter
                         _buildPillButton(Icons.wifi, "Online",
@@ -993,7 +1002,7 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                             onTap: _showFreshFilterDialog), // Fresh filter
                         _buildPillButton(Icons.tag, "Tags",
                             onTap:
-                                _showTagsFilterScreen), // Tags filter now goes to TagsScreen
+                            _showTagsFilterScreen), // Tags filter now goes to TagsScreen
                         _buildPillButton(Icons.filter_list, "More Filters",
                             onTap: _showMoreFiltersScreen),
                         const SizedBox(width: 8.0),
@@ -1006,149 +1015,149 @@ class _MainBrowseScreenState extends State<MainBrowseScreen> {
                       padding: const EdgeInsets.all(8.0),
                       child: _errorMessage.isNotEmpty
                           ? Center(
-                              child: Text(_errorMessage,
-                                  style: const TextStyle(color: Colors.red)))
+                          child: Text(_errorMessage,
+                              style: const TextStyle(color: Colors.red)))
                           : (_isLoading && _users.isEmpty)
-                              ? const Center(
-                                  child: CircularProgressIndicator(
+                          ? const Center(
+                          child: CircularProgressIndicator(
+                              color: Colors.white))
+                          : RefreshIndicator(
+                        onRefresh: _refreshUsers,
+                        color: Colors.white,
+                        backgroundColor: Colors.grey[900],
+                        child: GridView.builder(
+                          controller: _scrollController,
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 2.0,
+                            mainAxisSpacing: 2.0,
+                            childAspectRatio: 1,
+                          ),
+                          itemCount:
+                          _users.length + (_hasMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == _users.length) {
+                              return _isLoading
+                                  ? const Center(
+                                  child:
+                                  CircularProgressIndicator(
                                       color: Colors.white))
-                              : RefreshIndicator(
-                                  onRefresh: _refreshUsers,
-                                  color: Colors.white,
-                                  backgroundColor: Colors.grey[900],
-                                  child: GridView.builder(
-                                    controller: _scrollController,
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3,
-                                      crossAxisSpacing: 2.0,
-                                      mainAxisSpacing: 2.0,
-                                      childAspectRatio: 1,
+                                  : const SizedBox.shrink();
+                            }
+                            final user = _users[index];
+                            final imageUrl = user.imageUrls.isNotEmpty
+                                ? user.imageUrls[0]
+                                : 'assets/placeholder_user.jpg';
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ProfileScreen(
+                                          userId: user.id.toString(),
+                                        ),
+                                  ),
+                                );
+                              },
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius:
+                                    BorderRadius.circular(2.0),
+                                    child: Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      errorBuilder: (context, error,
+                                          stackTrace) {
+                                        return Image.asset(
+                                          'assets/placeholder_error.jpg',
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        );
+                                      },
+                                      loadingBuilder: (context, child,
+                                          loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Center(
+                                          child:
+                                          CircularProgressIndicator(
+                                            value: loadingProgress
+                                                .expectedTotalBytes !=
+                                                null
+                                                ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                                : null,
+                                            color: Colors.grey,
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    itemCount:
-                                        _users.length + (_hasMore ? 1 : 0),
-                                    itemBuilder: (context, index) {
-                                      if (index == _users.length) {
-                                        return _isLoading
-                                            ? const Center(
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        color: Colors.white))
-                                            : const SizedBox.shrink();
-                                      }
-                                      final user = _users[index];
-                                      final imageUrl = user.imageUrls.isNotEmpty
-                                          ? user.imageUrls[0]
-                                          : 'assets/placeholder_user.jpg';
-                                      return GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  ProfileScreen(
-                                                userId: user.id.toString(),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Stack(
-                                          children: [
-                                            ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(2.0),
-                                              child: Image.network(
-                                                imageUrl,
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                height: double.infinity,
-                                                errorBuilder: (context, error,
-                                                    stackTrace) {
-                                                  return Image.asset(
-                                                    'assets/placeholder_error.jpg',
-                                                    fit: BoxFit.cover,
-                                                    width: double.infinity,
-                                                    height: double.infinity,
-                                                  );
-                                                },
-                                                loadingBuilder: (context, child,
-                                                    loadingProgress) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return Center(
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      value: loadingProgress
-                                                                  .expectedTotalBytes !=
-                                                              null
-                                                          ? loadingProgress
-                                                                  .cumulativeBytesLoaded /
-                                                              loadingProgress
-                                                                  .expectedTotalBytes!
-                                                          : null,
-                                                      color: Colors.grey,
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            Positioned(
-                                              bottom: 0,
-                                              left: 0,
-                                              right: 0,
-                                              child: Container(
-                                                height: 50,
-                                                decoration: BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    begin:
-                                                        Alignment.bottomCenter,
-                                                    end: Alignment.topCenter,
-                                                    colors: [
-                                                      Colors.black
-                                                          .withOpacity(0.9),
-                                                      Colors.transparent
-                                                    ],
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              bottom: 8.0,
-                                              left: 8.0,
-                                              child: Row(
-                                                children: [
-                                                  if (user.status!
-                                                      .toLowerCase()
-                                                      .contains('online')) ...[
-                                                    Container(
-                                                      width: 10.0,
-                                                      height: 10.0,
-                                                      decoration:
-                                                          const BoxDecoration(
-                                                        color: Colors.green,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                  const SizedBox(width: 4.0),
-                                                  Text(
-                                                    user.userName.toString(),
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10.0,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin:
+                                          Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            Colors.black
+                                                .withOpacity(0.9),
+                                            Colors.transparent
                                           ],
                                         ),
-                                      );
-                                    },
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Positioned(
+                                    bottom: 8.0,
+                                    left: 8.0,
+                                    child: Row(
+                                      children: [
+                                        if (user.status!
+                                            .toLowerCase()
+                                            .contains('online')) ...[
+                                          Container(
+                                            width: 10.0,
+                                            height: 10.0,
+                                            decoration:
+                                            const BoxDecoration(
+                                              color: Colors.green,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(width: 4.0),
+                                        Text(
+                                          user.userName.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10.0,
+                                            fontWeight:
+                                            FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ],

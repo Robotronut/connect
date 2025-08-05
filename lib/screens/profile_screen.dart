@@ -608,7 +608,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                       // Display Gender
 
                       // Display Pronouns
-                      if (_userProfile!.pronouns != 'Not Specified' && _userProfile!.pronouns!.isNotEmpty)
+                      if (_userProfile!.pronouns != 'Rather Not Say' && _userProfile!.pronouns!.isNotEmpty)
                         _buildStatRow(
                           Icons.male,
                           _userProfile!.gender != 'Rather Not Say' && _userProfile!.gender!.isNotEmpty
@@ -616,6 +616,8 @@ class ProfileScreenState extends State<ProfileScreen> {
                               : _userProfile!.pronouns!,
                           showInfo: true,
                         ),
+                      if (_userProfile!.bodyType != 'Rather Not Say' && _userProfile!.bodyType!.isNotEmpty)
+                        _buildStatRow(Icons.accessibility_new, _userProfile!.bodyType!),
                       // Display Race
                       if (_userProfile!.race != 'Rather Not Say')
                         _buildStatRow(
@@ -625,7 +627,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                         _buildStatRow(Icons.favorite, // Icon for sexual orientation
                             _userProfile!.sexualOrientation.toString()), // Display sexual orientation
                       // Display Tribes
-                      if (_userProfile!.tribes != null && _userProfile!.tribes!.isNotEmpty && !_userProfile!.tribes!.contains('Not Specified'))
+                      if (_userProfile!.tribes != null && _userProfile!.tribes!.isNotEmpty && !_userProfile!.tribes!.contains('Rather Not Say'))
                         _buildStatRow(Icons.people_alt, // Changed icon for tribes
                             _userProfile!.tribes?.join(', ') ?? 'N/A'), // Display tribes, joined by comma
                       // Display Relationship Status
