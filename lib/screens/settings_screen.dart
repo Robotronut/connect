@@ -14,9 +14,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   // State variables for various settings toggles
-  bool _pushNotificationsEnabled = true;
-  bool _emailNotificationsEnabled = false;
-  bool _locationServicesEnabled = true;
   bool _showOnlineStatus = true;
   String _selectedLanguage = 'English'; // Default language
 
@@ -27,6 +24,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // New theme toggle
   bool _isDarkMode = true; // Default to dark mode
+
+  // New state for 'Show Distance'
+  bool _showDistanceEnabled = true;
 
   // Helper method for consistent section titles
   Widget _buildSectionTitle(String title) {
@@ -271,17 +271,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // --- Notification Settings ---
             _buildSectionTitle('NOTIFICATIONS'),
             _buildSwitchRow(
-              title: 'Push Notifications',
-              value: _pushNotificationsEnabled,
-              onChanged: (bool newValue) {
-                setState(() {
-                  _pushNotificationsEnabled = newValue;
-                });
-                // TODO: Update notification preference in backend
-              },
-              subtitle: 'Receive alerts for new messages and activity.',
-            ),
-            _buildSwitchRow(
               title: 'Sound Notifications',
               value: _soundNotificationsEnabled,
               onChanged: (bool newValue) {
@@ -304,7 +293,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               subtitle: 'Vibrate for new notifications.',
             ),
             _buildSwitchRow(
-              title: 'In-App Tap Notifications',
+              title: 'Tap Notifications',
               value: _tapsNotificationsEnabled,
               onChanged: (bool newValue) {
                 setState(() {
@@ -314,30 +303,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               subtitle: 'Receive subtle visual cues for new activity.',
             ),
-            _buildSwitchRow(
-              title: 'Email Notifications',
-              value: _emailNotificationsEnabled,
-              onChanged: (bool newValue) {
-                setState(() {
-                  _emailNotificationsEnabled = newValue;
-                });
-                // TODO: Update email notification preference in backend
-              },
-              subtitle: 'Get updates and promotions via email.',
-            ),
 
             // --- Privacy Settings ---
             _buildSectionTitle('PRIVACY'),
             _buildSwitchRow(
-              title: 'Location Services',
-              value: _locationServicesEnabled,
+              title: 'Show Distance', // Changed title
+              value: _showDistanceEnabled, // Using new state variable
               onChanged: (bool newValue) {
                 setState(() {
-                  _locationServicesEnabled = newValue;
+                  _showDistanceEnabled = newValue;
                 });
-                // TODO: Handle location service permission/preference
+                // TODO: Handle preference for showing distance
               },
-              subtitle: 'Allow the app to use your device location.',
+              subtitle: 'Display your distance from other users.', // New subtitle
             ),
             _buildSwitchRow(
               title: 'Show Online Status',
@@ -349,6 +327,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // TODO: Update online status preference in backend
               },
               subtitle: 'Let others see when you are online.',
+            ),
+            _buildActionRow(
+              title: 'Blocked Users',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const BlockedUsersScreen()),
+                );
+              },
+              subtitle: 'Manage users you have blocked.',
             ),
 
             // --- App Preferences ---
@@ -638,6 +626,102 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A screen for managing blocked users.
+class BlockedUsersScreen extends StatefulWidget {
+  const BlockedUsersScreen({Key? key}) : super(key: key);
+
+  @override
+  State<BlockedUsersScreen> createState() => _BlockedUsersScreenState();
+}
+
+class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
+  // Example list of blocked users
+  final List<String> _blockedUsers = [
+    'User123',
+    'AnotherUser',
+    'BlockedGuy',
+    'SpammerBot',
+  ];
+
+  void _unblockUser(String user) {
+    setState(() {
+      _blockedUsers.remove(user);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$user has been unblocked.')),
+    );
+    // TODO: Implement actual API call to unblock user
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Determine if the parent SettingsScreen is in dark mode to apply consistent theme
+    final SettingsScreen? parentSettings = context.findAncestorWidgetOfExactType<SettingsScreen>();
+    final bool parentIsDarkMode = (parentSettings?.createState() as _SettingsScreenState?)?._isDarkMode ?? true;
+
+    return Scaffold(
+      backgroundColor: parentIsDarkMode ? Colors.black : Colors.white,
+      appBar: AppBar(
+        backgroundColor: parentIsDarkMode ? Colors.black : Colors.blueGrey[800],
+        title: Text(
+          'Blocked Users',
+          style: TextStyle(
+              color: parentIsDarkMode ? Colors.yellow : Colors.white,
+              fontWeight: FontWeight.bold),
+        ),
+        iconTheme: IconThemeData(color: parentIsDarkMode ? Colors.white : Colors.white),
+      ),
+      body: _blockedUsers.isEmpty
+          ? Center(
+        child: Text(
+          'No blocked users.',
+          style: TextStyle(color: parentIsDarkMode ? Colors.grey : Colors.black54, fontSize: 16),
+        ),
+      )
+          : ListView.builder(
+        itemCount: _blockedUsers.length,
+        itemBuilder: (context, index) {
+          final user = _blockedUsers[index];
+          return Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
+              ),
+              color: parentIsDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  user,
+                  style: TextStyle(color: parentIsDarkMode ? Colors.white : Colors.black87, fontSize: 16),
+                ),
+                ElevatedButton(
+                  onPressed: () => _unblockUser(user),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[700],
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                  ),
+                  child: const Text(
+                    'Unblock',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

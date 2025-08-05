@@ -8,6 +8,7 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 import 'dart:io'; // Required for File
 import 'package:flutter/services.dart'; // Required for TextInputFormatter
 import 'package:connect/screens/settings_screen.dart'; // Import the new SettingsScreen
+import 'package:connect/screens/selected_tags_screen.dart'; // Import the NEW SelectTagsScreen
 
 /// A screen for editing the user's profile information.
 ///
@@ -97,7 +98,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     'She/Her/Hers',
     'They/Them/Theirs',
     'Ask me',
-    'Not Specified',
+    'Rather Not Say',
   ];
   String? _selectedPronouns;
 
@@ -148,15 +149,32 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   final List<String> _sexualOrientationOptions = [
     'Straight',
     'Gay',
+    'Lesbian',
     'Bisexual',
     'Pansexual',
     'Asexual',
+    'Demisexual',
     'Queer',
     'Questioning',
+    'Fluid',
+    'Skoliosexual',
+    'Polysexual',
+    'Omnisexual',
+    'Androsexual',
+    'Gynosexual',
+    'Gray-Asexual',
+    'Reciprosexual',
+    'Aroace',
+    'Cupio-sexual',
+    'Fraysexual',
+    'Lithsexual',
+    'Placiosexual',
+    'Quoi-sexual',
     'What Ever',
     'Rather Not Say',
   ];
-  String? _selectedSexualOrientation;
+  // Changed _selectedSexualOrientation to a List<String>
+  List<String> _selectedSexualOrientation = [];
 
   // Store the UserProfile that we are editing
   UserModel? _currentUserProfile;
@@ -168,6 +186,155 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
   // Track if an image upload/deletion is in progress
   bool _isImageProcessing = false;
+
+  // --- New state for general tags ---
+  // This map holds all available tags categorized
+  final Map<String, List<String>> _allAvailableTags = {
+    'Kinks': [
+      'anon',
+      'bator',
+      'bb',
+      'bondage',
+      'bubblebutt',
+      'carplay',
+      'chastity',
+      'commando',
+      'condoms',
+      'condomsonly',
+      'cruising',
+      'cut',
+      'dirty',
+      'discreet',
+      'dl',
+      'dom',
+      'dtf',
+      'edging',
+      'feet',
+      'ff',
+      'flexible',
+      'furries',
+      'fwb',
+      'gear',
+      'gh',
+      'gooner',
+      'group',
+      'hands',
+      'hosting',
+      'hung',
+      'jo',
+      'kink',
+      'kissing',
+      'latex',
+      'leather',
+      'limits',
+      'lingerie',
+      'looking',
+      'muscle',
+      'nylon',
+      'otter',
+      'pic4pic',
+      'poz',
+      'sissy',
+      'smooth',
+      'sober',
+      't4t',
+      'trans',
+      'twink',
+      'twunk',
+      'uniform',
+      'visiting',
+      'watching',
+      'ws'
+    ],
+    'Hobbies': [
+      'anime',
+      'apres ski',
+      'art',
+      'beach',
+      'brunch',
+      'concerts',
+      'cooking',
+      'dancing',
+      'diy',
+      'fashion',
+      'gaming',
+      'hiking',
+      'karaoke',
+      'movies',
+      'music',
+      'naps',
+      'popmusic',
+      'reading',
+      'rpdr',
+      'tattoos',
+      'tennis',
+      'theater',
+      'tv',
+      'weightlifting',
+      'workingout',
+      'writing',
+      'yoga'
+    ],
+    'Personality': [
+      'adventurous',
+      'catperson',
+      'chill',
+      'confident',
+      'curious',
+      'direct',
+      'dogperson',
+      'fun',
+      'goofy',
+      'kind',
+      'loyal',
+      'mature',
+      'outgoing',
+      'parent',
+      'reliable',
+      'romantic',
+      'shy',
+      'unicorn'
+    ],
+    'Other Tags': [
+      'bear',
+      'beard',
+      'bi',
+      'chub',
+      'cleancut',
+      'college',
+      'couple',
+      'cub',
+      'cuddling',
+      'daddy',
+      'drag',
+      'drugfree',
+      'femme',
+      'friends',
+      'gaymer',
+      'geek',
+      'hairy',
+      'jock',
+      'leather',
+      'masc',
+      'military',
+      'nosmoking',
+      'nylon',
+      'otter',
+      'pic4pic',
+      'poz',
+      'sissy',
+      'smooth',
+      'sober',
+      't4t',
+      'trans',
+      'twink',
+      'twunk',
+      'uniform'
+    ], // Combined from _tribeOptions and other possible tags
+  };
+  // This list will hold the tags selected by the user for their profile
+  List<String> _userSelectedTags = [];
+  // --- End new state for general tags ---
 
   @override
   void initState() {
@@ -226,8 +393,22 @@ class EditProfileScreenState extends State<EditProfileScreen> {
           []; // Initialize with an empty list if null
       _selectedTribes = _currentUserProfile!.tribes ??
           []; // Initialize with an empty list if null
-      _selectedSexualOrientation = _currentUserProfile!
-          .sexualOrientation!; // Initialize sexual orientation
+
+      // Handle loading sexual orientation: convert string to list
+      if (_currentUserProfile!.sexualOrientation != null &&
+          _currentUserProfile!.sexualOrientation!.isNotEmpty) {
+        _selectedSexualOrientation = _currentUserProfile!.sexualOrientation!
+            .split(',')
+            .map((e) => e.trim())
+            .toList();
+      } else {
+        _selectedSexualOrientation = [];
+      }
+
+      // Load user selected tags (assuming your UserModel has a 'tags' field)
+      _userSelectedTags = _currentUserProfile!.tags ?? [];
+
+
       _imageUrls.clear();
       _imageUrls.addAll(_currentUserProfile!.imageUrls as Iterable<String>);
     } catch (e) {
@@ -256,7 +437,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _saveProfile() async {
     final updatedProfile = UserModel(
       bodyType: _selectedBuild,
-      imageUrls: _imageUrls,
+      imageUrls: _imageUrls, // This is the list from the state, which is updated on reorder
       // Map 'Yes' to true, 'No' to false, otherwise null for other options.
       acceptsNsfwPics: _selectedNsfwPics,
       aboutMe: _bioController.text,
@@ -276,8 +457,9 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       joined: _currentUserProfile!.joined,
       position: _selectedPositions,
       tribes: _selectedTribes, // Add the new tribes field
-      sexualOrientation:
-      _selectedSexualOrientation, // Add the new sexual orientation field
+      // Convert the list of sexual orientations back to a comma-separated string for saving
+      sexualOrientation: _selectedSexualOrientation.join(', '),
+      tags: _userSelectedTags, // Save the selected tags
     );
     try {
       await ApiService.updateExistingUserProfile(updatedProfile);
@@ -286,6 +468,10 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
       setState(() {
         _isLoading = false;
+        // Update the local _currentUserProfile to reflect the saved changes
+        // This ensures the UI remains consistent if the screen is revisited
+        // without a full reload from the API.
+        _currentUserProfile = updatedProfile;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully!')),
         );
@@ -306,6 +492,14 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
   /// Allows the user to pick an image from the gallery and uploads it.
   Future<void> _pickImage() async {
+    // Limit to 9 images
+    if (_imageUrls.length >= 9) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You can upload a maximum of 9 pictures.')),
+      );
+      return;
+    }
+
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
@@ -320,7 +514,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
           if (_imageUrls.isEmpty) {
             _imageUrls.add(imageUrl);
           } else {
-            _imageUrls.insert(0, imageUrl);
+            _imageUrls.insert(0, imageUrl); // Insert at the beginning to make it the main photo
           }
         });
 
@@ -374,6 +568,18 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       });
     }
   }
+
+  /// Handles reordering of images in the gallery.
+  void _onReorderImages(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final String item = _imageUrls.removeAt(oldIndex);
+      _imageUrls.insert(newIndex, item);
+    });
+  }
+
 
   /// Performs user logout by clearing authentication data and navigating to login.
   Future<void> _performLogout() async {
@@ -508,6 +714,28 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  /// A helper widget to get the appropriate icon for a given position.
+  IconData? _getIconForPosition(String position) {
+    switch (position) {
+      case 'Top':
+        return Icons.arrow_upward;
+      case 'Versatile':
+        return Icons.swap_horiz;
+      case 'Bottom':
+        return Icons.arrow_downward;
+      case 'Side':
+        return Icons.horizontal_rule;
+      case 'Ver Bottom':
+        return Icons.arrow_downward; // Can be more specific if needed
+      case 'Vers Top':
+        return Icons.arrow_upward; // Can be more specific if needed
+      case 'Rather Not Say':
+        return Icons.do_not_disturb_alt;
+      default:
+        return null;
+    }
+  }
+
   /// A helper widget to create a full-width, tappable row for multi-select options.
   /// It uses a modal bottom sheet with a list of checkboxes for the options.
   Widget _buildMultiSelectableRow({
@@ -531,7 +759,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                 int selectionsCount = tempSelected.length;
                 if (exclusiveOption != null &&
                     tempSelected.contains(exclusiveOption)) {
-                  selectionsCount = 0;
+                  selectionsCount = 0; // If exclusive is selected, count as 0 for other options
                 } else if (maxSelections != null) {
                   selectionsCount = tempSelected.length;
                 }
@@ -553,9 +781,9 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                   fontWeight: FontWeight.bold),
                             ),
                             if (maxSelections != null &&
-                                exclusiveOption == null ||
-                                (exclusiveOption != null &&
-                                    !tempSelected.contains(exclusiveOption)))
+                                (exclusiveOption == null ||
+                                    (exclusiveOption != null &&
+                                        !tempSelected.contains(exclusiveOption))))
                               Text(
                                 '${selectionsCount}/$maxSelections',
                                 style: const TextStyle(
@@ -576,26 +804,38 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                               final option = options[index];
                               final isSelected = tempSelected.contains(option);
                               bool isEnabled = true;
-                              if (exclusiveOption != null &&
-                                  option == exclusiveOption) {
-                                // If exclusive option is selected, only it can be deselected
-                                isEnabled = isSelected || selectionsCount == 0;
-                              } else if (exclusiveOption != null &&
-                                  tempSelected.contains(exclusiveOption)) {
+
+                              if (exclusiveOption != null && option == exclusiveOption) {
+                                // If the current option is the exclusive one
+                                isEnabled = !tempSelected.any((element) => element != exclusiveOption) || isSelected;
+                              } else if (exclusiveOption != null && tempSelected.contains(exclusiveOption)) {
                                 // If exclusive option is already selected, other options are disabled
                                 isEnabled = false;
                               } else if (maxSelections != null) {
                                 // Standard multi-select logic with max limit
-                                isEnabled = isSelected ||
-                                    tempSelected.length < maxSelections;
+                                isEnabled = isSelected || tempSelected.length < maxSelections;
                               }
+
                               return CheckboxListTile(
-                                title: Text(
-                                  option,
-                                  style: TextStyle(
-                                      color: isEnabled
-                                          ? Colors.white
-                                          : Colors.grey),
+                                title: Row( // Use Row to include text and icon
+                                  children: [
+                                    Text(
+                                      option,
+                                      style: TextStyle(
+                                          color: isEnabled
+                                              ? Colors.white
+                                              : Colors.grey),
+                                    ),
+                                    if (isSelected && _getIconForPosition(option) != null && title == 'Positions') // Only show icon for 'Positions'
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8.0),
+                                        child: Icon(
+                                          _getIconForPosition(option),
+                                          color: Colors.yellow,
+                                          size: 18,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 value: isSelected,
                                 onChanged: isEnabled
@@ -621,8 +861,10 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                                       tempSelected.remove(option);
                                     }
                                   });
-                                  onChanged(
-                                      tempSelected); // Update the parent state immediately
+                                  // Update the parent state immediately, but only if the change is valid
+                                  // This `onChanged` is called from within the modal's setState
+                                  // which ensures the UI updates correctly.
+                                  onChanged(tempSelected);
                                 }
                                     : null,
                                 activeColor: Colors.yellow,
@@ -661,27 +903,103 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                 fontSize: 16,
               ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8.0),
-                child: Text(
+            Row(
+              children: [
+                Text(
                   selectedValues.isEmpty ? 'Select' : selectedValues.join(', '),
                   style: const TextStyle(
                     color: Colors.grey,
                     fontSize: 16,
                   ),
-                  textAlign: TextAlign.right,
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_forward_ios,
+                    color: Colors.grey, size: 16),
+              ],
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
           ],
         ),
       ),
     );
   }
+
+  /// A helper widget to create a full-width, tappable row for displaying selected tags
+  /// and navigating to the tag selection screen.
+  Widget _buildSelectableTagsRow({
+    required String title,
+    required List<String> selectedValues,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
+          ),
+          color: Colors.white.withOpacity(0.1), // Lighter background
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        margin: const EdgeInsets.only(
+            left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
+        padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+            Expanded( // Use Expanded to allow text to take available space
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Text(
+                    selectedValues.isEmpty ? 'Select' : selectedValues.join(', '),
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis, // Handle overflow
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios,
+                color: Colors.grey, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- New function to navigate to TagsScreen ---
+  Future<void> _navigateToTagsScreen() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SelectTagsScreen( // Changed to SelectTagsScreen
+          initialSelectedTags: _userSelectedTags,
+          allTagOptions: _allAvailableTags,
+          maxSelections: 5, // Set the maximum number of tags the user can select
+        ),
+      ),
+    );
+
+    if (result != null && result['selectedTags'] is List<String>) {
+      setState(() {
+        _userSelectedTags = List.from(result['selectedTags']);
+        // If TagsScreen also controls a filterEnabled state, you can update it here:
+        // _tempIsFilterEnabled = result['filterEnabled'];
+      });
+    }
+  }
+  // --- End new function ---
 
   @override
   Widget build(BuildContext context) {
@@ -732,179 +1050,150 @@ class EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Profile Photo and Username Row ---
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 24.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Main profile image (Square with radius)
-                    GestureDetector(
-                      onTap: _isImageProcessing ? null : _pickImage,
-                      child: Container(
-                        width: 100.0,
-                        height: 100.0,
-                        decoration: BoxDecoration(
-                          color: Colors
-                              .grey[800], // Background for avatar
-                          borderRadius: BorderRadius.circular(
-                              5.0), // Apply radius
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12.0),
-                          child: _imageUrls.isNotEmpty
-                              ? Image.network(
-                            _imageUrls[
-                            0], // First image in the list
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 100,
-                            errorBuilder: (context, error,
-                                stackTrace) =>
-                                Image.asset(
-                                    'assets/placeholder_error.jpg',
-                                    fit: BoxFit.cover),
-                            loadingBuilder: (context, child,
-                                loadingProgress) {
-                              if (loadingProgress == null)
-                                return child;
-                              return Center(
-                                child:
-                                CircularProgressIndicator(
-                                  value: loadingProgress
-                                      .expectedTotalBytes !=
-                                      null
-                                      ? loadingProgress
-                                      .cumulativeBytesLoaded /
-                                      loadingProgress
-                                          .expectedTotalBytes!
-                                      : null,
-                                  color: Colors.white54,
-                                ),
-                              );
-                            },
-                          )
-                              : Image.asset(
-                            'assets/placeholder_error.jpg', // Use asset for placeholder
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 100,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(
-                        width:
-                        16), // Space between photo and username
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          TextFormField(
-                            controller: _usernameController,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24),
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: 'Your Username',
-                              hintStyle: TextStyle(
-                                  color: Colors.white54,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24),
-                            ),
-                          ),
-                          TextFormField(
-                            controller: _emailController,
-                            style: const TextStyle(
-                                color: Colors.grey, fontSize: 16),
-                            enabled: false, // Email is not editable
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              hintText: 'Email address',
-                              hintStyle: TextStyle(
-                                  color: Colors.grey, fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // --- Removed Username and Email Section ---
+              // The Padding widget that contained the username and email TextFormFields has been removed.
+
               // --- Image Gallery Section ---
               _buildSectionTitle('PHOTOS'),
-              Container(
-                height: 120, // Adjust height as needed
-                margin: const EdgeInsets.only(left: 16.0),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _imageUrls.length +
-                      1, // +1 for the add photo button
-                  itemBuilder: (context, index) {
-                    if (index == _imageUrls.length) {
-                      return GestureDetector(
-                        onTap: _isImageProcessing ? null : _pickImage,
-                        child: Container(
-                          width: 100,
-                          height: 100,
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[800],
-                            borderRadius: BorderRadius.circular(10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Wrap( // Changed to Wrap for multi-row layout
+                  spacing: 8.0, // Horizontal spacing between cards
+                  runSpacing: 8.0, // Vertical spacing between rows
+                  children: List.generate(_imageUrls.length + 1, (index) {
+                    // Only show add photo button if less than 9 images
+                    if (index == _imageUrls.length && _imageUrls.length < 9) {
+                      // Add photo button
+                      return ReorderableDragStartListener(
+                        key: const ValueKey('add_photo_button_reorderable'),
+                        index: index,
+                        child: GestureDetector(
+                          onTap: _isImageProcessing ? null : _pickImage,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[800],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  spreadRadius: 1,
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: _isImageProcessing
+                                  ? const Center(
+                                  child: CircularProgressIndicator(color: Colors.white))
+                                  : const Icon(Icons.add_a_photo,
+                                  color: Colors.white, size: 40),
+                            ),
                           ),
-                          child: _isImageProcessing
-                              ? const Center(
-                              child: CircularProgressIndicator(
-                                  color: Colors.white))
-                              : const Icon(Icons.add_a_photo,
-                              color: Colors.white, size: 40),
                         ),
                       );
+                    } else if (index == _imageUrls.length && _imageUrls.length >= 9) {
+                      return const SizedBox.shrink(); // Hide button if 9 images uploaded
                     }
                     final imageUrl = _imageUrls[index];
-                    return Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          margin: const EdgeInsets.only(right: 8),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error,
-                                  stackTrace) =>
-                                  Image.asset(
-                                      'assets/placeholder_error.jpg',
-                                      fit: BoxFit.cover),
+                    return ReorderableDragStartListener(
+                      key: ValueKey(imageUrl),
+                      index: index,
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  spreadRadius: 1,
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: _isImageProcessing
-                                ? null
-                                : () => _removeImage(imageUrl),
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.7),
-                                shape: BoxShape.circle,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: 100,
+                                height: 100,
+                                errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  'assets/placeholder_error.jpg',
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                ),
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) {
+                                    return child;
+                                  }
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress
+                                          .expectedTotalBytes !=
+                                          null
+                                          ? loadingProgress
+                                          .cumulativeBytesLoaded /
+                                          loadingProgress
+                                              .expectedTotalBytes!
+                                          : null,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
                               ),
-                              child: const Icon(Icons.close,
-                                  size: 16, color: Colors.white),
                             ),
                           ),
-                        ),
-                      ],
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: GestureDetector(
+                              onTap: _isImageProcessing
+                                  ? null
+                                  : () => _removeImage(imageUrl),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close,
+                                    size: 16, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          // Indicator for the main photo (first in the list)
+                          if (index == 0)
+                            Positioned(
+                              bottom: 4,
+                              left: 4,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.yellow.withOpacity(0.8),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: const Text(
+                                  'Main',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     );
-                  },
+                  }),
                 ),
               ),
               // --- About Me Section ---
@@ -948,15 +1237,19 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                       _selectedPronouns = newValue;
                     });
                   }),
-              _buildSelectableRow(
-                  title: 'Relationship Status',
-                  selectedValue: _selectedSexualOrientation,
-                  options: _sexualOrientationOptions,
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedRelationshipStatus = newValue;
-                    });
-                  }),
+              // Changed to _buildMultiSelectableRow for Sexual Orientation
+              _buildMultiSelectableRow(
+                title: 'Sexual Orientation',
+                selectedValues: _selectedSexualOrientation,
+                options: _sexualOrientationOptions,
+                onChanged: (newValues) {
+                  setState(() {
+                    _selectedSexualOrientation = newValues;
+                  });
+                },
+                maxSelections: 3, // Max 3 selections
+                exclusiveOption: 'Rather Not Say', // Exclusive option
+              ),
               _buildSelectableRow(
                   title: 'Race',
                   selectedValue: _selectedRace,
@@ -1079,7 +1372,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                       _selectedPositions = newValues;
                     });
                   },
-                  exclusiveOption: 'Not Applicable',
+                  exclusiveOption: 'Rather Not Say',
                   maxSelections: 1
               ),
 
@@ -1093,8 +1386,16 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                     _selectedTribes = newValues;
                   });
                 },
-                exclusiveOption: 'Not Specified',
+                exclusiveOption: 'Rather Not Say',
                 maxSelections: 5,
+              ),
+
+              // --- MY INTERESTS/TAGS Section (now using _buildSelectableTagsRow) ---
+              _buildSectionTitle('MY INTERESTS/TAGS'),
+              _buildSelectableTagsRow(
+                title: 'Tags',
+                selectedValues: _userSelectedTags,
+                onTap: _navigateToTagsScreen,
               ),
 
               const SizedBox(height: 50.0),

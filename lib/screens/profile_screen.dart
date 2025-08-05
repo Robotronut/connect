@@ -30,7 +30,7 @@ class ProfileScreen extends StatefulWidget {
 class ProfileScreenState extends State<ProfileScreen> {
   final PageController _pageController = PageController();
   final DraggableScrollableController _sheetController =
-      DraggableScrollableController();
+  DraggableScrollableController();
   late HubConnection hubConnection;
 
   UserModel? _userProfile;
@@ -42,11 +42,11 @@ class ProfileScreenState extends State<ProfileScreen> {
   int _currentPageIndex = 0;
   bool _isFlameTapped = false;
   final double _initialChildSize =
-      1; // Starts showing most of the content including photo
+  1; // Starts showing most of the content including photo
   final double _minChildSize =
-      1; // Sheet can shrink to 15% (showing just header)
+  1; // Sheet can shrink to 15% (showing just header)
   final double _maxSheetExtent =
-      1; // Max height the sheet can expand to (almost full screen)
+  1; // Max height the sheet can expand to (almost full screen)
 
   double _sheetScrollOpacity = 0.0;
 
@@ -68,7 +68,7 @@ class ProfileScreenState extends State<ProfileScreen> {
 
       if (currentExtent > _minChildSize) {
         normalizedOpacity = ((currentExtent - _minChildSize) /
-                (_maxSheetExtent - _minChildSize))
+            (_maxSheetExtent - _minChildSize))
             .clamp(0.0, 1.0);
       }
 
@@ -93,9 +93,9 @@ class ProfileScreenState extends State<ProfileScreen> {
     try {
       _currentLoggedInUserId = await SecureStorageService.getUserId();
       final UserModel fetchedProfile =
-          await ApiService.getUserProfileById(widget.userId);
+      await ApiService.getUserProfileById(widget.userId);
       final UserModel myProfile =
-          await ApiService.getUserProfileById(_currentLoggedInUserId);
+      await ApiService.getUserProfileById(_currentLoggedInUserId);
       if (mounted) {
         // Check if the widget is still in the tree before calling setState
         setState(() {
@@ -125,11 +125,11 @@ class ProfileScreenState extends State<ProfileScreen> {
     final String? APIkey = await SecureStorageService.getApiKey();
     hubConnection = HubConnectionBuilder()
         .withUrl(
-          kServerUrl,
-          options: HttpConnectionOptions(
-            accessTokenFactory: () async => Future.value(APIkey),
-          ),
-        )
+      kServerUrl,
+      options: HttpConnectionOptions(
+        accessTokenFactory: () async => Future.value(APIkey),
+      ),
+    )
         .build();
     // It's a good practice to start the connection here if needed.
     await hubConnection.start()?.then((_) {
@@ -181,6 +181,28 @@ class ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// A helper widget to get the appropriate icon for a given position.
+  IconData? _getIconForPosition(String position) {
+    switch (position) {
+      case 'Top':
+        return Icons.arrow_upward;
+      case 'Versatile':
+        return Icons.swap_horiz;
+      case 'Bottom':
+        return Icons.arrow_downward;
+      case 'Side':
+        return Icons.horizontal_rule;
+      case 'Ver Bottom':
+        return Icons.arrow_downward; // Can be more specific if needed
+      case 'Vers Top':
+        return Icons.arrow_upward; // Can be more specific if needed
+      case 'Rather Not Say':
+        return Icons.do_not_disturb_alt;
+      default:
+        return null;
+    }
+  }
+
   Widget _buildStatRow(IconData icon, String text, {bool showInfo = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -230,15 +252,15 @@ class ProfileScreenState extends State<ProfileScreen> {
         context,
         MaterialPageRoute(
             builder: (context) => ChatScreen(
-                  hubConnection: hubConnection,
-                  currentUserId: _currentUser.id,
-                  currentUserImgUrl: _currentUser!.imageUrls.first,
-                  currentUserName: _currentUser.userName,
-                  chatHubUrl: kServerUrl,
-                  otherUserId: _userProfile!.id.toString(),
-                  otherUserName: _userProfile!.userName.toString(),
-                  otherUserImgUrl: _userProfile!.imageUrls.first,
-                )),
+              hubConnection: hubConnection,
+              currentUserId: _currentUser.id,
+              currentUserImgUrl: _currentUser!.imageUrls.first,
+              currentUserName: _currentUser.userName,
+              chatHubUrl: kServerUrl,
+              otherUserId: _userProfile!.id.toString(),
+              otherUserName: _userProfile!.userName.toString(),
+              otherUserImgUrl: _userProfile!.imageUrls.first,
+            )),
       );
     }
   }
@@ -388,74 +410,74 @@ class ProfileScreenState extends State<ProfileScreen> {
                   width: double.infinity,
                   child: _userProfile!.imageUrls.isEmpty
                       ? Container(
-                          color: Colors.grey[800],
-                          child: const Center(
-                            child: Icon(Icons.person,
-                                size: 100, color: Colors.grey),
-                          ),
-                        )
+                    color: Colors.grey[800],
+                    child: const Center(
+                      child: Icon(Icons.person,
+                          size: 100, color: Colors.grey),
+                    ),
+                  )
                       : Stack(
-                          children: [
-                            PageView.builder(
-                              controller: _pageController,
-                              itemCount: _userProfile!.imageUrls.length,
-                              itemBuilder: (context, index) {
-                                // CORRECTED: Direct access to the URL string
-                                final String imageUrl =
-                                    _userProfile!.imageUrls[index];
-                                return GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => PhotoDetailScreen(
-                                          // CORRECTED: Pass the URL string directly
-                                          imageUrl:
-                                              _userProfile!.imageUrls[index],
-                                          heroTag: 'profilePhoto$index',
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: Hero(
-                                    tag: 'profilePhoto$index',
-                                    child: Image.network(
-                                      imageUrl,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      errorBuilder: (context, error,
-                                              stackTrace) =>
-                                          Image.asset(
-                                              'assets/placeholder_error.jpg',
-                                              fit: BoxFit.cover),
-                                      loadingBuilder:
-                                          (context, child, loadingProgress) {
-                                        if (loadingProgress == null) {
-                                          return child;
-                                        }
-                                        return Center(
-                                          child: CircularProgressIndicator(
-                                            value: loadingProgress
-                                                        .expectedTotalBytes !=
-                                                    null
-                                                ? loadingProgress
-                                                        .cumulativeBytesLoaded /
-                                                    loadingProgress
-                                                        .expectedTotalBytes!
-                                                : null,
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      },
-                                    ),
+                    children: [
+                      PageView.builder(
+                        controller: _pageController,
+                        itemCount: _userProfile!.imageUrls.length,
+                        itemBuilder: (context, index) {
+                          // CORRECTED: Direct access to the URL string
+                          final String imageUrl =
+                          _userProfile!.imageUrls[index];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PhotoDetailScreen(
+                                    // CORRECTED: Pass the URL string directly
+                                    imageUrl:
+                                    _userProfile!.imageUrls[index],
+                                    heroTag: 'profilePhoto$index',
                                   ),
-                                );
-                              },
+                                ),
+                              );
+                            },
+                            child: Hero(
+                              tag: 'profilePhoto$index',
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error,
+                                    stackTrace) =>
+                                    Image.asset(
+                                        'assets/placeholder_error.jpg',
+                                        fit: BoxFit.cover),
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                  if (loadingProgress == null) {
+                                    return child;
+                                  }
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress
+                                          .expectedTotalBytes !=
+                                          null
+                                          ? loadingProgress
+                                          .cumulativeBytesLoaded /
+                                          loadingProgress
+                                              .expectedTotalBytes!
+                                          : null,
+                                      color: Colors.white,
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                            _buildPageIndicator(),
-                          ],
-                        ),
+                          );
+                        },
+                      ),
+                      _buildPageIndicator(),
+                    ],
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -482,6 +504,33 @@ class ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ],
                       ),
+                      // Display Position under username
+                      if (_userProfile!.position != null &&
+                          _userProfile!.position!.isNotEmpty &&
+                          !_userProfile!.position!.contains('Rather Not Say')) // Updated condition
+                        Padding(
+                          padding: const EdgeInsets.only(top: 5.0),
+                          child: Row(
+                            children: [
+                              // Display icon for each selected position
+                              ..._userProfile!.position!.map((pos) =>
+                              _getIconForPosition(pos) != null
+                                  ? Padding(
+                                padding: const EdgeInsets.only(right: 5.0),
+                                child: Icon(
+                                  _getIconForPosition(pos),
+                                  size: 18,
+                                  color: Colors.grey[400],
+                                ),
+                              )
+                                  : const SizedBox.shrink()),
+                              Text(
+                                _userProfile!.position!.join(', '),
+                                style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 10),
                       Row(
                         children: [
@@ -556,13 +605,33 @@ class ProfileScreenState extends State<ProfileScreen> {
                             color: Colors.grey[400]),
                       ),
                       const SizedBox(height: 10),
-                      _buildStatRow(Icons.male,
-                          '${_userProfile!.gender} | ${_userProfile!.pronouns}',
-                          showInfo: true),
-                      _buildStatRow(
-                          Icons.person, _userProfile!.race.toString()),
-                      _buildStatRow(Icons.person,
-                          _userProfile!.relationshipStatus.toString()),
+                      // Display Gender
+
+                      // Display Pronouns
+                      if (_userProfile!.pronouns != 'Not Specified' && _userProfile!.pronouns!.isNotEmpty)
+                        _buildStatRow(
+                          Icons.male,
+                          _userProfile!.gender != 'Rather Not Say' && _userProfile!.gender!.isNotEmpty
+                              ? '${_userProfile!.gender} | ${_userProfile!.pronouns}'
+                              : _userProfile!.pronouns!,
+                          showInfo: true,
+                        ),
+                      // Display Race
+                      if (_userProfile!.race != 'Rather Not Say')
+                        _buildStatRow(
+                            Icons.public, _userProfile!.race.toString()), // Changed icon for race/ethnicity
+                      // Display Sexual Orientation
+                      if (_userProfile!.sexualOrientation != 'Rather Not Say')
+                        _buildStatRow(Icons.favorite, // Icon for sexual orientation
+                            _userProfile!.sexualOrientation.toString()), // Display sexual orientation
+                      // Display Tribes
+                      if (_userProfile!.tribes != null && _userProfile!.tribes!.isNotEmpty && !_userProfile!.tribes!.contains('Not Specified'))
+                        _buildStatRow(Icons.people_alt, // Changed icon for tribes
+                            _userProfile!.tribes?.join(', ') ?? 'N/A'), // Display tribes, joined by comma
+                      // Display Relationship Status
+                      if (_userProfile!.relationshipStatus != 'Rather Not Say')
+                        _buildStatRow(Icons.person,
+                            _userProfile!.relationshipStatus.toString()),
                       const SizedBox(height: 20),
                       Text(
                         'EXPECTATIONS',
@@ -572,12 +641,18 @@ class ProfileScreenState extends State<ProfileScreen> {
                             color: Colors.grey[400]),
                       ),
                       const SizedBox(height: 10),
-                      _buildExpectationRow(Icons.people, 'Looking For',
-                          _userProfile!.lookingFor.toString()),
-                      _buildExpectationRow(Icons.home, 'Meet At',
-                          _userProfile!.meetAt.toString()),
-                      _buildExpectationRow(Icons.camera_alt, 'NSFW pics?',
-                          _userProfile!.acceptsNsfwPics.toString()),
+                      // Display Looking For
+                      if (_userProfile!.lookingFor != 'Rather Not Say')
+                        _buildExpectationRow(Icons.people, 'Looking For',
+                            _userProfile!.lookingFor.toString()),
+                      // Display Meet At
+                      if (_userProfile!.meetAt != 'Rather Not Say')
+                        _buildExpectationRow(Icons.home, 'Meet At',
+                            _userProfile!.meetAt.toString()),
+                      // Display Accepts NSFW pics?
+                      if (_userProfile!.acceptsNsfwPics != 'Rather Not Say')
+                        _buildExpectationRow(Icons.camera_alt, 'NSFW pics?',
+                            _userProfile!.acceptsNsfwPics.toString()),
                       const SizedBox(height: 50),
                     ],
                   ),

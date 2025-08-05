@@ -20,6 +20,7 @@ class UserModel {
   final bool isFresh;
   final List<String>? position;
   final List<String>? tribes;
+  final List<String>? tags;
   final String? sexualOrientation; // Added sexualOrientation
 
   UserModel(
@@ -44,7 +45,8 @@ class UserModel {
       this.weight,
       this.tribes,
       this.sexualOrientation, // Ensure sexualOrientation is included
-      this.position // Ensure weight is also included here if it was missing
+      this.position, // Ensure weight is also included here if it was missing
+      this.tags
       });
 
   // Factory constructor for creating a UserModel from a JSON map
