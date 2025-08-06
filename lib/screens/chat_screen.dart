@@ -469,17 +469,12 @@ class _ChatScreenState extends State<ChatScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ReportScreen(
-                                    reportedUserId: widget.otherUserId,
-                                    reportedUsername: widget
-                                        .otherUserName, // Pass the other user's ID
-                                  ),
-                                ),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('User reported.'),
-                                  backgroundColor: Colors.red,
+                                  builder: (context) =>
+                                      ReportScreen(
+                                        reportedUserId: widget.otherUserId,
+                                        reportedUsername: widget
+                                            .otherUserName, // Pass the other user's ID
+                                      ),
                                 ),
                               );
                             },

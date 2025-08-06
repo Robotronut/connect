@@ -705,16 +705,16 @@ class ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(width: 15),
                         GestureDetector(
-                            onTap: _navigateToChatScreen,
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[850],
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(CupertinoIcons.chat_bubble_2,
-                                  color: Colors.yellow, size: 28),
+                          onTap: _navigateToChatScreen,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[850],
+                              shape: BoxShape.circle,
                             ),
+                            child: const Icon(CupertinoIcons.chat_bubble_2,
+                                color: Colors.yellow, size: 28),
+                          ),
                         ),
                       ],
                     ),

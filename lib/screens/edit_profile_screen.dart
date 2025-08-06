@@ -503,11 +503,8 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         File imageFile = File(pickedFile.path);
         final imageUrl = await ApiService.uploadImage(imageFile);
         setState(() {
-          if (_imageUrls.isEmpty) {
-            _imageUrls.add(imageUrl);
-          } else {
-            _imageUrls.insert(0, imageUrl); // Insert at the beginning to make it the main photo
-          }
+          // New image always becomes the main photo
+          _imageUrls.insert(0, imageUrl);
         });
 
         if (!mounted) return;
@@ -561,17 +558,15 @@ class EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  /// Handles reordering of images in the gallery.
-  void _onReorderImages(int oldIndex, int newIndex) {
+  /// Sets the selected image as the main profile image.
+  void _setMainImage(String imageUrlToSetAsMain) {
     setState(() {
-      if (newIndex > oldIndex) {
-        newIndex -= 1;
-      }
-      final String item = _imageUrls.removeAt(oldIndex);
-      _imageUrls.insert(newIndex, item);
+      // Remove the image from its current position
+      _imageUrls.remove(imageUrlToSetAsMain);
+      // Insert it at the beginning to make it the main image
+      _imageUrls.insert(0, imageUrlToSetAsMain);
     });
   }
-
 
   /// Performs user logout by clearing authentication data and navigating to login.
   Future<void> _performLogout() async {
@@ -667,9 +662,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-          ),
+          // Removed the border property to eliminate the white border
           color: Colors.white.withOpacity(0.1), // Lighter background
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -876,9 +869,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-          ),
+          // Removed the border property to eliminate the white border
           color: Colors.white.withOpacity(0.1), // Lighter background
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -926,9 +917,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-          ),
+          // Removed the border property to eliminate the white border
           color: Colors.white.withOpacity(0.1), // Lighter background
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -1047,96 +1036,63 @@ class EditProfileScreenState extends State<EditProfileScreen> {
 
               // --- Image Gallery Section ---
               _buildSectionTitle('PHOTOS'),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Wrap( // Changed to Wrap for multi-row layout
-                  spacing: 8.0, // Horizontal spacing between cards
-                  runSpacing: 8.0, // Vertical spacing between rows
-                  children: List.generate(_imageUrls.length + 1, (index) {
-                    if (index == _imageUrls.length) {
-                      // Add photo button
-                      return ReorderableDragStartListener(
-                        key: const ValueKey('add_photo_button_reorderable'),
-                        index: index,
-                        child: GestureDetector(
-                          onTap: _isImageProcessing ? null : _pickImage,
-                          child: Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[800],
-                              boxShadow: [
-                                BoxShadow( // Corrected from BoxBoxShadow
-                                  color: Colors.black.withOpacity(0.3),
-                                  spreadRadius: 1,
-                                  blurRadius: 3,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: _isImageProcessing
-                                  ? const Center(
-                                  child: CircularProgressIndicator(color: Colors.white))
-                                  : const Icon(Icons.add_a_photo,
-                                  color: Colors.white, size: 40),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    final imageUrl = _imageUrls[index];
-                    return ReorderableDragStartListener(
-                      key: ValueKey(imageUrl),
-                      index: index,
-                      child: Stack(
+              // Removed Padding to make images touch screen edges
+              SizedBox(
+                height: MediaQuery.of(context).size.width * 0.8, // Adjusted height to make it taller
+                child: Row(
+                  children: [
+                    // Main Photo (Left Side)
+                    Expanded(
+                      flex: 1, // Main photo takes less width
+                      child: _imageUrls.isNotEmpty
+                          ? Stack(
                         children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  spreadRadius: 1,
-                                  blurRadius: 3,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                imageUrl,
-                                fit: BoxFit.cover,
-                                width: 100,
-                                height: 100,
-                                errorBuilder: (context, error, stackTrace) => Image.asset(
-                                  'assets/placeholder_error.jpg',
+                          GestureDetector(
+                            onTap: () => _setMainImage(_imageUrls[0]), // Tap to set as main (already main)
+                            child: Container(
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    spreadRadius: 1,
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(0), // No rounded corners for touching edges
+                                child: Image.network(
+                                  _imageUrls[0],
                                   fit: BoxFit.cover,
-                                  width: 100,
-                                  height: 100,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                                    'assets/placeholder_error.jpg',
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  ),
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                    if (loadingProgress == null) {
+                                      return child;
+                                    }
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress
+                                            .expectedTotalBytes !=
+                                            null
+                                            ? loadingProgress
+                                            .cumulativeBytesLoaded /
+                                            loadingProgress
+                                                .expectedTotalBytes!
+                                            : null,
+                                        color: Colors.white,
+                                      ),
+                                    );
+                                  },
                                 ),
-                                loadingBuilder:
-                                    (context, child, loadingProgress) {
-                                  if (loadingProgress == null) {
-                                    return child;
-                                  }
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      value: loadingProgress
-                                          .expectedTotalBytes !=
-                                          null
-                                          ? loadingProgress
-                                          .cumulativeBytesLoaded /
-                                          loadingProgress
-                                              .expectedTotalBytes!
-                                          : null,
-                                      color: Colors.white,
-                                    ),
-                                  );
-                                },
                               ),
                             ),
                           ),
@@ -1146,7 +1102,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                             child: GestureDetector(
                               onTap: _isImageProcessing
                                   ? null
-                                  : () => _removeImage(imageUrl),
+                                  : () => _removeImage(_imageUrls[0]),
                               child: Container(
                                 padding: const EdgeInsets.all(2),
                                 decoration: BoxDecoration(
@@ -1158,34 +1114,97 @@ class EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                             ),
                           ),
-                          // Indicator for the main photo (first in the list)
-                          if (index == 0)
-                            Positioned(
-                              bottom: 4,
-                              left: 4,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.yellow.withOpacity(0.8),
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: const Text(
-                                  'Main',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          // Indicator for the main photo
+                          Positioned(
+                            bottom: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.yellow.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: const Text(
+                                'Main',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
+                          ),
+                        ],
+                      )
+                          : GestureDetector(
+                        onTap: _isImageProcessing ? null : _pickImage,
+                        child: Container(
+                          color: Colors.grey[800],
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(0),
+                            child: _isImageProcessing
+                                ? const Center(
+                                child: CircularProgressIndicator(color: Colors.white))
+                                : const Center( // Added Center
+                              child: const Icon(Icons.add_a_photo,
+                                  color: Colors.white, size: 60), // Smaller size
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Side Photos (Right Side)
+                    Expanded(
+                      flex: 1, // Side photos take more width
+                      child: Column(
+                        children: [
+                          // First row of 2 side photos
+                          Expanded(
+                            child: Row(
+                              children: List.generate(2, (index) {
+                                final imageIndex = index + 1; // Start from the second image
+                                return Expanded(
+                                  child: _buildSidePhotoOrAddButton(imageIndex),
+                                );
+                              }),
+                            ),
+                          ),
+                          // Second row of 2 side photos
+                          Expanded(
+                            child: Row(
+                              children: List.generate(2, (index) {
+                                final imageIndex = index + 3; // Start from the fourth image
+                                return Expanded(
+                                  child: _buildSidePhotoOrAddButton(imageIndex),
+                                );
+                              }),
+                            ),
+                          ),
                         ],
                       ),
-                    );
-                  }),
+                    ),
+                  ],
                 ),
               ),
               // --- About Me Section ---
+              _buildSectionTitle('USERNAME'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: TextFormField(
+                  controller: _usernameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Enter your username',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
               _buildSectionTitle('ABOUT ME'),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -1415,6 +1434,102 @@ class EditProfileScreenState extends State<EditProfileScreen> {
         ),
       ),
     );
+  }
+
+  // New helper function to build individual side photos or add buttons
+  Widget _buildSidePhotoOrAddButton(int imageIndex) {
+    if (_imageUrls.length > imageIndex) {
+      final imageUrl = _imageUrls[imageIndex];
+      return Stack(
+        children: [
+          GestureDetector(
+            onTap: () => _setMainImage(imageUrl), // Tap to set as main
+            child: Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(0), // No rounded corners for touching edges
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                    'assets/placeholder_error.jpg',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                  loadingBuilder:
+                      (context, child, loadingProgress) {
+                    if (loadingProgress == null) {
+                      return child;
+                    }
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress
+                            .expectedTotalBytes !=
+                            null
+                            ? loadingProgress
+                            .cumulativeBytesLoaded /
+                            loadingProgress
+                                .expectedTotalBytes!
+                            : null,
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: _isImageProcessing
+                  ? null
+                  : () => _removeImage(imageUrl),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.7),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close,
+                    size: 16, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Add photo button for empty slots
+      return GestureDetector(
+        onTap: _isImageProcessing ? null : _pickImage,
+        child: Container(
+          color: Colors.grey[800],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(0),
+            child: _isImageProcessing
+                ? const Center(
+                child: CircularProgressIndicator(color: Colors.white))
+                : const Center( // Added Center
+              child: const Icon(Icons.add_a_photo,
+                  color: Colors.white, size: 60), // Smaller size
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 

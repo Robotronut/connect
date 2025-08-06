@@ -53,9 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-          ),
+          // Removed the border property to eliminate the white border
           color: _isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade200, // Background color based on theme
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -100,9 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-        ),
+        // Removed the border property to eliminate the white border
         color: _isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade200, // Background color based on theme
         borderRadius: BorderRadius.circular(10.0),
       ),
@@ -191,9 +187,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       },
       child: Container(
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-          ),
+          // Removed the border property to eliminate the white border
           color: _isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade200, // Background color based on theme
           borderRadius: BorderRadius.circular(10.0),
         ),
@@ -689,9 +683,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
           final user = _blockedUsers[index];
           return Container(
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1.0),
-              ),
+              // Removed the border property to eliminate the white border
               color: parentIsDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(10.0),
             ),
