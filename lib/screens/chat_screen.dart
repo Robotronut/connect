@@ -81,10 +81,11 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     // Register the video call listeners here, as they are crucial for the ChatScreen's logic.
-    widget.hubConnection.on('ReceiveVideoCallInvitation', _handleVideoCallInvitation);
+    widget.hubConnection
+        .on('ReceiveVideoCallInvitation', _handleVideoCallInvitation);
     widget.hubConnection.on('VideoCallAccepted', _handleVideoCallAccepted);
     widget.hubConnection.on('VideoCallRejected', _handleVideoCallRejected);
-    
+
     // Add the message listener back in, as you removed it.
     widget.hubConnection.on('ReceiveMessage', _handleReceiveMessage);
 
@@ -95,6 +96,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void _handleVideoCallAccepted(List<Object?>? args) {
     // This is called on the caller's device when the callee accepts.
     Navigator.pop(context); // Close the "Calling..." dialog
+    String conversationId = args?[0] as String;
+    String otherUserId = widget.otherUserId;
+    String currentUserId = widget.currentUserId;
+    print('Tylar:ConversationId: $conversationId)');
+    print('Tylar:otherUserId: $otherUserId)');
+    print('Tylar:currentUserId: $currentUserId)');
 
     // Now that the call is accepted, navigate to the video screen.
     Navigator.push(
@@ -104,6 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
             hubConnection: widget.hubConnection,
             currentUserId: widget.currentUserId,
             otherUserId: widget.otherUserId,
+            conversationId: conversationId,
             isCallInitiated: true),
       ),
     );
@@ -122,17 +130,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _handleVideoCallInvitation(List<Object?>? args) {
-    if (args == null || args.isEmpty) return;
+    if (args == null || args.length < 2) return;
     final String callerId = args[0] as String;
+    final String conversationId =
+        args[1] as String; // Retrieve the conversation ID
 
     // Only handle the invitation if it's from the person we're currently chatting with.
     if (callerId != widget.otherUserId) {
       // You might want to handle this case differently, e.g., show a toast.
-      return;
+      // toast - let the user know someone else is calling.
+      //   return;
     }
-    
+
     // This is the correct location for the dialog logic.
-    // The previous code had a nested method definition here.
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -142,14 +152,19 @@ class _ChatScreenState extends State<ChatScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context); // Close the dialog
-              await widget.hubConnection.invoke('RejectVideoCall', args: [callerId]);
+              // Now, pass the conversationId to the RejectVideoCall method
+              await widget.hubConnection
+                  .invoke('RejectVideoCall', args: [callerId, conversationId]);
             },
             child: const Text('Reject'),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context); // Close the dialog
-              await widget.hubConnection.invoke('AcceptVideoCall', args: [callerId]);
+              // Pass both the callerId and the conversationId to the AcceptVideoCall method
+              await widget.hubConnection
+                  .invoke('AcceptVideoCall', args: [callerId, conversationId]);
+              print('Tylar: $conversationId $callerId');
               // Callee navigates here, after accepting.
               Navigator.push(
                 context,
@@ -158,6 +173,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       hubConnection: widget.hubConnection,
                       currentUserId: widget.currentUserId,
                       otherUserId: callerId,
+                      conversationId: conversationId,
                       isCallInitiated: false),
                 ),
               );
@@ -188,7 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
     widget.hubConnection.off('ReceiveVideoCallInvitation');
     widget.hubConnection.off('VideoCallAccepted');
     widget.hubConnection.off('VideoCallRejected');
-    
+
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -345,7 +361,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _startVideoCall() async {
     try {
       // 1. Send the invitation.
-      await widget.hubConnection.invoke('InviteToVideoCall', args: [widget.otherUserId]);
+      await widget.hubConnection
+          .invoke('InviteToVideoCall', args: [widget.otherUserId]);
 
       // 2. Show a dialog indicating the call is in progress.
       // Do NOT navigate yet.
@@ -366,7 +383,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       );
-      
+
       // The `_handleVideoCallAccepted` listener will handle navigation to `VideoChatScreen`
       // if the callee accepts the call.
     } catch (e) {
@@ -478,8 +495,6 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.videocam, color: Colors.white),
             onPressed: () {
-              // TODO: Implement the call invitation logic
-              // For now, let's just navigate to the video screen
               _startVideoCall();
             },
           ),

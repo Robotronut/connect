@@ -3,6 +3,7 @@ import 'package:connect/main.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:connect/models/user_model.dart' show UserModel;
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/secure_storage_service.dart';
 import 'dart:io';
@@ -62,6 +63,55 @@ class ApiService {
     } catch (e) {
       print('Error generating OTP: $e');
       return false;
+    }
+  }
+
+  static void _showSuccessMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green, // Optional: change color for success
+        duration: Duration(seconds: 2), // Optional: how long it shows
+      ),
+    );
+  }
+
+  static void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red, // Optional: change color for errors
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  static Future<void> savePayload(BuildContext context,
+      {required String sender,
+      required String receiver,
+      required String conversationId,
+      required String payLoad}) async {
+    final url = Uri.parse('$_baseUrl/savePayload');
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'senderId': sender,
+          'receiverId': receiver,
+          'conversationid': conversationId,
+          'payload': payLoad
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        _showSuccessMessage(context, 'Data loaded successfully! 🎉');
+      }
+    } catch (e) {
+      _showErrorMessage(context, 'An error occurred: $e');
+      print('error');
     }
   }
 
