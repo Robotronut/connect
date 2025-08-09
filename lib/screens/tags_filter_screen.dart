@@ -21,6 +21,8 @@ class _TagsScreenState extends State<TagsScreen> {
   late List<String> _tempSelectedTags;
   late bool _tempIsFilterEnabled;
   bool _filtersInteractable = true; // State to control interactivity of filters
+  final Map<String, bool> _expandedSections = {}; // To manage section expansion
+  static const int _initialTagsToShow = 5; // Number of tags to show initially per section
 
   @override
   void initState() {
@@ -28,6 +30,11 @@ class _TagsScreenState extends State<TagsScreen> {
     _tempSelectedTags = List.from(widget.initialSelectedTags);
     _tempIsFilterEnabled = widget.initialIsFilterEnabled;
     _filtersInteractable = _tempIsFilterEnabled; // Initialize based on filter state
+
+    // Initialize all sections as not expanded
+    widget.allTagOptions.keys.forEach((category) {
+      _expandedSections[category] = false;
+    });
   }
 
   void _applyFilters() {
@@ -42,6 +49,8 @@ class _TagsScreenState extends State<TagsScreen> {
       _tempSelectedTags.clear();
       _tempIsFilterEnabled = false;
       _filtersInteractable = false; // Disable filters on reset
+      // Reset all expanded sections to false
+      _expandedSections.updateAll((key, value) => false);
     });
   }
 
@@ -135,6 +144,17 @@ class _TagsScreenState extends State<TagsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: widget.allTagOptions.entries.map((entry) {
+                    final category = entry.key;
+                    final allTagsInCategory = entry.value;
+
+                    // Determine which tags to display
+                    final bool isExpanded = _expandedSections[category] ?? false;
+                    final List<String> displayedTags = isExpanded || allTagsInCategory.length <= _initialTagsToShow
+                        ? allTagsInCategory
+                        : allTagsInCategory.take(_initialTagsToShow).toList();
+
+                    final int remainingTagsCount = allTagsInCategory.length - displayedTags.length;
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -152,7 +172,7 @@ class _TagsScreenState extends State<TagsScreen> {
                         Wrap(
                           spacing: 8.0,
                           runSpacing: 8.0,
-                          children: entry.value.map((tag) {
+                          children: displayedTags.map((tag) {
                             final isSelected = _tempSelectedTags.contains(tag);
                             return GestureDetector(
                               onTap: () {
@@ -185,6 +205,20 @@ class _TagsScreenState extends State<TagsScreen> {
                             );
                           }).toList(),
                         ),
+                        if (remainingTagsCount > 0 || isExpanded)
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _expandedSections[category] = !isExpanded;
+                                });
+                              },
+                              child: Text(
+                                isExpanded ? '- Show Less' : '+ $remainingTagsCount more',
+                                style: const TextStyle(color: Colors.yellow),
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 20),
                       ],
                     );

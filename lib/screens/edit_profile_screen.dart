@@ -8,7 +8,7 @@ import 'package:connect/models/user_model.dart'; // Import your user model
 import 'dart:io'; // Required for File
 import 'package:flutter/services.dart'; // Required for TextInputFormatter
 import 'package:connect/screens/settings_screen.dart'; // Import the new SettingsScreen
-import 'package:connect/screens/selected_tags_screen.dart'; // Import the NEW SelectTagsScreen
+import 'package:connect/screens/selected_profile_tags_screen.dart'; // Import the NEW SelectTagsScreen
 
 /// A screen for editing the user's profile information.
 ///
