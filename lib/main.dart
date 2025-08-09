@@ -90,7 +90,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
         '/otp_verification': (context) => const OtpVerificationScreen(),
-        '/forgot_password': (context) => const ForgotPasswordScreen(),       
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/grindr': (context) =>
         const MainBrowseScreen(), // Make sure 'grindr()' returns a Widget
       },

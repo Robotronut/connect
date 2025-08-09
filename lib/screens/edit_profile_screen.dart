@@ -371,7 +371,7 @@ class EditProfileScreenState extends State<EditProfileScreen> {
       }
 
       _bioController.text = _currentUserProfile!.aboutMe!;
-      _usernameController.text = _currentUserProfile!.userName!;
+      _usernameController.text = _currentUserProfile!.userName;
       _emailController.text = await SecureStorageService.getEmail() ??
           'myemail@example.com'; // Placeholder if email not in secure storage
 

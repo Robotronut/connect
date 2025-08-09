@@ -635,6 +635,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                       if (_userProfile!.relationshipStatus != 'Rather Not Say')
                         _buildStatRow(Icons.person,
                             _userProfile!.relationshipStatus.toString()),
+
                       const SizedBox(height: 20),
                       Text(
                         'EXPECTATIONS',

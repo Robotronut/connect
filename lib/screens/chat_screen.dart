@@ -81,7 +81,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     // Register the video call listeners here, as they are crucial for the ChatScreen's logic.
-    widget.hubConnection.on('ReceiveVideoCallInvitation', _handleVideoCallInvitation);
+    widget.hubConnection
+        .on('ReceiveVideoCallInvitation', _handleVideoCallInvitation);
     widget.hubConnection.on('VideoCallAccepted', _handleVideoCallAccepted);
     widget.hubConnection.on('VideoCallRejected', _handleVideoCallRejected);
 
@@ -95,6 +96,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void _handleVideoCallAccepted(List<Object?>? args) {
     // This is called on the caller's device when the callee accepts.
     Navigator.pop(context); // Close the "Calling..." dialog
+    String conversationId = args?[0] as String;
+    String otherUserId = widget.otherUserId;
+    String currentUserId = widget.currentUserId;
+    print('Tylar:ConversationId: $conversationId)');
+    print('Tylar:otherUserId: $otherUserId)');
+    print('Tylar:currentUserId: $currentUserId)');
 
     // Now that the call is accepted, navigate to the video screen.
     Navigator.push(
@@ -104,6 +111,7 @@ class _ChatScreenState extends State<ChatScreen> {
             hubConnection: widget.hubConnection,
             currentUserId: widget.currentUserId,
             otherUserId: widget.otherUserId,
+            conversationId: conversationId,
             isCallInitiated: true),
       ),
     );
@@ -122,17 +130,19 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _handleVideoCallInvitation(List<Object?>? args) {
-    if (args == null || args.isEmpty) return;
+    if (args == null || args.length < 2) return;
     final String callerId = args[0] as String;
+    final String conversationId =
+    args[1] as String; // Retrieve the conversation ID
 
     // Only handle the invitation if it's from the person we're currently chatting with.
     if (callerId != widget.otherUserId) {
       // You might want to handle this case differently, e.g., show a toast.
-      return;
+      // toast - let the user know someone else is calling.
+      //   return;
     }
 
     // This is the correct location for the dialog logic.
-    // The previous code had a nested method definition here.
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -142,14 +152,19 @@ class _ChatScreenState extends State<ChatScreen> {
           TextButton(
             onPressed: () async {
               Navigator.pop(context); // Close the dialog
-              await widget.hubConnection.invoke('RejectVideoCall', args: [callerId]);
+              // Now, pass the conversationId to the RejectVideoCall method
+              await widget.hubConnection
+                  .invoke('RejectVideoCall', args: [callerId, conversationId]);
             },
             child: const Text('Reject'),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context); // Close the dialog
-              await widget.hubConnection.invoke('AcceptVideoCall', args: [callerId]);
+              // Pass both the callerId and the conversationId to the AcceptVideoCall method
+              await widget.hubConnection
+                  .invoke('AcceptVideoCall', args: [callerId, conversationId]);
+              print('Tylar: $conversationId $callerId');
               // Callee navigates here, after accepting.
               Navigator.push(
                 context,
@@ -158,6 +173,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       hubConnection: widget.hubConnection,
                       currentUserId: widget.currentUserId,
                       otherUserId: callerId,
+                      conversationId: conversationId,
                       isCallInitiated: false),
                 ),
               );
@@ -260,6 +276,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // Determine who the sender is for THIS specific chat screen.
       final bool isSender = senderId == widget.currentUserId;
 
+      // For now, let's just add the message if it's new.
       final newMessage = Message(
         senderId: senderId,
         senderAvatarUrl: (messageData['SenderAvatarUrl'] as String?) ?? '',
@@ -276,8 +293,8 @@ class _ChatScreenState extends State<ChatScreen> {
         isSender: isSender,
       );
 
-      // Add the message to the list.
-      // The previous duplicate check is removed as we are no longer optimistically adding.
+      // This is the correct way to add the message, ensuring there's no duplication.
+      // The optimistic add in _sendMessage has been removed.
       setState(() {
         _messages.add(newMessage);
       });
@@ -292,18 +309,19 @@ class _ChatScreenState extends State<ChatScreen> {
     if (messageContent.isNotEmpty) {
       // Clear the text field immediately.
       _messageController.clear();
+      // NOTE: We no longer add the message to the list here.
+      // We will wait for the server to broadcast the message back
+      // via the 'ReceiveMessage' event, which will then add it.
 
       try {
         // Send the message to the hub.
-        // The message will be added to the _messages list when the server broadcasts it back
-        // via the _handleReceiveMessage callback.
         await widget.hubConnection.invoke(
           'SendPrivateMessage',
           args: [widget.otherUserId, messageContent],
         );
       } catch (e) {
         print("Error sending message: $e");
-        // TODO: Handle the error gracefully (e.g., show an error message to the user).
+        // TODO: Handle the error gracefully (e.g., show an error indicator).
       }
     }
   }
@@ -311,7 +329,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _startVideoCall() async {
     try {
       // 1. Send the invitation.
-      await widget.hubConnection.invoke('InviteToVideoCall', args: [widget.otherUserId]);
+      await widget.hubConnection
+          .invoke('InviteToVideoCall', args: [widget.otherUserId]);
 
       // 2. Show a dialog indicating the call is in progress.
       // Do NOT navigate yet.
@@ -339,58 +358,6 @@ class _ChatScreenState extends State<ChatScreen> {
       print('Tylar: Failed to send video call invitation: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to start call. Error: $e')),
-      );
-    }
-  }
-
-  // New method to handle blocking a user
-  Future<void> _blockUser() async {
-    Navigator.pop(context); // Close the modal bottom sheet first
-
-    try {
-      // Show a confirmation dialog before blocking
-      final bool? confirmBlock = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Block User?'),
-          content: Text('Are you sure you want to block ${widget.otherUserName}? You will no longer receive messages from them.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false), // User cancels
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true), // User confirms
-              child: const Text('Block'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmBlock == true) {
-        // Invoke the SignalR hub method to block the user
-        await widget.hubConnection.invoke(
-          'BlockUser',
-          args: [widget.otherUserId],
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${widget.otherUserName} has been blocked.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-
-        // Optionally, navigate back or clear chat history after blocking
-        Navigator.pop(context); // Go back from the chat screen
-      }
-    } catch (e) {
-      print("Error blocking user: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to block user. Error: $e'),
-          backgroundColor: Colors.red,
-        ),
       );
     }
   }
@@ -430,7 +397,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 builder: (BuildContext context) {
                   return SafeArea(
                     child: SizedBox(
-                      height: 200, // Adjust height as needed to fit new option
+                      height: 150, // Adjust height as needed
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
@@ -469,24 +436,20 @@ class _ChatScreenState extends State<ChatScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      ReportScreen(
-                                        reportedUserId: widget.otherUserId,
-                                        reportedUsername: widget
-                                            .otherUserName, // Pass the other user's ID
-                                      ),
+                                  builder: (context) => ReportScreen(
+                                    reportedUserId: widget.otherUserId,
+                                    reportedUsername: widget
+                                        .otherUserName, // Pass the other user's ID
+                                  ),
+                                ),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('User reported.'),
+                                  backgroundColor: Colors.red,
                                 ),
                               );
                             },
-                          ),
-                          ListTile(
-                            leading: const Icon(Icons.block,
-                                color: Colors.white), // Block icon
-                            title: const Text(
-                              'Block User',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            onTap: _blockUser, // Call the new block user method
                           ),
                         ],
                       ),
@@ -500,8 +463,6 @@ class _ChatScreenState extends State<ChatScreen> {
           IconButton(
             icon: const Icon(Icons.videocam, color: Colors.white),
             onPressed: () {
-              // TODO: Implement the call invitation logic
-              // For now, let's just navigate to the video screen
               _startVideoCall();
             },
           ),
@@ -557,7 +518,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     child: Column(
                       crossAxisAlignment: isSender
-                          ? CrossAxisAlignment.end
+                          ? CrossAxisAlignment.start
                           : CrossAxisAlignment.start,
                       children: [
                         Text(

@@ -3,6 +3,7 @@ import 'package:connect/main.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:connect/models/user_model.dart' show UserModel;
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../services/secure_storage_service.dart';
 import 'dart:io';
@@ -17,7 +18,7 @@ List<UserModel> _parseUserModels(String responseBody) {
   // Assuming your API returns a structure like { "users": [...], "totalCount": ... }
   // Adjust this based on your actual API response structure.
   final List<dynamic> usersJson = responseData[
-      'users']; // <--- THIS IS THE CRITICAL LINE FOR YOUR "MAP ERROR"
+  'users']; // <--- THIS IS THE CRITICAL LINE FOR YOUR "MAP ERROR"
 
   return usersJson.map((json) => UserModel.fromJson(json)).toList();
 }
@@ -65,12 +66,61 @@ class ApiService {
     }
   }
 
+  static void _showSuccessMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green, // Optional: change color for success
+        duration: Duration(seconds: 2), // Optional: how long it shows
+      ),
+    );
+  }
+
+  static void _showErrorMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red, // Optional: change color for errors
+        duration: Duration(seconds: 4),
+      ),
+    );
+  }
+
+  static Future<void> savePayload(BuildContext context,
+      {required String sender,
+        required String receiver,
+        required String conversationId,
+        required String payLoad}) async {
+    final url = Uri.parse('$_baseUrl/savePayload');
+    try {
+      final response = await http.post(
+        url,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'senderId': sender,
+          'receiverId': receiver,
+          'conversationid': conversationId,
+          'payload': payLoad
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        _showSuccessMessage(context, 'Data loaded successfully! 🎉');
+      }
+    } catch (e) {
+      _showErrorMessage(context, 'An error occurred: $e');
+      print('error');
+    }
+  }
+
   /// Calls the OTP verification API.
   /// Returns the key string if successful, null otherwise.
   static Future<String?> verifyOtp(
       {required String email, // Assuming email is needed for verification
-      required String otp,
-      required String username}) async {
+        required String otp,
+        required String username}) async {
     final url = Uri.parse('$_baseUrl/Verify-Otp');
     try {
       final response = await http.post(
@@ -229,7 +279,7 @@ class ApiService {
 
         // Extract the JWT token from the successful response
         final String? jwtToken =
-            responseData['jwtToken']; // Assuming the key is 'token'
+        responseData['jwtToken']; // Assuming the key is 'token'
         final String? userName = responseData['username'];
         final String? userId = responseData['userid'];
 
@@ -347,7 +397,7 @@ class ApiService {
         // Pass the response.body to the top-level _parseUserModels function
         // which will run in a separate isolate.
         final List<UserModel> userList =
-            await compute(_parseUserModels, response.body);
+        await compute(_parseUserModels, response.body);
         return userList;
       } else {
         print(
@@ -383,7 +433,7 @@ class ApiService {
         // Pass the response.body to the top-level _parseUserModels function
         // which will run in a separate isolate.
         final List<UserModel> userList =
-            await compute(_parseUserModels, response.body);
+        await compute(_parseUserModels, response.body);
         return userList;
       } else {
         print(
@@ -419,7 +469,7 @@ class ApiService {
         // Pass the response.body to the top-level _parseUserModels function
         // which will run in a separate isolate.
         final List<UserModel> userList =
-            await compute(_parseUserModels, response.body);
+        await compute(_parseUserModels, response.body);
         return userList;
       } else {
         print(
@@ -493,7 +543,7 @@ class ApiService {
         print(response.body);
         // Use compute for single user profile parsing as well, especially if the profile can be complex
         final UserModel userProfile =
-            await compute(_parseUserModel, response.body);
+        await compute(_parseUserModel, response.body);
         return userProfile;
       } else {
         print(
@@ -553,7 +603,7 @@ class ApiService {
     }
 
     final url =
-        Uri.parse('$_baseUrl/upload_image'); // Your API's image upload endpoint
+    Uri.parse('$_baseUrl/upload_image'); // Your API's image upload endpoint
 
     try {
       final request = http.MultipartRequest('POST', url);
@@ -573,7 +623,7 @@ class ApiService {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
         // Assuming your backend returns the URL of the uploaded image
         final String imageUrl =
-            jsonResponse['imageUrl']; // Adjust key based on your API response
+        jsonResponse['imageUrl']; // Adjust key based on your API response
         return imageUrl;
       } else {
         print(
@@ -590,7 +640,7 @@ class ApiService {
   // If your backend has an endpoint to remove specific images
   static Future<void> deleteImage(String imageUrlToDelete) async {
     final url =
-        Uri.parse('$_baseUrl/delete_image'); // Your API's delete image endpoint
+    Uri.parse('$_baseUrl/delete_image'); // Your API's delete image endpoint
 
     try {
       final headers = await _getHeaders();
@@ -621,7 +671,7 @@ class ApiService {
   // --- NEW: Update User Profile ---
   static Future<void> reportUser(String? userId, String? complaint) async {
     final url =
-        Uri.parse('$_baseUrl/report_user'); // Your API's update endpoint
+    Uri.parse('$_baseUrl/report_user'); // Your API's update endpoint
 
     try {
       final headers = await _getHeaders();

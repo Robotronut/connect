@@ -17,7 +17,7 @@ import 'package:connect/filters/age_filter_dialog.dart';
 import 'package:connect/filters/online_filter_dialog.dart';
 import 'package:connect/filters/fresh_filter_dialog.dart';
 import 'package:connect/filters/favorite_filter_dialog.dart';
-import 'package:connect/screens/tags_screen.dart';
+import 'package:connect/screens/tags_filter_screen.dart';
 import 'package:connect/screens/more_filters_screen.dart';
 
 class MainBrowseScreen extends StatefulWidget {

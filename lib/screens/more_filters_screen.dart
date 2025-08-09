@@ -104,6 +104,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
 
   late bool _isHeightFilterEnabled;
   late bool _isWeightFilterEnabled;
+  late bool _isAgeFilterEnabled;
   late bool _isMeetAtFilterEnabled;
 
   bool filtersInteractable = true;
@@ -128,7 +129,8 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
     _tempSelectedMaxWeight = widget.initialSelectedMaxWeight;
     _tempSelectedRelationshipStatus =
         List.from(widget.initialSelectedRelationshipStatus);
-    _tempAcceptsNsfwPics = List.from(widget.initialAcceptsNsfwPics); // Ensure it's a mutable list
+    _tempAcceptsNsfwPics =
+        List.from(widget.initialAcceptsNsfwPics); // Ensure it's a mutable list
     _tempSelectedLookingFor =
         List.from(widget.initialSelectedLookingFor); // Updated
     _tempSelectedMeetAt = widget.initialSelectedMeetAt;
@@ -140,7 +142,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
     _isWeightFilterEnabled = widget.initialSelectedMinWeight != null ||
         widget.initialSelectedMaxWeight != null;
     _isMeetAtFilterEnabled = widget.initialSelectedMeetAt != null;
-
+    _isAgeFilterEnabled = widget.initialSelectedMinAge != null || widget.initialSelectedMaxAge != null;
     filtersInteractable = _tempIsGlobalFilterEnabled;
   }
 
@@ -257,7 +259,8 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                         style: const TextStyle(color: Colors.white),
                         icon: const Icon(Icons.arrow_drop_down,
                             color: Colors.white),
-                        onChanged: onMinChanged, // Corrected from onChanged to onMinChanged
+                        onChanged: onMinChanged,
+                        // Corrected from onChanged to onMinChanged
                         items: filteredMinOptions
                             .map<DropdownMenuItem<String>>((String item) {
                           return DropdownMenuItem<String>(
@@ -355,6 +358,124 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _showAgePicker() async {
+    final List<String> minPickerOptions = ['No Minimum', ...widget.ageOptions];
+    final List<String> maxPickerOptions = ['No Maximum', ...widget.ageOptions];
+
+    String? tempMinAge = _tempSelectedMinAge;
+    String? tempMaxAge = _tempSelectedMaxAge;
+
+
+
+    int minAgeIndex = _tempSelectedMinAge == null
+        ? 0
+        : minPickerOptions.indexOf(_tempSelectedMinAge!);
+    int maxAgeIndex = _tempSelectedMaxAge == null
+        ? maxPickerOptions.length - 1
+        : maxPickerOptions.indexOf(_tempSelectedMaxAge!);
+
+
+
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 250,
+          color: CupertinoColors.systemBackground.resolveFrom(context),
+          child: Column(
+            children: [
+              Container(
+                color: Colors.grey[900],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Reset',
+                          style: TextStyle(color: Colors.yellow)),
+                      onPressed: () {
+                        setState(() {
+                          _tempSelectedMinAge = null;
+                          _tempSelectedMaxAge = null;
+                          _isAgeFilterEnabled = false;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done',
+                          style: TextStyle(color: Colors.yellow)),
+                      onPressed: () {
+                        setState(() {
+                          // Ensure that the min age is not greater than the max age
+                          String selectedMin = minPickerOptions[minAgeIndex];
+                          String selectedMax = maxPickerOptions[maxAgeIndex];
+
+                          _tempSelectedMinAge = selectedMin;
+                          _tempSelectedMaxAge = selectedMax;
+
+                          _isAgeFilterEnabled = true;
+
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CupertinoPicker(
+                        backgroundColor: Colors.black,
+                        itemExtent: 40,
+                        scrollController: FixedExtentScrollController(
+                            initialItem: minAgeIndex),
+                        onSelectedItemChanged: (int index) {
+                          minAgeIndex = index;
+                        },
+                        children: minPickerOptions.map((String item) {
+                          return Center(
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 18),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    Expanded(
+                      child: CupertinoPicker(
+                        backgroundColor: Colors.black,
+                        itemExtent: 40,
+                        scrollController: FixedExtentScrollController(
+                            initialItem: maxAgeIndex),
+                        onSelectedItemChanged: (int index) {
+                          maxAgeIndex = index;
+                        },
+                        children: maxPickerOptions.map((String item) {
+                          return Center(
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 18),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -893,6 +1014,65 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
     );
   }
 
+  Widget _buildAgeFilter() {
+    String titleText = 'Age';
+    if (_isAgeFilterEnabled) {
+      String minText = _tempSelectedMinAge ?? 'No Min';
+      String maxText = _tempSelectedMaxAge ?? 'No Max';
+      titleText = 'Age: $minText - $maxText';
+    }
+    return Opacity(
+      opacity: filtersInteractable ? 1.0 : 0.5,
+      child: IgnorePointer(
+        ignoring: !filtersInteractable,
+        child: GestureDetector(
+          onTap: () {
+            if (_isAgeFilterEnabled) {
+              setState(() {
+                _isAgeFilterEnabled = false;
+                _tempSelectedMinHeight = null;
+                _tempSelectedMaxHeight = null;
+              });
+            } else {
+              _showAgePicker();
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            color: Colors.transparent,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isAgeFilterEnabled
+                        ? Colors.yellow
+                        : Colors.transparent,
+                    border: Border.all(
+                      color:
+                      _isAgeFilterEnabled ? Colors.yellow : Colors.white,
+                      width: 2.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  titleText,
+                  style: TextStyle(
+                    color: _isAgeFilterEnabled ? Colors.white : Colors.grey,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildHeightFilter() {
     String titleText = 'Height';
     if (_isHeightFilterEnabled) {
@@ -1212,23 +1392,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                       isEnabled: filtersInteractable,
                     ),
                     const SizedBox(height: 16.0),
-                    _buildRangeFilter(
-                      label: 'Age Range',
-                      minValue: _tempSelectedMinAge,
-                      maxValue: _tempSelectedMaxAge,
-                      allOptions: widget.ageOptions,
-                      onMinChanged: (String? newValue) {
-                        setState(() {
-                          _tempSelectedMinAge = newValue;
-                        });
-                      },
-                      onMaxChanged: (String? newValue) {
-                        setState(() {
-                          _tempSelectedMaxAge = newValue;
-                        });
-                      },
-                      isEnabled: filtersInteractable,
-                    ),
+
                     _buildMultiSelectChipFilter(
                       title: 'Genders',
                       options: widget.genderOptions,
@@ -1267,6 +1431,7 @@ class _MoreFiltersScreenState extends State<MoreFiltersScreen> {
                       },
                     ),
                     _buildHeightFilter(),
+                    _buildAgeFilter(),
                     _buildWeightFilter(),
                     _buildMultiSelectDotFilter(
                       title: 'Relationship Status',
